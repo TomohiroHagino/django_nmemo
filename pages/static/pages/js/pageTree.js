@@ -229,7 +229,29 @@ function handleDrop(e) {
         return;
     }
     
-    // 並び替えを実行
+    // DOMの見た目を即座に更新
+    const draggedElement = document.getElementById('header-' + draggedPageId);
+    const targetElement = document.getElementById('header-' + targetPageId);
+    
+    if (draggedElement && targetElement) {
+        const draggedPageItem = draggedElement.closest('.page-item');
+        const targetPageItem = targetElement.closest('.page-item');
+        
+        if (draggedPageItem && targetPageItem) {
+            if (position === 'before') {
+                targetPageItem.parentNode.insertBefore(draggedPageItem, targetPageItem);
+            } else {
+                // after の場合、次の兄弟要素の前に挿入、または末尾に追加
+                if (targetPageItem.nextSibling) {
+                    targetPageItem.parentNode.insertBefore(draggedPageItem, targetPageItem.nextSibling);
+                } else {
+                    targetPageItem.parentNode.appendChild(draggedPageItem);
+                }
+            }
+        }
+    }
+    
+    // サーバーに並び替えを通知
     reorderPage(draggedPageId, targetPageId, position);
     
     e.currentTarget.classList.remove('drop-target');
@@ -314,8 +336,7 @@ function reorderPage(pageId, targetPageId, position) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // ツリーを更新して反映
-            window.location.reload();
+            // 何もしない（既にDOMが更新されている）
         } else {
             alert('並び替えに失敗しました: ' + (data.error || '不明なエラー'));
         }

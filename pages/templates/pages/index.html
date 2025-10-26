@@ -17,7 +17,12 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <h1>📝 Nmemo</h1>
-                <button onclick="openCreateModal()" class="btn btn-primary" style="width: 100%; margin-top: 10px;">+ 新しいページ</button>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="window.location.reload()" class="btn btn-secondary" style="background: #6c757d; border: none; padding: 8px 12px; cursor: pointer; border-radius: 4px; font-size: 18px; display: flex; align-items: center; justify-content: center; min-width: 40px;" title="リロード">
+                        🔄
+                    </button>
+                    <button onclick="openCreateModal()" class="btn btn-primary" style="flex: 1;">+ 新しいページ</button>
+                </div>
             </div>
             <div class="sidebar-content">
                 {% if pages %}
