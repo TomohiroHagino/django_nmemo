@@ -3,6 +3,13 @@
 Djangoで構築された一人用のNotionライクなメモアプリケーションです。
 クラウドストレージを保存先に利用でき、自動でHTMLページと画像がエクスポートされます。
 
+<table>
+  <tr>
+    <td><img alt="スクリーンショット 2025-10-26 20:18:00" src="https://github.com/user-attachments/assets/59fcc89b-29c5-4e77-bc8a-5088c302f212" width="100%"></td>
+    <td><img alt="スクリーンショット 2025-10-26 21:19:44" src="https://github.com/user-attachments/assets/f75851f3-08c3-4baa-9589-2ab255d32c7d" width="100%"></td>
+  </tr>
+</table>
+
 ## 特徴
 
 - 階層構造を持つページ管理
