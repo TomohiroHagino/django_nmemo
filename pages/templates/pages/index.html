@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notionライク メモアプリ</title>
+    <!-- Quill.js CSS -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <!-- Quill Image Resize Module CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.css" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'pages/css/index.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>📝 Nmemo</h1>
+                <button onclick="openCreateModal()" class="btn btn-primary" style="width: 100%; margin-top: 10px;">+ 新しいページ</button>
+            </div>
+            <div class="sidebar-content">
+                {% if pages %}
+                    <div class="page-list" id="pageTree">
+                        {% for page in pages %}
+                            {% include 'pages/patial_tree_item.html' with page=page %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <p>ページがありません</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Vertical Resizer -->
+        <div class="sidebar-resizer" id="sidebarResizer" title="ドラッグして幅を変更"></div>
+
+        <!-- Right Content Area -->
+        <div class="main-content">
+            <div id="pageContent" class="content-body">
+                <div class="content-empty">
+                    ← 左側のページを選択してください
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 新規ページ作成モーダル -->
+    <div id="createModal" class="modal">
+        <div class="modal-content" id="modalContent">
+            <!-- リサイズハンドル -->
+            <div class="resize-handle resize-handle-tl"></div>
+            <div class="resize-handle resize-handle-t"></div>
+            <div class="resize-handle resize-handle-tr"></div>
+            <div class="resize-handle resize-handle-r"></div>
+            <div class="resize-handle resize-handle-br"></div>
+            <div class="resize-handle resize-handle-b"></div>
+            <div class="resize-handle resize-handle-bl"></div>
+            <div class="resize-handle resize-handle-l"></div>
+            <div class="resize-indicator"></div>
+            
+            <div class="modal-header">
+                <h2>新しいページを作成</h2>
+            </div>
+            <form id="createForm" method="POST" action="{% url 'pages:page_create' %}" onsubmit="return handleCreatePage(event)">
+                {% csrf_token %}
+                <input type="hidden" name="parent_id" value="">
+                <div class="form-group">
+                    <label>タイトル</label>
+                    <input type="text" name="title" id="newPageTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>コンテンツ</label>
+                    <div id="createEditor" class="editor-container"></div>
+                    <input type="hidden" name="content" id="newPageContent">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn close-btn" onclick="closeCreateModal()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">作成</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- アイコン選択モーダル -->
+    <div id="iconModal" class="modal">
+        <div class="modal-content" id="iconModalContent" style="width: 500px; min-width: 400px;">
+            <div class="modal-header">
+                <h2>アイコンを選択</h2>
+            </div>
+            <div id="iconGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 10px; padding: 20px; max-height: 400px; overflow-y: auto;">
+                <!-- アイコンはJavaScriptで追加 -->
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn close-btn" onclick="closeIconModal()">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="confirmIconChange()">決定</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quill.js JavaScript -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <!-- Quill Image Resize Module -->
+    <script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
+    
+    <!-- Custom JavaScript (ES6 Modules) -->
+    <script type="module" src="{% static 'pages/js/main.js' %}"></script>
+</body>
+</html>

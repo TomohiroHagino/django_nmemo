@@ -1,0 +1,36 @@
+/* Debug z-index issues */
+
+/* Highlight elements with their z-index */
+.sidebar {
+    outline: 2px solid red !important;
+    background: rgba(255, 0, 0, 0.1) !important;
+}
+
+.main-content {
+    outline: 2px solid blue !important;
+    background: rgba(0, 0, 255, 0.05) !important;
+}
+
+.ql-tooltip {
+    outline: 5px solid green !important;
+    background: rgba(0, 255, 0, 0.3) !important;
+}
+
+.ql-tooltip.ql-editing {
+    outline: 5px solid orange !important;
+    background: rgba(255, 165, 0, 0.5) !important;
+}
+
+/* Show z-index values */
+.sidebar::before {
+    content: 'Sidebar z-index: ' attr(style);
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: red;
+    color: white;
+    padding: 2px 5px;
+    font-size: 10px;
+    z-index: 999999999;
+}
+

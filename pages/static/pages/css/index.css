@@ -1,0 +1,724 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #fff;
+    color: #333;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #d3d3d3;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #b3b3b3;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Vertical resizer between sidebar and main content */
+.sidebar-resizer {
+    width: 3px;
+    cursor: col-resize;
+    background: transparent;
+    position: relative;
+}
+
+.sidebar-resizer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 2px;
+    width: 2px;
+    background: #e5e5e5;
+}
+
+.sidebar-resizer:hover::after,
+.sidebar-resizer.dragging::after {
+    background: #c7c7c7;
+}
+
+.sidebar {
+    width: 300px;
+    min-width: 220px;
+    max-width: 60vw;
+    border-right: 1px solid #e5e5e5;
+    display: flex;
+    flex-direction: column;
+    background: #fbfbfa;
+    isolation: isolate;
+    z-index: 1;
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    position: relative;
+    transition: background 0.2s, outline 0.2s;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    isolation: isolate;
+    z-index: 999999;
+}
+
+.content-header {
+    padding: 20px 40px;
+    border-bottom: 1px solid #e5e5e5;
+    background: #fff;
+}
+
+.content-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px;
+    background: #fff;
+}
+
+.content-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #999;
+    font-size: 18px;
+}
+
+.sidebar h1 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #37352f;
+    margin: 0;
+}
+
+.page-title-main {
+    font-size: 40px;
+    font-weight: 700;
+    color: #37352f;
+    margin-bottom: 20px;
+    line-height: 1.2;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: text;
+    transition: background 0.2s;
+    outline: none;
+}
+
+.page-title-main:hover {
+    background: #f7f6f3;
+}
+
+.page-title-main:focus {
+    background: #fff;
+    box-shadow: 0 0 0 2px #2383e2;
+}
+
+.page-title-main[contenteditable="true"]:empty:before {
+    content: "無題";
+    color: #ccc;
+}
+
+.page-content-display {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #37352f;
+    padding: 8px;
+    border-radius: 4px;
+    min-height: 200px;
+}
+
+.page-content-display img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Image resize styles */
+.ql-editor img {
+    cursor: pointer;
+    max-width: 100%;
+    height: auto;
+}
+
+.ql-editor img.selected {
+    outline: 2px solid #2383e2;
+    box-shadow: 0 0 0 1px white, 0 0 0 3px #2383e2;
+}
+
+.ql-editor img.resizing {
+    opacity: 0.7;
+}
+
+.image-resize-overlay {
+    position: absolute;
+    border: 2px dashed #2383e2;
+    background: rgba(35, 131, 226, 0.1);
+    pointer-events: none;
+    z-index: 100;
+}
+
+.resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #2383e2;
+    border: 2px solid white;
+    /* box-shadow: 0 0 3px rgba(0,0,0,0.3); */
+    z-index: 101;
+}
+
+.resize-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
+.resize-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
+.resize-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+.resize-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+.resize-handle.n { top: -5px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+.resize-handle.s { bottom: -5px; left: 50%; transform: translateY(-50%); cursor: s-resize; }
+.resize-handle.w { top: 50%; left: -5px; transform: translateY(-50%); cursor: w-resize; }
+.resize-handle.e { top: 50%; right: -5px; transform: translateY(-50%); cursor: e-resize; }
+
+#contentEditor {
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.page-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 30px;
+}
+
+.page-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.page-item {
+    position: relative;
+}
+
+.page-item-header {
+    display: flex;
+    align-items: center;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.page-item-header:hover {
+    background: #e9e9e7;
+}
+
+.page-item-header.active {
+    background: #e3e2e0;
+}
+
+/* Drag and drop styles for page tree */
+.page-item-header[draggable="true"] {
+    cursor: move;
+}
+
+.page-item-header.drop-target {
+    background: #e3f2fd !important;
+    outline: 2px solid #2196F3;
+    outline-offset: -2px;
+    border-radius: 4px;
+}
+
+/* Drag to root indicator */
+.sidebar-content.drop-root-target {
+    background: rgba(35, 131, 226, 0.05);
+    outline: 2px dashed #2196F3;
+    outline-offset: -10px;
+}
+
+.sidebar-content.drop-root-target::after {
+    content: 'ルートに移動';
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 16px;
+    background: #2196F3;
+    color: white;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.toggle-btn {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin-right: 4px;
+    font-size: 12px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+}
+
+.toggle-btn.collapsed {
+    transform: rotate(-90deg);
+}
+
+.toggle-btn.empty {
+    visibility: hidden;
+}
+
+.page-icon {
+    margin-right: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.page-icon:hover {
+    transform: scale(1.2);
+}
+
+.page-item-title {
+    flex: 1;
+    font-weight: 400;
+    color: #37352f;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.page-item-title:hover {
+    text-decoration: none;
+}
+
+.actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.page-item-header:hover .actions {
+    opacity: 1;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.save-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background: #28a745;
+    color: white;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 999999999;
+    pointer-events: none;
+}
+
+.save-indicator.show {
+    opacity: 1;
+}
+
+/* Drag and drop styles */
+.ql-editor.drag-over {
+    background-color: #e3f2fd !important;
+    border: 2px dashed #2196F3 !important;
+    opacity: 0.8;
+}
+
+.edit-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 10px 0;
+    border-top: 1px solid #e5e5e5;
+}
+
+.children {
+    margin-left: 24px;
+    display: none;
+}
+
+.children.expanded {
+    display: block;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #2383e2;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #0f6eb7;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.empty-state h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000000;
+}
+
+.modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    width: 600px;
+    max-width: 90vw;
+    max-height: 80vh;
+    min-width: 400px;
+    min-height: 400px;
+    resize: both;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.modal-content.resizing {
+    user-select: none;
+}
+
+.resize-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    cursor: nwse-resize;
+}
+
+.resize-handle-br {
+    bottom: 0;
+    right: 0;
+    cursor: nwse-resize;
+}
+
+.resize-handle-bl {
+    bottom: 0;
+    left: 0;
+    cursor: nesw-resize;
+}
+
+.resize-handle-tr {
+    top: 0;
+    right: 0;
+    cursor: nesw-resize;
+}
+
+.resize-handle-tl {
+    top: 0;
+    left: 0;
+    cursor: nwse-resize;
+}
+
+.resize-handle-t {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 10px;
+    cursor: ns-resize;
+}
+
+.resize-handle-b {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    cursor: ns-resize;
+}
+
+.resize-handle-l {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+.resize-handle-r {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+.resize-indicator {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 15px;
+    height: 15px;
+    pointer-events: none;
+}
+
+.resize-indicator::before,
+.resize-indicator::after {
+    content: '';
+    position: absolute;
+    background: #ccc;
+}
+
+.resize-indicator::before {
+    width: 2px;
+    height: 10px;
+    right: 0;
+    bottom: 0;
+}
+
+.resize-indicator::after {
+    width: 10px;
+    height: 2px;
+    right: 0;
+    bottom: 0;
+}
+
+.modal-header {
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    font-size: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.modal-content .form-group:has(.editor-container) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    min-height: 200px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.form-group .editor-container {
+    flex: 1;
+    min-height: 200px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-content .editor-container .ql-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content .editor-container .ql-editor {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.ql-editor {
+    min-height: 250px;
+    font-size: 14px;
+}
+
+.ql-toolbar {
+    background: #f7f6f3;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.close-btn {
+    background: #6c757d;
+    color: #fff;
+}
+
+.close-btn:hover {
+    background: #5a6268;
+}
+
+/* Quill tooltip/link modal z-index fix */
+/* CRITICAL: Quill tooltips must be above sidebar */
+
+/* The container that holds the tooltip */
+.ql-container,
+#contentEditor,
+#createEditor,
+.editor-container {
+    position: relative !important;
+    /* Don't set z-index on container */
+}
+
+/* Force Quill tooltips to appear above everything */
+.ql-tooltip {
+    position: absolute !important;
+    z-index: 99999999 !important;
+}
+
+/* Quill tooltip when in editing mode (link input form) */
+.ql-tooltip.ql-editing {
+    position: absolute !important;
+    z-index: 99999999 !important;
+}
+
+/* All children of editing tooltip */
+.ql-tooltip.ql-editing *,
+.ql-tooltip * {
+    position: relative;
+    z-index: inherit !important;
+}
+
+/* Quill tooltip input field */
+.ql-tooltip input[type="text"] {
+    position: relative;
+    z-index: 99999999 !important;
+}
+
+/* Quill toolbar dropdown menus */
+.ql-picker-options {
+    position: absolute !important;
+    z-index: 99999998 !important;
+}
+
+/* Create proper stacking contexts */
+/* Force sidebar and all its children to stay at lower z-index */
+.sidebar,
+.sidebar-header,
+.sidebar-content,
+.page-list,
+.page-item,
+.page-item-header,
+.page-item-title,
+.actions {
+    /* Ensure no child creates a new stacking context */
+    transform: none !important;
+    will-change: auto !important;
+}
+
+/* Main content and all Quill elements stay at higher z-index */
+.content-body {
+    position: relative;
+    z-index: auto;
+    transform: translateZ(0);
+}
+
+/* Ensure Quill containers create proper stacking context */
+.ql-container {
+    transform: translateZ(0);
+}
+

@@ -1,0 +1,29 @@
+<div class="page-item">
+    <div class="page-item-header" id="header-{{ page.id }}">
+        {% if page.children %}
+            <button id="toggle-{{ page.id }}" class="toggle-btn collapsed" onclick="event.stopPropagation(); toggleChildren({{ page.id }})">
+                ▼
+            </button>
+        {% else %}
+            <button class="toggle-btn empty">
+                ▼
+            </button>
+        {% endif %}
+        <span class="page-icon" onclick="event.stopPropagation(); openIconModal({{ page.id }}, '{{ page.icon|escapejs }}')" title="アイコンを変更">{{ page.icon|default:"📄" }}</span>
+        <span class="page-item-title" onclick="loadPage({{ page.id }})" style="flex: 1;">
+            {{ page.title }}
+        </span>
+        <div class="actions">
+            <button class="btn" style="background: transparent; color: #37352f; font-size: 16px; padding: 4px 6px; border: none; cursor: pointer; font-weight: bold;" onclick="event.stopPropagation(); openCreateChildModal({{ page.id }}, '{{ page.title|escapejs }}');" title="子ページを追加">+</button>
+            <a href="{% url 'pages:export_page' page.id %}" class="btn" style="background: #28a745; color: white; text-decoration: none; font-size: 11px; padding: 4px 8px;" onclick="event.stopPropagation();" title="JSONエクスポート">📥</a>
+        </div>
+    </div>
+    {% if page.children %}
+        <div id="children-{{ page.id }}" class="children">
+            {% for child in page.children %}
+                {% include 'pages/patial_tree_item.html' with page=child %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
