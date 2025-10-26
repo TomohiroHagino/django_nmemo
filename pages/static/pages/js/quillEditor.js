@@ -1,5 +1,50 @@
 // Quill editor initialization and image handling
 
+// カスタムVideoBlotを登録（ローカル動画ファイル用の<video>タグ）
+const BlockEmbed = Quill.import('blots/block/embed');
+
+class VideoBlot extends BlockEmbed {
+    static create(value) {
+        const node = super.create();
+        // URLがYouTube/Vimeoの場合はiframe、それ以外は<video>タグ
+        if (value.includes('youtube.com') || value.includes('youtu.be') || value.includes('vimeo.com')) {
+            // iframe用
+            const iframe = document.createElement('iframe');
+            iframe.setAttribute('src', value);
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute('allowfullscreen', true);
+            iframe.setAttribute('class', 'ql-video');
+            node.appendChild(iframe);
+        } else {
+            // ローカル動画用の<video>タグ
+            const video = document.createElement('video');
+            video.setAttribute('controls', '');
+            video.setAttribute('class', 'ql-video-local');
+            video.style.maxWidth = '100%';
+            video.style.height = 'auto';
+            
+            const source = document.createElement('source');
+            source.setAttribute('src', value);
+            video.appendChild(source);
+            
+            node.appendChild(video);
+        }
+        return node;
+    }
+    
+    static value(node) {
+        const iframe = node.querySelector('iframe');
+        const video = node.querySelector('video source');
+        return iframe ? iframe.getAttribute('src') : (video ? video.getAttribute('src') : '');
+    }
+}
+
+VideoBlot.blotName = 'video';
+VideoBlot.tagName = 'div';
+VideoBlot.className = 'video-wrapper';
+
+Quill.register(VideoBlot);
+
 export function initCreateEditor(imageHandler, videoHandler, addImageResizeHandlers, addDragDropImageUpload, addDragDropVideoUpload) {
     // カスタムフォントサイズを登録
     const Size = Quill.import('attributors/style/size');
@@ -202,16 +247,18 @@ export function videoHandler(currentPageId, getCreateQuill) {
         // ファイルアップロード
         const input = document.createElement('input');
         input.setAttribute('type', 'file');
-        input.setAttribute('accept', 'video/*');
-        input.click();
+        input.setAttribute('accept', 'video/mp4,video/webm,video/ogg,video/quicktime');
         
-        input.onchange = async () => {
+        input.addEventListener('change', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
             const file = input.files[0];
             if (!file) return;
             
-            // Validate file size (50MB max for videos)
-            if (file.size > 50 * 1024 * 1024) {
-                alert('動画ファイルサイズは50MB以下にしてください');
+            // Validate file size (250MB max for videos)
+            if (file.size > 250 * 1024 * 1024) {
+                alert('動画ファイルサイズは250MB以下にしてください');
                 return;
             }
             
@@ -261,7 +308,9 @@ export function videoHandler(currentPageId, getCreateQuill) {
             } catch (error) {
                 alert('動画のアップロードに失敗しました');
             }
-        };
+        });
+        
+        input.click();
     }
 }
 
@@ -470,9 +519,9 @@ export function addDragDropVideoUpload(quill, isCreateModal, currentPageId) {
                 continue; // Skip non-video files
             }
             
-            // Validate file size (50MB max)
-            if (file.size > 50 * 1024 * 1024) {
-                alert(`ファイル "${file.name}" のサイズは50MB以下にしてください`);
+            // Validate file size (250MB max)
+            if (file.size > 250 * 1024 * 1024) {
+                alert(`ファイル "${file.name}" のサイズは250MB以下にしてください`);
                 continue;
             }
             

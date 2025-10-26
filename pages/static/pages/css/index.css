@@ -656,6 +656,17 @@ body {
     max-width: 100%;
     height: auto;
     display: block;
+}
+
+/* ローカル動画用のスタイル */
+.ql-editor .ql-video-local {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* 動画ラッパー */
+.ql-editor .video-wrapper {
     margin: 10px 0;
 }
 

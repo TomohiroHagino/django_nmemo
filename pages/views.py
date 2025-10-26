@@ -297,9 +297,9 @@ def upload_video(request):
     if video.content_type not in allowed_types:
         return JsonResponse({'error': '許可されていないファイル形式です（mp4, webm, ogg, mov）'}, status=400)
     
-    # Validate file size (max 50MB)
-    if video.size > 50 * 1024 * 1024:
-        return JsonResponse({'error': 'ファイルサイズは50MB以下にしてください'}, status=400)
+    # Validate file size (max 250MB)
+    if video.size > 250 * 1024 * 1024:
+        return JsonResponse({'error': 'ファイルサイズは250MB以下にしてください'}, status=400)
     
     # Generate unique filename and save in page-specific folder
     ext = os.path.splitext(video.name)[1]
