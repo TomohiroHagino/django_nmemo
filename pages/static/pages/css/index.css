@@ -706,11 +706,10 @@ body {
 
 /* YouTubeの16:9アスペクト比を維持 */
 .ql-editor .ql-video {
-    width: 560px !important;
-    height: 315px !important;
     display: block !important;
 }
 
+/* スマホ表示では幅を100%に */
 @media (max-width: 768px) {
     .ql-editor .ql-video {
         width: 100% !important;

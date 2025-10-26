@@ -1,4 +1,4 @@
-// Page CRUD operations
+// ページのCRUD（作成・読み込み・更新・削除）操作
 
 let currentPageId = null;
 let saveTimeout = null;
@@ -10,12 +10,12 @@ export function getCurrentPageId() {
 }
 
 export function loadPage(pageId, initContentEditor, escapeHtml, formatDate) {
-    // Remove active class from all items
+    // すべての項目から active クラスを外す
     document.querySelectorAll('.page-item-header').forEach(el => {
         el.classList.remove('active');
     });
     
-    // Add active class to clicked item
+    // クリックした項目に active クラスを付与
     const header = document.getElementById('header-' + pageId);
     if (header) {
         header.classList.add('active');
@@ -23,7 +23,7 @@ export function loadPage(pageId, initContentEditor, escapeHtml, formatDate) {
     
     currentPageId = pageId;
     
-    // Fetch page content and return the promise
+    // ページ内容を取得して Promise を返す
     return fetch(`/api/page/${pageId}/`)
         .then(response => response.json())
         .then(data => {
@@ -48,22 +48,22 @@ export function loadPage(pageId, initContentEditor, escapeHtml, formatDate) {
                 </div>
             `;
             
-            // Initialize Quill editor for content
+            // Quill エディタ（本文）の初期化
             const contentQuill = initContentEditor(data.content);
             
-            // Add input listeners for auto-save indication
+            // 入力監視（自動保存インジケータ用）
             const titleEl = document.getElementById('pageTitle');
             
             if (titleEl) {
                 titleEl.addEventListener('input', () => {
                     clearTimeout(saveTimeout);
                     saveTimeout = setTimeout(() => {
-                        // Auto-save after 2 seconds of inactivity
+                        // 無操作2秒後に自動保存する場合はここで呼ぶ
                         // savePage();
                     }, 2000);
                 });
                 
-                // Prevent line breaks in title
+                // タイトルでは改行を禁止。Enterで本文へフォーカス移動
                 titleEl.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -99,13 +99,13 @@ export function savePage(contentQuill, showSaveIndicator) {
         return;
     }
     
-    // Get CSRF token
+    // CSRFトークン取得
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
-    // Show saving indicator
+    // 保存中インジケータの表示
     showSaveIndicator('保存中...');
     
-    // Send update request
+    // 更新リクエスト送信
     fetch(`/page/${currentPageId}/update/`, {
         method: 'POST',
         headers: {
@@ -125,7 +125,7 @@ export function savePage(contentQuill, showSaveIndicator) {
             originalTitle = title;
             originalContent = content;
             
-            // Update tree item title
+            // ツリー側のタイトル表示を更新
             const treeTitle = document.querySelector(`#header-${currentPageId} .page-item-title`);
             if (treeTitle) {
                 treeTitle.textContent = title;
@@ -143,6 +143,7 @@ export function savePage(contentQuill, showSaveIndicator) {
 export function cancelEdit(contentQuill) {
     const titleEl = document.getElementById('pageTitle');
     
+    // 編集内容を元に戻す
     if (titleEl) titleEl.textContent = originalTitle;
     if (contentQuill) {
         contentQuill.root.innerHTML = originalContent;
@@ -166,14 +167,14 @@ export function deletePage(pageId, showSaveIndicator) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Remove from tree
+            // ツリーから該当ノードを削除
             const pageHeader = document.getElementById('header-' + pageId);
             if (pageHeader) {
                 const pageItem = pageHeader.parentElement;
                 pageItem.remove();
             }
             
-            // Clear content area
+            // 本文領域を初期表示に戻す
             const contentArea = document.getElementById('pageContent');
             contentArea.innerHTML = '<div class="content-empty">← 左側のページを選択してください</div>';
             currentPageId = null;
@@ -188,4 +189,3 @@ export function deletePage(pageId, showSaveIndicator) {
         alert('削除に失敗しました');
     });
 }
-

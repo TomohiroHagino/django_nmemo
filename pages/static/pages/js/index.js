@@ -647,13 +647,11 @@ function addDragDropImageUpload(quill, isCreateModal) {
                 if (!currentPageId) {
                     alert('ページIDが取得できません。ページを再読み込みしてください。');
                     return;
-                }
-                pageId = currentPageId;
             }
-            
-            console.log('Drag & Drop upload - Page ID:', pageId, 'File:', file.name);
-            
-            // Upload image
+            pageId = currentPageId;
+        }
+        
+        // Upload image
             const formData = new FormData();
             formData.append('image', file);
             formData.append('page_id', pageId);
@@ -721,8 +719,6 @@ function imageHandler() {
             }
             pageId = currentPageId;
         }
-        
-        console.log('Image upload - Page ID:', pageId, 'Editor:', isCreateModal ? 'create' : 'content');
         
         // Upload image
         const formData = new FormData();

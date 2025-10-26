@@ -10,6 +10,7 @@ export function initCreateEditor(imageHandler, videoHandler, addImageResizeHandl
         [{ 'header': [1, 2, 3, false] }],
         [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline', 'strike'],
+        ['code', 'code-block'],
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         [{ 'color': [] }, { 'background': [] }],
         [{ 'align': [] }],
@@ -74,6 +75,7 @@ export function initContentEditor(initialContent, imageHandler, videoHandler, ad
         [{ 'header': [1, 2, 3, false] }],
         [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline', 'strike'],
+        ['code', 'code-block'],
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         [{ 'color': [] }, { 'background': [] }],
         [{ 'align': [] }],
@@ -145,6 +147,22 @@ export function videoHandler(currentPageId, getCreateQuill) {
         const url = prompt('YouTube または Vimeo の URL を入力してください:');
         if (!url) return;
         
+        // サイズを選択
+        const size = prompt('動画のサイズを選択してください:\n1: 小 (420x236)\n2: 中 (560x315) - デフォルト\n3: 大 (840x472)\n\n番号を入力してください (1, 2, または 3):');
+        
+        let width, height;
+        if (size === '1') {
+            width = 420;
+            height = 236;
+        } else if (size === '3') {
+            width = 840;
+            height = 472;
+        } else {
+            // デフォルトは中サイズ
+            width = 560;
+            height = 315;
+        }
+        
         // YouTube/Vimeo URLを埋め込み用に変換
         let embedUrl = url;
         
@@ -162,10 +180,22 @@ export function videoHandler(currentPageId, getCreateQuill) {
             embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
         }
         
-        // エディタに埋め込み
+        // エディタに埋め込み（サイズ指定付き）
         const quill = self.quill;
         const range = quill.getSelection(true);
         quill.insertEmbed(range.index, 'video', embedUrl);
+        
+        // 挿入後にiframeのサイズを設定
+        setTimeout(() => {
+            const editor = quill.root;
+            const iframes = editor.querySelectorAll('iframe');
+            const lastIframe = iframes[iframes.length - 1];
+            if (lastIframe && lastIframe.src === embedUrl) {
+                lastIframe.style.width = width + 'px';
+                lastIframe.style.height = height + 'px';
+            }
+        }, 100);
+        
         quill.setSelection(range.index + 1);
         
     } else if (choice === '2') {

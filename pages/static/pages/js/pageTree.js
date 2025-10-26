@@ -1,23 +1,23 @@
-// Page tree management and drag & drop functionality
+// ページツリーの管理とドラッグ＆ドロップ機能
 
 let draggedPageId = null;
 let draggedElement = null;
 let dropIndicator = null;
 
-// Initialize drag and drop for page tree
+// ページツリーのドラッグ＆ドロップ初期化
 export function initPageTreeDragDrop() {
     const pageTree = document.getElementById('pageTree');
     if (!pageTree) return;
     
-    // Add drag and drop to all page items
+    // すべてのページ項目にドラッグ＆ドロップを付与
     attachDragDropToPageItems();
     
-    // Allow dropping on the sidebar to move to root
+    // サイドバー上にドロップしてルートへ移動できるようにする
     const sidebar = document.querySelector('.sidebar');
     const sidebarContent = document.querySelector('.sidebar-content');
     
     if (sidebar && sidebarContent) {
-        // Add dragover to prevent default and show visual feedback
+        // dragover を許可し、既定動作を抑制しつつ視覚的フィードバックを出す
         sidebar.addEventListener('dragover', function(e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
@@ -27,7 +27,7 @@ export function initPageTreeDragDrop() {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             
-            // Add visual feedback when dragging over empty space
+            // 何もない領域の上にドラッグ中は視覚的フィードバックを付与
             if (draggedPageId && (e.target === sidebarContent || 
                 e.target.classList.contains('sidebar-content') || 
                 e.target.id === 'pageTree' || 
@@ -37,25 +37,25 @@ export function initPageTreeDragDrop() {
         });
         
         sidebarContent.addEventListener('dragleave', function(e) {
-            // Remove visual feedback when leaving
+            // 対象領域から離れたらフィードバックを除去
             if (!sidebarContent.contains(e.relatedTarget) || 
                 (e.relatedTarget && e.relatedTarget.classList.contains('page-item-header'))) {
                 sidebarContent.classList.remove('drop-root-target');
             }
         });
         
-        // Allow dropping on sidebar content to move to root
+        // サイドバー領域へのドロップでルート直下へ移動させる
         sidebarContent.addEventListener('drop', function(e) {
-            // Remove visual feedback
+            // 視覚的フィードバックを除去
             sidebarContent.classList.remove('drop-root-target');
             
-            // Only handle if dropped on the sidebar content itself, not on a page item
+            // ページ項目そのものではなく、サイドバー領域に落としたときだけ処理
             if (e.target === sidebarContent || e.target.classList.contains('sidebar-content') || 
                 e.target.id === 'pageTree' || e.target.classList.contains('page-list')) {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // Move to root (parent_id = null)
+                // ルートへ移動（parent_id = null）
                 if (draggedPageId) {
                     movePage(draggedPageId, null);
                 }
@@ -68,14 +68,14 @@ function attachDragDropToPageItems() {
     const pageItems = document.querySelectorAll('.page-item-header');
     
     pageItems.forEach(header => {
-        // Make draggable
+        // ドラッグ可能にする
         header.setAttribute('draggable', 'true');
         
-        // Drag events
+        // ドラッグ関連イベント
         header.addEventListener('dragstart', handleDragStart);
         header.addEventListener('dragend', handleDragEnd);
         
-        // Drop events
+        // ドロップ関連イベント
         header.addEventListener('dragover', handleDragOver);
         header.addEventListener('dragenter', handleDragEnter);
         header.addEventListener('dragleave', handleDragLeave);
@@ -92,7 +92,7 @@ function handleDragStart(e) {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
     
-    // Create drop indicator
+    // ドロップ位置インジケータを作成
     if (!dropIndicator) {
         dropIndicator = document.createElement('div');
         dropIndicator.className = 'drop-indicator';
@@ -110,24 +110,24 @@ function handleDragStart(e) {
 function handleDragEnd(e) {
     e.currentTarget.style.opacity = '1';
     
-    // Remove all drop-target classes
+    // すべての drop-target クラスを除去
     document.querySelectorAll('.page-item-header').forEach(header => {
         header.classList.remove('drop-target');
         header.removeAttribute('data-drop-position');
     });
     
-    // Remove root drop target indicator
+    // ルートドロップ用の強調表示を除去
     const sidebarContent = document.querySelector('.sidebar-content');
     if (sidebarContent) {
         sidebarContent.classList.remove('drop-root-target');
     }
     
-    // Remove drop indicator
+    // ドロップ位置インジケータを除去
     if (dropIndicator && dropIndicator.parentNode) {
         dropIndicator.parentNode.removeChild(dropIndicator);
     }
     
-    // Reset draggedPageId
+    // ドラッグ中IDをリセット
     draggedPageId = null;
 }
 
@@ -141,16 +141,16 @@ function handleDragOver(e) {
         return;
     }
     
-    // Calculate position (top half = before, bottom half = after)
+    // マウス位置から挿入位置を判定（上半分=before、下半分=after）
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top;
     const height = rect.height;
     const position = y < height / 2 ? 'before' : 'after';
     
-    // Store position on element
+    // 判定結果を要素の属性に保持
     e.currentTarget.setAttribute('data-drop-position', position);
     
-    // Show drop indicator
+    // ドロップ位置インジケータを表示
     if (dropIndicator) {
         if (!dropIndicator.parentNode) {
             e.currentTarget.parentNode.appendChild(dropIndicator);
@@ -171,17 +171,17 @@ function handleDragOver(e) {
 function handleDragEnter(e) {
     const targetPageId = e.currentTarget.id.replace('header-', '');
     
-    // Don't allow dropping on itself
+    // 自身へのドロップは不可
     if (targetPageId === draggedPageId) {
         return;
     }
     
-    // Don't add drop-target class anymore since we're using indicator
+    // インジケータを使うため、ここでは drop-target クラスは付けない
     // e.currentTarget.classList.add('drop-target');
 }
 
 function handleDragLeave(e) {
-    // Only remove if we're actually leaving the element (not entering a child)
+    // 子要素に移動しただけでなく、実際に領域外へ出たときのみ除去
     if (!e.currentTarget.contains(e.relatedTarget)) {
         e.currentTarget.classList.remove('drop-target');
     }
@@ -197,19 +197,19 @@ function handleDrop(e) {
     const targetPageId = e.currentTarget.id.replace('header-', '');
     const position = e.currentTarget.getAttribute('data-drop-position') || 'after';
     
-    // Don't allow dropping on itself
+    // 自身へのドロップは不可
     if (targetPageId === draggedPageId) {
         return;
     }
     
-    // Check if target is a descendant of dragged page
+    // ドラッグ中のページの子孫を、親にすることは不可
     if (isDescendant(targetPageId, draggedPageId)) {
         alert('子孫ページを親にはできません');
         e.currentTarget.classList.remove('drop-target');
         return;
     }
     
-    // Reorder the page
+    // 並び替えを実行
     reorderPage(draggedPageId, targetPageId, position);
     
     e.currentTarget.classList.remove('drop-target');
@@ -218,7 +218,7 @@ function handleDrop(e) {
 }
 
 function isDescendant(targetId, ancestorId) {
-    // Check if targetId is a descendant of ancestorId
+    // targetId が ancestorId の子孫かどうかを判定
     const targetElement = document.getElementById('header-' + targetId);
     if (!targetElement) return false;
     
@@ -230,7 +230,7 @@ function isDescendant(targetId, ancestorId) {
             return true;
         }
         
-        // Move up to next parent
+        // さらに上位の親へ辿る
         const parentItem = parent.closest('.page-item');
         if (!parentItem) break;
         
@@ -246,7 +246,7 @@ function movePage(pageId, newParentId) {
     
     const formData = new FormData();
     
-    // If newParentId is explicitly null or undefined, send it as an empty string
+    // newParentId が null/undefined の場合は空文字で送る
     if (newParentId === null || newParentId === undefined) {
         formData.append('new_parent_id', '');
     } else {
@@ -264,7 +264,7 @@ function movePage(pageId, newParentId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Reload the page to show updated tree
+            // ツリーを更新して反映
             window.location.reload();
         } else {
             alert('移動に失敗しました: ' + (data.error || '不明なエラー'));
@@ -294,7 +294,7 @@ function reorderPage(pageId, targetPageId, position) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Reload the page to show updated tree
+            // ツリーを更新して反映
             window.location.reload();
         } else {
             alert('並び替えに失敗しました: ' + (data.error || '不明なエラー'));
@@ -324,7 +324,7 @@ export function toggleChildren(pageId) {
 export function addPageToTree(pageId, title, parentId, escapeHtml) {
     const now = new Date().toISOString();
     
-    // Create new page item HTML
+    // 新しいページ項目のHTMLを生成
     const pageItemHtml = `
         <div class="page-item">
             <div class="page-item-header" id="header-${pageId}">
@@ -342,44 +342,44 @@ export function addPageToTree(pageId, title, parentId, escapeHtml) {
     `;
     
     if (parentId) {
-        // Add as child to parent
+        // 親ページに子として追加
         let childrenContainer = document.getElementById('children-' + parentId);
         
-        // If children container doesn't exist, create it
+        // 子コンテナが未作成なら生成
         if (!childrenContainer) {
             const parentHeader = document.getElementById('header-' + parentId);
             const parentItem = parentHeader.parentElement;
             
-            // Update parent's toggle button
+            // 親のトグルボタンを更新
             const toggleBtn = parentHeader.querySelector('.toggle-btn');
             toggleBtn.id = 'toggle-' + parentId;
             toggleBtn.classList.remove('empty');
             toggleBtn.classList.add('collapsed');
             toggleBtn.setAttribute('onclick', `event.stopPropagation(); toggleChildren(${parentId})`);
             
-            // Create children container
+            // 子コンテナを作成
             childrenContainer = document.createElement('div');
             childrenContainer.id = 'children-' + parentId;
             childrenContainer.className = 'children';
             parentItem.appendChild(childrenContainer);
         }
         
-        // Add new page to children
+        // 子コンテナの末尾に追加
         childrenContainer.insertAdjacentHTML('beforeend', pageItemHtml);
         
-        // Expand parent to show new child
+        // 追加が見えるように親を展開
         childrenContainer.classList.add('expanded');
         const toggleBtn = document.getElementById('toggle-' + parentId);
         if (toggleBtn) {
             toggleBtn.classList.remove('collapsed');
         }
     } else {
-        // Add as root page
+        // ルートページとして追加
         const pageTree = document.getElementById('pageTree');
         if (pageTree) {
             pageTree.insertAdjacentHTML('beforeend', pageItemHtml);
         } else {
-            // If tree doesn't exist (was empty), recreate it
+            // ツリー自体が無ければ（空状態なら）作り直す
             const sidebarContent = document.querySelector('.sidebar-content');
             const emptyState = sidebarContent.querySelector('.empty-state');
             if (emptyState) {
@@ -394,4 +394,3 @@ export function addPageToTree(pageId, title, parentId, escapeHtml) {
         }
     }
 }
-
