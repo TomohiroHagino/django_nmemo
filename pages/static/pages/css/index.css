@@ -89,8 +89,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    isolation: isolate;
-    z-index: 999999;
+    z-index: 1;
 }
 
 .content-header {
@@ -356,7 +355,7 @@ body {
     border-radius: 4px;
     opacity: 0;
     transition: opacity 0.3s;
-    z-index: 999999999;
+    z-index: 9999;
     pointer-events: none;
 }
 
@@ -434,7 +433,7 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(0,0,0,0.5);
-    z-index: 10000000;
+    z-index: 1000;
 }
 
 .modal-content {
@@ -652,6 +651,134 @@ body {
     background: #5a6268;
 }
 
+/* Quillエディタ内の動画スタイル */
+.ql-editor video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 10px 0;
+}
+
+/* iframe用のコンテナ */
+.ql-editor .iframe-container {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    margin: 10px 0;
+}
+
+/* iframe用のオーバーレイ */
+.ql-editor .iframe-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 1;
+    transition: background 0.2s;
+}
+
+.ql-editor .iframe-overlay:hover {
+    background: rgba(0, 102, 204, 0.05);
+}
+
+/* Quillエディタ内のiframe（YouTube等）スタイル */
+.ql-editor iframe {
+    max-width: 100%;
+    display: block !important;
+    min-height: 315px;
+    transition: box-shadow 0.2s;
+    border: none;
+}
+
+.ql-editor .iframe-container:hover iframe {
+    box-shadow: 0 0 0 2px #0066cc;
+}
+
+.ql-editor iframe.selected {
+    box-shadow: 0 0 0 3px #0066cc;
+}
+
+.ql-editor iframe.resizing {
+    opacity: 0.7;
+}
+
+/* YouTubeの16:9アスペクト比を維持 */
+.ql-editor .ql-video {
+    width: 560px !important;
+    height: 315px !important;
+    display: block !important;
+}
+
+@media (max-width: 768px) {
+    .ql-editor .ql-video {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 200px !important;
+    }
+}
+
+/* Quillエディタのフォントサイズドロップダウンのスタイル */
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="10px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="10px"]::before {
+    content: '10px';
+    font-size: 10px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
+    content: '12px';
+    font-size: 12px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before {
+    content: '14px';
+    font-size: 14px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before {
+    content: '16px';
+    font-size: 16px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before {
+    content: '18px';
+    font-size: 18px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="20px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="20px"]::before {
+    content: '20px';
+    font-size: 20px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
+    content: '24px';
+    font-size: 24px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before {
+    content: '32px';
+    font-size: 32px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="48px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="48px"]::before {
+    content: '48px';
+    font-size: 48px !important;
+}
+
+/* デフォルト（サイズ未設定）の表示 */
+.ql-snow .ql-picker.ql-size .ql-picker-label::before {
+    content: '標準';
+}
+
 /* Quill tooltip/link modal z-index fix */
 /* CRITICAL: Quill tooltips must be above sidebar */
 
@@ -667,13 +794,13 @@ body {
 /* Force Quill tooltips to appear above everything */
 .ql-tooltip {
     position: absolute !important;
-    z-index: 99999999 !important;
+    z-index: 1100 !important;
 }
 
 /* Quill tooltip when in editing mode (link input form) */
 .ql-tooltip.ql-editing {
     position: absolute !important;
-    z-index: 99999999 !important;
+    z-index: 1100 !important;
 }
 
 /* All children of editing tooltip */
@@ -686,13 +813,13 @@ body {
 /* Quill tooltip input field */
 .ql-tooltip input[type="text"] {
     position: relative;
-    z-index: 99999999 !important;
+    z-index: 1100 !important;
 }
 
 /* Quill toolbar dropdown menus */
 .ql-picker-options {
     position: absolute !important;
-    z-index: 99999998 !important;
+    z-index: 1050 !important;
 }
 
 /* Create proper stacking contexts */
@@ -720,5 +847,183 @@ body {
 /* Ensure Quill containers create proper stacking context */
 .ql-container {
     transform: translateZ(0);
+}
+
+/* ========================================
+   レスポンシブデザイン
+   ======================================== */
+
+/* タブレット（768px以下） */
+@media screen and (max-width: 768px) {
+    .sidebar {
+        width: 250px;
+        min-width: 200px;
+        max-width: 70vw;
+    }
+    
+    .content-body {
+        padding: 20px;
+    }
+    
+    .page-title-main {
+        font-size: 32px;
+    }
+    
+    .modal-content {
+        width: 90vw;
+        padding: 20px;
+        min-width: 300px;
+    }
+    
+    /* サイドバーリサイザーを太くしてタッチしやすく */
+    .sidebar-resizer {
+        width: 8px;
+    }
+    
+    .sidebar-resizer::after {
+        left: 3px;
+        width: 2px;
+    }
+}
+
+/* スマートフォン（480px以下） */
+@media screen and (max-width: 480px) {
+    .container {
+        flex-direction: column;
+    }
+    
+    /* サイドバーをトグル式に */
+    .sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 80vw !important;
+        max-width: 300px !important;
+        height: 100vh !important;
+        z-index: 2000 !important;
+        transform: translateX(-100%) !important;
+        transition: transform 0.3s ease !important;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1) !important;
+    }
+    
+    .sidebar.open {
+        transform: translateX(0) !important;
+    }
+    
+    /* サイドバーリサイザーを非表示 */
+    .sidebar-resizer {
+        display: none;
+    }
+    
+    /* メインコンテンツを全幅に */
+    .main-content {
+        width: 100%;
+        margin-left: 0;
+    }
+    
+    /* ハンバーガーメニューとタイトルが被らないように上部にパディング追加 */
+    .content-body {
+        padding: 70px 15px 15px 15px;
+    }
+    
+    .page-title-main {
+        font-size: 24px;
+    }
+    
+    /* モーダルを全画面に近く */
+    .modal-content {
+        width: 95vw;
+        max-width: 95vw;
+        max-height: 90vh;
+        padding: 15px;
+        min-width: auto;
+    }
+    
+    /* フォームアクションボタンを縦並びに */
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+    
+    /* ページツリーのアイテムを大きく */
+    .page-item-header {
+        padding: 8px 10px;
+    }
+    
+    .page-icon {
+        font-size: 18px;
+    }
+    
+    .page-item-title {
+        font-size: 15px;
+    }
+    
+    /* アクションボタンを常に表示 */
+    .actions {
+        opacity: 1;
+    }
+    
+    /* エディターのツールバーを縮小 */
+    .ql-toolbar {
+        padding: 4px;
+    }
+    
+    .ql-toolbar button {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+/* ハンバーガーメニューボタン（スマホ用） */
+.mobile-menu-btn {
+    display: none;
+}
+
+@media screen and (max-width: 480px) {
+    .mobile-menu-btn {
+        display: flex;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        width: 44px;
+        height: 44px;
+        background: #2383e2;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 1800;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        transition: all 0.2s;
+    }
+    
+    .mobile-menu-btn:active {
+        transform: scale(0.95);
+        background: #1976d2;
+    }
+}
+
+/* オーバーレイ（スマホでサイドバーが開いているとき） */
+@media screen and (max-width: 480px) {
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1900;
+    }
+    
+    .sidebar-overlay.active {
+        display: block !important;
+    }
 }
 

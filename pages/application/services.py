@@ -163,29 +163,29 @@ class PageApplicationService:
                     print(f"Warning: Failed to delete image folder for page {page_id}: {e}")
     
     def _delete_removed_images(self, page_id: int, old_content: str, new_content: str) -> None:
-        """コンテンツから削除された画像を物理削除する"""
+        """コンテンツから削除された画像・動画を物理削除する"""
         media_root = Path(settings.MEDIA_ROOT)
         
-        # 旧・新コンテンツから画像URLを抽出
-        old_images = self._extract_image_urls(old_content)
-        new_images = self._extract_image_urls(new_content)
+        # 旧・新コンテンツから画像・動画URLを抽出
+        old_media = self._extract_media_urls(old_content)
+        new_media = self._extract_media_urls(new_content)
         
         # 削除対象のURL集合を算出
-        removed_images = old_images - new_images
+        removed_media = old_media - new_media
         
-        # 削除対象の画像ファイルを削除
-        for img_url in removed_images:
+        # 削除対象のメディアファイルを削除
+        for media_url in removed_media:
             # URL をファイルパスに変換
             # 期待形式: /media/uploads/page_X/filename.ext
-            if img_url.startswith('/media/'):
-                relative_path = img_url.replace('/media/', '')
+            if media_url.startswith('/media/'):
+                relative_path = media_url.replace('/media/', '')
                 file_path = media_root / relative_path
                 
                 if file_path.exists() and file_path.is_file():
                     try:
                         os.remove(file_path)
                     except Exception as e:
-                        print(f"Warning: Failed to delete image {file_path}: {e}")
+                        print(f"Warning: Failed to delete media {file_path}: {e}")
     
     def _extract_image_urls(self, content: str) -> set:
         """HTMLコンテンツから画像URLをすべて抽出する"""
@@ -195,35 +195,55 @@ class PageApplicationService:
         matches = re.findall(pattern, content)
         return set(matches)
     
+    def _extract_media_urls(self, content: str) -> set:
+        """HTMLコンテンツから画像・動画URLをすべて抽出する"""
+        import re
+        urls = set()
+        
+        # img の src 属性を抽出
+        img_pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
+        urls.update(re.findall(img_pattern, content))
+        
+        # video の src 属性を抽出
+        video_pattern = r'<video[^>]+src=["\']([^"\']+)["\']'
+        urls.update(re.findall(video_pattern, content))
+        
+        # source タグの src 属性を抽出（video 内の source タグ対応）
+        source_pattern = r'<source[^>]+src=["\']([^"\']+)["\']'
+        urls.update(re.findall(source_pattern, content))
+        
+        return urls
+    
     def _delete_orphaned_images(self, page_id: int, content: str) -> None:
-        """ページフォルダ内のうちコンテンツで参照されない画像を削除する"""
+        """ページフォルダ内のうちコンテンツで参照されない画像・動画を削除する"""
         media_root = Path(settings.MEDIA_ROOT)
         page_folder = media_root / 'uploads' / f'page_{page_id}'
         
         if not page_folder.exists() or not page_folder.is_dir():
             return
         
-        # コンテンツで参照されている画像のファイル名集合を作成
-        content_images = self._extract_image_urls(content)
+        # コンテンツで参照されている画像・動画のファイル名集合を作成
+        content_media = self._extract_media_urls(content)
         content_filenames = set()
-        for img_url in content_images:
+        for media_url in content_media:
             # URL からファイル名を抽出（/media/uploads/page_X/filename.ext）
-            if f'/page_{page_id}/' in img_url:
-                filename = os.path.basename(img_url)
+            if f'/page_{page_id}/' in media_url:
+                filename = os.path.basename(media_url)
                 content_filenames.add(filename)
         
-        # フォルダ内の画像ファイル一覧を取得（.html は除外）
+        # フォルダ内の画像・動画ファイル一覧を取得（.html は除外）
         folder_files = set()
-        image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'}
+        media_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico', 
+                           '.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'}
         try:
             for file_path in page_folder.iterdir():
-                if file_path.is_file() and file_path.suffix.lower() in image_extensions:
+                if file_path.is_file() and file_path.suffix.lower() in media_extensions:
                     folder_files.add(file_path.name)
         except Exception as e:
             print(f"Warning: Failed to list files in {page_folder}: {e}")
             return
         
-        # 孤立（未参照）の画像を特定
+        # 孤立（未参照）の画像・動画を特定
         orphaned_files = folder_files - content_filenames
         
         # 孤立ファイルを削除
@@ -375,7 +395,7 @@ class PageApplicationService:
         return self._generate_html_content(entity)
     
     def _move_temp_images_to_page_folder(self, page_id: int, content: str) -> str:
-        """一時フォルダの画像をページ専用フォルダへ移動し、URL を更新する"""
+        """一時フォルダの画像・動画をページ専用フォルダへ移動し、URL を更新する"""
         if not content:
             return content
         
@@ -386,7 +406,7 @@ class PageApplicationService:
         # ページフォルダを作成（存在しなければ）
         page_folder.mkdir(parents=True, exist_ok=True)
         
-        # content 内の page_temp を参照する画像URLを抽出
+        # content 内の page_temp を参照する画像・動画URLを抽出
         pattern = r'(/media/uploads/page_temp/[^"\'>\s]+)'
         matches = re.findall(pattern, content)
         

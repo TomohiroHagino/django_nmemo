@@ -35,7 +35,7 @@ SECRET_KEY = 'django-insecure-isso%1evuuff97ajyt0)kf_ji#_5@nd=9nm93rp_i_yhf2h$o3
 DEBUG = True
 
 # 許可するホスト名（本番では適切に設定すること）
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '192.168.100.4']
 
 
 # アプリケーション定義

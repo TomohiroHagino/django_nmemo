@@ -280,6 +280,45 @@ def upload_image(request):
 
 
 @require_http_methods(["POST"])
+def upload_video(request):
+    """Upload video for rich text editor"""
+    if 'video' not in request.FILES:
+        return JsonResponse({'error': '動画ファイルが必要です'}, status=400)
+    
+    # Get page_id from request
+    page_id = request.POST.get('page_id')
+    if not page_id:
+        return JsonResponse({'error': 'ページIDが必要です'}, status=400)
+    
+    video = request.FILES['video']
+    
+    # Validate file type
+    allowed_types = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
+    if video.content_type not in allowed_types:
+        return JsonResponse({'error': '許可されていないファイル形式です（mp4, webm, ogg, mov）'}, status=400)
+    
+    # Validate file size (max 50MB)
+    if video.size > 50 * 1024 * 1024:
+        return JsonResponse({'error': 'ファイルサイズは50MB以下にしてください'}, status=400)
+    
+    # Generate unique filename and save in page-specific folder
+    ext = os.path.splitext(video.name)[1]
+    filename = f"{uuid.uuid4()}{ext}"
+    filepath = os.path.join('uploads', f'page_{page_id}', filename)
+    
+    # Save file
+    saved_path = default_storage.save(filepath, video)
+    
+    # Return URL
+    video_url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
+    
+    return JsonResponse({
+        'success': True,
+        'url': video_url
+    })
+
+
+@require_http_methods(["POST"])
 def page_update_icon(request, page_id):
     """Update page icon"""
     icon = request.POST.get('icon', '📄')

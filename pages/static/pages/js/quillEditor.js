@@ -1,13 +1,19 @@
 // Quill editor initialization and image handling
 
-export function initCreateEditor(imageHandler, addImageResizeHandlers, addDragDropImageUpload) {
+export function initCreateEditor(imageHandler, videoHandler, addImageResizeHandlers, addDragDropImageUpload, addDragDropVideoUpload) {
+    // カスタムフォントサイズを登録
+    const Size = Quill.import('attributors/style/size');
+    Size.whitelist = ['10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
+    Quill.register(Size, true);
+    
     const toolbarOptions = [
         [{ 'header': [1, 2, 3, false] }],
+        [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         [{ 'color': [] }, { 'background': [] }],
         [{ 'align': [] }],
-        ['link', 'image'],
+        ['link', 'image', 'video'],
         ['clean']
     ];
     
@@ -22,7 +28,8 @@ export function initCreateEditor(imageHandler, addImageResizeHandlers, addDragDr
             toolbar: {
                 container: toolbarOptions,
                 handlers: {
-                    image: imageHandler
+                    image: imageHandler,
+                    video: videoHandler
                 }
             },
             imageResize: {
@@ -51,17 +58,26 @@ export function initCreateEditor(imageHandler, addImageResizeHandlers, addDragDr
     // Add drag and drop image upload
     addDragDropImageUpload(createQuill, true);
     
+    // Add drag and drop video upload
+    addDragDropVideoUpload(createQuill, true);
+    
     return createQuill;
 }
 
-export function initContentEditor(initialContent, imageHandler, addImageResizeHandlers, addDragDropImageUpload) {
+export function initContentEditor(initialContent, imageHandler, videoHandler, addImageResizeHandlers, addDragDropImageUpload, addDragDropVideoUpload) {
+    // カスタムフォントサイズを登録
+    const Size = Quill.import('attributors/style/size');
+    Size.whitelist = ['10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
+    Quill.register(Size, true);
+    
     const toolbarOptions = [
         [{ 'header': [1, 2, 3, false] }],
+        [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         [{ 'color': [] }, { 'background': [] }],
         [{ 'align': [] }],
-        ['link', 'image'],
+        ['link', 'image', 'video'],
         ['clean']
     ];
     
@@ -76,7 +92,8 @@ export function initContentEditor(initialContent, imageHandler, addImageResizeHa
             toolbar: {
                 container: toolbarOptions,
                 handlers: {
-                    image: imageHandler
+                    image: imageHandler,
+                    video: videoHandler
                 }
             },
             imageResize: {
@@ -110,7 +127,112 @@ export function initContentEditor(initialContent, imageHandler, addImageResizeHa
     // Add drag and drop image upload
     addDragDropImageUpload(contentQuill, false);
     
+    // Add drag and drop video upload
+    addDragDropVideoUpload(contentQuill, false);
+    
     return contentQuill;
+}
+
+export function videoHandler(currentPageId, getCreateQuill) {
+    const self = this;
+    const createQuill = getCreateQuill();
+    
+    // ユーザーに選択肢を提示
+    const choice = prompt('1: YouTube/Vimeo URLを入力\n2: 動画ファイルをアップロード\n\n番号を入力してください (1 または 2):');
+    
+    if (choice === '1') {
+        // YouTube/Vimeo URLを入力
+        const url = prompt('YouTube または Vimeo の URL を入力してください:');
+        if (!url) return;
+        
+        // YouTube/Vimeo URLを埋め込み用に変換
+        let embedUrl = url;
+        
+        // YouTube URL の処理
+        const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+        const youtubeMatch = url.match(youtubeRegex);
+        if (youtubeMatch) {
+            embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+        }
+        
+        // Vimeo URL の処理
+        const vimeoRegex = /vimeo\.com\/(\d+)/;
+        const vimeoMatch = url.match(vimeoRegex);
+        if (vimeoMatch) {
+            embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+        }
+        
+        // エディタに埋め込み
+        const quill = self.quill;
+        const range = quill.getSelection(true);
+        quill.insertEmbed(range.index, 'video', embedUrl);
+        quill.setSelection(range.index + 1);
+        
+    } else if (choice === '2') {
+        // ファイルアップロード
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'video/*');
+        input.click();
+        
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (!file) return;
+            
+            // Validate file size (50MB max for videos)
+            if (file.size > 50 * 1024 * 1024) {
+                alert('動画ファイルサイズは50MB以下にしてください');
+                return;
+            }
+            
+            // Determine which editor is being used
+            const isCreateModal = (self.quill === createQuill);
+            let pageId;
+            
+            if (isCreateModal) {
+                // Creating new page - use temp folder
+                pageId = 'temp';
+            } else {
+                // Editing existing page - must have currentPageId
+                if (!currentPageId) {
+                    alert('ページIDが取得できません。ページを再読み込みしてください。');
+                    return;
+                }
+                pageId = currentPageId;
+            }
+            
+            // Upload video
+            const formData = new FormData();
+            formData.append('video', file);
+            formData.append('page_id', pageId);
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            try {
+                const response = await fetch('/api/upload-video/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Insert video into editor
+                    const quill = self.quill;
+                    const range = quill.getSelection(true);
+                    quill.insertEmbed(range.index, 'video', data.url);
+                    quill.setSelection(range.index + 1);
+                } else {
+                    alert('動画のアップロードに失敗しました: ' + (data.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('動画のアップロードに失敗しました');
+            }
+        };
+    }
 }
 
 export function imageHandler(currentPageId, getCreateQuill) {
@@ -275,37 +397,139 @@ export function addDragDropImageUpload(quill, isCreateModal, currentPageId) {
     }, false);
 }
 
-// Custom image resize functionality
+// Add drag and drop video upload functionality
+export function addDragDropVideoUpload(quill, isCreateModal, currentPageId) {
+    const editor = quill.root;
+    
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        editor.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    // Highlight drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        editor.addEventListener(eventName, () => {
+            editor.classList.add('drag-over');
+        }, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        editor.addEventListener(eventName, () => {
+            editor.classList.remove('drag-over');
+        }, false);
+    });
+    
+    // Handle dropped files
+    editor.addEventListener('drop', async (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length === 0) return;
+        
+        // Process each file
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            
+            // Check if file is a video
+            if (!file.type.startsWith('video/')) {
+                continue; // Skip non-video files
+            }
+            
+            // Validate file size (50MB max)
+            if (file.size > 50 * 1024 * 1024) {
+                alert(`ファイル "${file.name}" のサイズは50MB以下にしてください`);
+                continue;
+            }
+            
+            // Determine page ID
+            let pageId;
+            if (isCreateModal) {
+                pageId = 'temp';
+            } else {
+                if (!currentPageId) {
+                    alert('ページIDが取得できません。ページを再読み込みしてください。');
+                    return;
+                }
+                pageId = currentPageId;
+            }
+            
+            // Upload video
+            const formData = new FormData();
+            formData.append('video', file);
+            formData.append('page_id', pageId);
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            try {
+                const response = await fetch('/api/upload-video/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Insert video at the end of the editor
+                    const length = quill.getLength();
+                    quill.insertEmbed(length - 1, 'video', data.url);
+                    quill.insertText(length, '\n'); // Add newline after video
+                } else {
+                    alert('動画のアップロードに失敗しました: ' + (data.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('動画のアップロードに失敗しました');
+            }
+        }
+    }, false);
+}
+
+// Custom image and video resize functionality
 export function addImageResizeHandlers(quill) {
     const editor = quill.root;
-    let selectedImage = null;
+    let selectedElement = null; // Changed from selectedImage to support both img and iframe
     let resizeHandles = null;
     let isResizing = false;
     let resizeHandle = null;
     let startX, startY, startWidth, startHeight, startLeft, startTop;
     let aspectRatio = 1;
-    
-    // Click on image to select
+    // Click on image to select (iframeはリサイズ不可とする)
     editor.addEventListener('click', (e) => {
-        if (e.target.tagName === 'IMG') {
+        const target = e.target;
+        
+        // 画像をクリック
+        if (target.tagName === 'IMG') {
             e.stopPropagation();
-            selectImage(e.target);
-        } else if (!e.target.classList.contains('resize-handle')) {
-            deselectImage();
+            selectElement(target);
+            return;
+        }
+        
+        // リサイズハンドル以外をクリック
+        if (!target.classList.contains('resize-handle')) {
+            deselectElement();
         }
     });
     
-    function selectImage(img) {
-        deselectImage();
-        selectedImage = img;
-        img.classList.add('selected');
+    function selectElement(element) {
+        deselectElement();
+        selectedElement = element;
+        element.classList.add('selected');
         
-        // Create resize handles
-        createResizeHandles(img);
+        // Create resize handles (画像のみ)
+        if (element.tagName === 'IMG') {
+            createResizeHandles(element);
+        }
     }
     
-    function createResizeHandles(img) {
-        const rect = img.getBoundingClientRect();
+    function createResizeHandles(element) {
+        const rect = element.getBoundingClientRect();
         const editorRect = editor.getBoundingClientRect();
         
         // Create container for handles
@@ -344,19 +568,19 @@ export function addImageResizeHandlers(quill) {
         startX = e.clientX;
         startY = e.clientY;
         
-        const rect = selectedImage.getBoundingClientRect();
+        const rect = selectedElement.getBoundingClientRect();
         startWidth = rect.width;
         startHeight = rect.height;
         aspectRatio = startWidth / startHeight;
         
-        selectedImage.classList.add('resizing');
+        selectedElement.classList.add('resizing');
         
         document.addEventListener('mousemove', doResize);
         document.addEventListener('mouseup', stopResize);
     }
     
     function doResize(e) {
-        if (!isResizing || !selectedImage) return;
+        if (!isResizing || !selectedElement) return;
         
         const deltaX = e.clientX - startX;
         const deltaY = e.clientY - startY;
@@ -397,8 +621,8 @@ export function addImageResizeHandlers(quill) {
         newWidth = Math.max(50, Math.min(newWidth, editor.clientWidth - 20));
         newHeight = newWidth / aspectRatio;
         
-        selectedImage.style.width = newWidth + 'px';
-        selectedImage.style.height = newHeight + 'px';
+        selectedElement.style.width = newWidth + 'px';
+        selectedElement.style.height = newHeight + 'px';
         
         // Update handles position
         updateHandlesPosition();
@@ -408,7 +632,7 @@ export function addImageResizeHandlers(quill) {
         if (isResizing) {
             isResizing = false;
             resizeHandle = null;
-            selectedImage.classList.remove('resizing');
+            selectedElement.classList.remove('resizing');
             
             document.removeEventListener('mousemove', doResize);
             document.removeEventListener('mouseup', stopResize);
@@ -416,9 +640,9 @@ export function addImageResizeHandlers(quill) {
     }
     
     function updateHandlesPosition() {
-        if (!selectedImage || !resizeHandles) return;
+        if (!selectedElement || !resizeHandles) return;
         
-        const rect = selectedImage.getBoundingClientRect();
+        const rect = selectedElement.getBoundingClientRect();
         const editorRect = editor.getBoundingClientRect();
         
         resizeHandles.style.left = (rect.left - editorRect.left + editor.scrollLeft) + 'px';
@@ -427,10 +651,10 @@ export function addImageResizeHandlers(quill) {
         resizeHandles.style.height = rect.height + 'px';
     }
     
-    function deselectImage() {
-        if (selectedImage) {
-            selectedImage.classList.remove('selected', 'resizing');
-            selectedImage = null;
+    function deselectElement() {
+        if (selectedElement) {
+            selectedElement.classList.remove('selected', 'resizing');
+            selectedElement = null;
         }
         if (resizeHandles) {
             resizeHandles.remove();
@@ -441,24 +665,24 @@ export function addImageResizeHandlers(quill) {
     // Deselect when clicking outside
     document.addEventListener('click', (e) => {
         if (!editor.contains(e.target) && !e.target.classList.contains('resize-handle')) {
-            deselectImage();
+            deselectElement();
         }
     });
     
-    // Delete selected image with Delete/Backspace key
+    // Delete selected element (image or iframe) with Delete/Backspace key
     document.addEventListener('keydown', (e) => {
-        if (selectedImage && (e.key === 'Delete' || e.key === 'Backspace')) {
+        if (selectedElement && (e.key === 'Delete' || e.key === 'Backspace')) {
             if (document.activeElement === editor || editor.contains(document.activeElement)) {
                 e.preventDefault();
-                selectedImage.remove();
-                deselectImage();
+                selectedElement.remove();
+                deselectElement();
             }
         }
     });
     
     // Update handles on scroll
     editor.addEventListener('scroll', () => {
-        if (selectedImage) {
+        if (selectedElement) {
             updateHandlesPosition();
         }
     });

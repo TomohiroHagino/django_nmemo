@@ -3,10 +3,11 @@
 import { initPageTreeDragDrop, toggleChildren, addPageToTree } from './pageTree.js';
 import { openIconModal, closeIconModal, confirmIconChange } from './iconModal.js';
 import { openCreateModal, openCreateChildModal, closeCreateModal, handleCreatePage, setCreateQuill, getCreateQuill, initModalResize } from './pageModal.js';
-import { initCreateEditor, initContentEditor, imageHandler, addDragDropImageUpload, addImageResizeHandlers } from './quillEditor.js';
+import { initCreateEditor, initContentEditor, imageHandler, videoHandler, addDragDropImageUpload, addDragDropVideoUpload, addImageResizeHandlers } from './quillEditor.js';
 import { getCurrentPageId, loadPage, savePage, cancelEdit, deletePage } from './pageOperations.js';
 import { escapeHtml, formatDate, showSaveIndicator } from './utils.js';
 import { initSidebarResize } from './sidebarResize.js';
+import { initResponsive } from './responsive.js';
 
 // グローバルに保持する Quill エディタ参照
 let contentQuill = null;
@@ -37,14 +38,20 @@ window.addEventListener('load', () => {
     initModalResize();
     // サイドバーのドラッグリサイズを初期化
     initSidebarResize();
+    // レスポンシブ機能を初期化
+    initResponsive();
     
     // 作成モーダル用の Quill を初期化（適切なコンテキストを付与）
     const createQuill = initCreateEditor(
         function() {
             return imageHandler.call(this, getCurrentPageId(), getCreateQuill);
         },
+        function() {
+            return videoHandler.call(this, getCurrentPageId(), getCreateQuill);
+        },
         addImageResizeHandlers,
-        (quill, isCreate) => addDragDropImageUpload(quill, isCreate, getCurrentPageId())
+        (quill, isCreate) => addDragDropImageUpload(quill, isCreate, getCurrentPageId()),
+        (quill, isCreate) => addDragDropVideoUpload(quill, isCreate, getCurrentPageId())
     );
     setCreateQuill(createQuill);
     
@@ -73,8 +80,12 @@ window.loadPage = function(pageId) {
             function() {
                 return imageHandler.call(this, getCurrentPageId(), getCreateQuill);
             },
+            function() {
+                return videoHandler.call(this, getCurrentPageId(), getCreateQuill);
+            },
             addImageResizeHandlers,
-            (quill, isCreate) => addDragDropImageUpload(quill, isCreate, getCurrentPageId())
+            (quill, isCreate) => addDragDropImageUpload(quill, isCreate, getCurrentPageId()),
+            (quill, isCreate) => addDragDropVideoUpload(quill, isCreate, getCurrentPageId())
         ),
         escapeHtml,
         formatDate

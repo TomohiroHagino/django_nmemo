@@ -1,6 +1,7 @@
 # Nmemo Notionライクなメモアプリ
 
 Djangoで構築された一人用のNotionライクなメモアプリケーションです。
+クラウドストレージを保存先に利用でき、自動でHTMLページと画像がエクスポートされます。
 
 ## 特徴
 
@@ -27,9 +28,32 @@ Djangoで構築された一人用のNotionライクなメモアプリケーシ�
 
 ## 技術スタック
 
-- Django 5.2.7
-- SQLite
-- Python 3.15
+### バックエンド
+- **Python 3.x**
+- **Django 5.x** - Webフレームワーク
+- **SQLite** - データベース
+- **python-dotenv** - 環境変数管理
+
+### フロントエンド
+- **HTML5/CSS3**
+- **JavaScript (ES6 Modules)** - モジュール化されたコード構造
+- **Quill.js 1.3.6** - リッチテキストエディタ
+- **Quill Image Resize Module** - 画像リサイズ機能
+
+### アーキテクチャ
+- **Domain-Driven Design (DDD)** - レイヤードアーキテクチャ
+  - Domain Layer（ドメイン層）
+  - Application Layer（アプリケーション層）
+  - Infrastructure Layer（インフラ層）
+  - Presentation Layer（プレゼンテーション層）
+
+### 主要機能の技術
+- **Drag and Drop API** - ページの並び替え、画像のドラッグ&ドロップ
+- **LocalStorage API** - サイドバー幅の永続化
+- **Fetch API** - 非同期通信（AJAX）
+- **FormData API** - 画像アップロード
+- **Base64 encoding** - HTMLエクスポート時の画像埋め込み
+- **CSS Flexbox** - レスポンシブレイアウト
 
 ## セットアップ
 
@@ -66,11 +90,16 @@ http://127.0.0.1:8000/
 ```
 
 3. 管理画面にアクセス（オプション）:
+
+まず管理者ユーザーを作成します：
+```bash
+python manage.py createsuperuser
+```
+
+その後、ブラウザでアクセス：
 ```
 http://127.0.0.1:8000/admin/
 ```
-ユーザー名: admin
-パスワード: 自動生成されたパスワード（ターミナルに表示されます）
 
 ## プロジェクト構造（DDD アーキテクチャ）
 
@@ -94,10 +123,22 @@ django_nmemo_lite/
 │   ├── views.py                # Presentation Layer（プレゼンテーション層）
 │   ├── urls.py                 # URL設定
 │   ├── admin.py                # 管理画面設定
+│   ├── static/pages/           # 静的ファイル
+│   │   ├── css/
+│   │   │   └── index.css
+│   │   └── js/
+│   │       ├── main.js
+│   │       ├── pageTree.js
+│   │       ├── iconModal.js
+│   │       ├── pageModal.js
+│   │       ├── pageOperations.js
+│   │       ├── quillEditor.js
+│   │       ├── sidebarResize.js
+│   │       └── utils.js
 │   └── templates/              # テンプレート
 │       └── pages/
 │           ├── index.html
-│           └── detail.html
+│           └── patial_tree_item.html
 ├── db.sqlite3                  # SQLiteデータベース
 └── manage.py
 ```
@@ -140,12 +181,11 @@ django_nmemo_lite/
 - 見出し、箇条書き、番号付きリスト
 - テキストカラーと背景色
 - 画像のドラッグ&ドロップアップロード（最大5MB）
-- **画像のリサイズ機能**
+- **画像のリサイズ機能**（Quill Image Resize Module使用）
   - 画像をクリックして選択
-  - 8つのハンドル（四隅+四辺）でドラッグしてサイズ変更
-  - アスペクト比を自動保持
+  - ハンドルでドラッグしてサイズ変更
   - Delete/Backspaceキーで削除
-- 画像は `/media/uploads/` に保存
+- 画像はページごとに `/media/uploads/page_{id}/` に保存
 
 ### UI
 - Notionライクなデザイン
@@ -198,5 +238,5 @@ Domain LayerはどのLayerにも依存せず、純粋なビジネスロジック
 
 ## ライセンス
 
-このプロジェクトは教育目的で作成されています。
+このプロジェクトは個人用途で作成されています。
 

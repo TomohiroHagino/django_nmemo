@@ -17,5 +17,6 @@ urlpatterns = [
     path('page/<int:page_id>/reorder/', views.page_reorder, name='page_reorder'),
     path('api/page/<int:page_id>/', views.api_page_detail, name='api_page_detail'),
     path('api/upload-image/', views.upload_image, name='upload_image'),
+    path('api/upload-video/', views.upload_video, name='upload_video'),
 ]
 
