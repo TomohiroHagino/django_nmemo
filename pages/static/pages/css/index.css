@@ -257,6 +257,31 @@ body {
     border-radius: 4px;
 }
 
+/* Drop indicator (created dynamically by JavaScript) */
+.drop-indicator {
+    position: absolute;
+    height: 4px !important;
+    background: #2196F3 !important;
+    pointer-events: none !important;
+    z-index: 1000 !important;
+    box-shadow: 0 0 6px rgba(33, 150, 243, 0.9) !important;
+    border-radius: 2px !important;
+    transition: top 0.05s ease, left 0.05s ease !important;
+}
+
+.drop-indicator::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background: #2196F3;
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(33, 150, 243, 0.9);
+}
+
 /* Drag to root indicator */
 .sidebar-content.drop-root-target {
     background: rgba(35, 131, 226, 0.05);

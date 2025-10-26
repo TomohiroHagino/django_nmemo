@@ -27,12 +27,22 @@ export function initPageTreeDragDrop() {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             
-            // 何もない領域の上にドラッグ中は視覚的フィードバックを付与
+            // 何もない領域の上にドラッグ中は控えめな視覚的フィードバックを付与
             if (draggedPageId && (e.target === sidebarContent || 
                 e.target.classList.contains('sidebar-content') || 
                 e.target.id === 'pageTree' || 
                 e.target.classList.contains('page-list'))) {
-                sidebarContent.classList.add('drop-root-target');
+                // 背景色変更の代わりに、ドロップインジケーターを表示
+                if (dropIndicator && !dropIndicator.parentNode) {
+                    const pageTree = document.getElementById('pageTree');
+                    if (pageTree) {
+                        pageTree.appendChild(dropIndicator);
+                        dropIndicator.style.display = 'block';
+                        dropIndicator.style.top = '0px';
+                        dropIndicator.style.left = '10px';
+                        dropIndicator.style.right = '10px';
+                    }
+                }
             }
         });
         
@@ -40,14 +50,19 @@ export function initPageTreeDragDrop() {
             // 対象領域から離れたらフィードバックを除去
             if (!sidebarContent.contains(e.relatedTarget) || 
                 (e.relatedTarget && e.relatedTarget.classList.contains('page-item-header'))) {
-                sidebarContent.classList.remove('drop-root-target');
+                if (dropIndicator && dropIndicator.parentNode && 
+                    (e.relatedTarget && e.relatedTarget.classList.contains('page-item-header'))) {
+                    dropIndicator.style.display = 'none';
+                }
             }
         });
         
         // サイドバー領域へのドロップでルート直下へ移動させる
         sidebarContent.addEventListener('drop', function(e) {
-            // 視覚的フィードバックを除去
-            sidebarContent.classList.remove('drop-root-target');
+            // ドロップインジケーターを非表示
+            if (dropIndicator) {
+                dropIndicator.style.display = 'none';
+            }
             
             // ページ項目そのものではなく、サイドバー領域に落としたときだけ処理
             if (e.target === sidebarContent || e.target.classList.contains('sidebar-content') || 
@@ -92,17 +107,10 @@ function handleDragStart(e) {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
     
-    // ドロップ位置インジケータを作成
+    // ドロップ位置インジケータを作成（スタイルはCSSで定義）
     if (!dropIndicator) {
         dropIndicator = document.createElement('div');
         dropIndicator.className = 'drop-indicator';
-        dropIndicator.style.position = 'absolute';
-        dropIndicator.style.height = '2px';
-        dropIndicator.style.background = '#2196F3';
-        dropIndicator.style.left = '0';
-        dropIndicator.style.right = '0';
-        dropIndicator.style.pointerEvents = 'none';
-        dropIndicator.style.zIndex = '1000';
         dropIndicator.style.display = 'none';
     }
 }
@@ -116,10 +124,9 @@ function handleDragEnd(e) {
         header.removeAttribute('data-drop-position');
     });
     
-    // ルートドロップ用の強調表示を除去
-    const sidebarContent = document.querySelector('.sidebar-content');
-    if (sidebarContent) {
-        sidebarContent.classList.remove('drop-root-target');
+    // ドロップインジケーターを非表示（ルートドロップ用も含む）
+    if (dropIndicator) {
+        dropIndicator.style.display = 'none';
     }
     
     // ドロップ位置インジケータを除去
@@ -141,26 +148,39 @@ function handleDragOver(e) {
         return;
     }
     
-    // マウス位置から挿入位置を判定（上半分=before、下半分=after）
+    // マウス位置から挿入位置を判定
+    // 上部50%をbefore、下部50%をafterとする
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top;
     const height = rect.height;
-    const position = y < height / 2 ? 'before' : 'after';
+    const position = y < height * 0.5 ? 'before' : 'after';
     
     // 判定結果を要素の属性に保持
     e.currentTarget.setAttribute('data-drop-position', position);
     
     // ドロップ位置インジケータを表示
     if (dropIndicator) {
-        if (!dropIndicator.parentNode) {
-            e.currentTarget.parentNode.appendChild(dropIndicator);
+        // 常にsidebar-contentを基準にする
+        const sidebarContent = document.querySelector('.sidebar-content');
+        
+        if (!dropIndicator.parentNode && sidebarContent) {
+            sidebarContent.appendChild(dropIndicator);
         }
+        
         dropIndicator.style.display = 'block';
         
+        const sidebarRect = sidebarContent.getBoundingClientRect();
+        const scrollTop = sidebarContent.scrollTop || 0;
+        
+        // インジケーターの左右位置を現在のページアイテムに合わせる
+        dropIndicator.style.left = (rect.left - sidebarRect.left) + 'px';
+        dropIndicator.style.right = 'auto';
+        dropIndicator.style.width = (rect.width) + 'px';
+        
         if (position === 'before') {
-            dropIndicator.style.top = (rect.top - e.currentTarget.parentNode.getBoundingClientRect().top) + 'px';
+            dropIndicator.style.top = (rect.top - sidebarRect.top + scrollTop) + 'px';
         } else {
-            dropIndicator.style.top = (rect.bottom - e.currentTarget.parentNode.getBoundingClientRect().top) + 'px';
+            dropIndicator.style.top = (rect.bottom - sidebarRect.top + scrollTop) + 'px';
         }
     }
     

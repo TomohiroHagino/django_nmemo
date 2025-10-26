@@ -60,17 +60,17 @@ class PageRepository(PageRepositoryInterface):
     
     def find_all_root_pages(self) -> List[PageEntity]:
         """Find all root pages"""
-        pages = Page.objects.filter(parent=None).order_by('created_at')
+        pages = Page.objects.filter(parent=None).order_by('order', 'created_at')
         return [self._to_entity(page) for page in pages]
     
     def find_all_pages(self) -> List[PageEntity]:
         """Find all pages"""
-        pages = Page.objects.all().order_by('created_at')
+        pages = Page.objects.all().order_by('order', 'created_at')
         return [self._to_entity(page) for page in pages]
     
     def find_children(self, page_id: int) -> List[PageEntity]:
         """Find all children of a page"""
-        pages = Page.objects.filter(parent_id=page_id).order_by('created_at')
+        pages = Page.objects.filter(parent_id=page_id).order_by('order', 'created_at')
         return [self._to_entity(page) for page in pages]
     
     def save(self, entity: PageEntity) -> PageEntity:

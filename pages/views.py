@@ -367,14 +367,18 @@ def page_reorder(request, page_id):
         page = PageModel.objects.get(id=page_id)
         target_page = PageModel.objects.get(id=target_page_id)
         
-        # Get all siblings (pages with same parent as target)
+        # ページの親をターゲットページと同じ親に変更
+        page.parent = target_page.parent
+        
+        # Get all siblings (pages with same parent as target, including the moved page)
         siblings = list(PageModel.objects.filter(parent=target_page.parent).order_by('order', 'created_at'))
         
-        # Remove the page from its current position if it's in the list
+        # Remove the page from its current position in the list
         siblings = [s for s in siblings if s.id != page_id]
         
         # Find target position and insert
         new_siblings = []
+        inserted = False
         for sibling in siblings:
             if sibling.id == target_page_id:
                 if position == 'before':
@@ -383,13 +387,17 @@ def page_reorder(request, page_id):
                 else:  # after
                     new_siblings.append(sibling)
                     new_siblings.append(page)
+                inserted = True
             else:
                 new_siblings.append(sibling)
+        
+        # If target was not found (shouldn't happen), append at the end
+        if not inserted:
+            new_siblings.append(page)
         
         # Update order for all siblings
         for idx, sibling in enumerate(new_siblings):
             sibling.order = idx * 10  # Use increments of 10 for easier reordering
-            sibling.parent = target_page.parent  # Update parent for moved page
             sibling.save()
         
         return JsonResponse({'success': True})
