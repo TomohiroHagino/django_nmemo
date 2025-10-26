@@ -5,7 +5,7 @@ Djangoで構築された一人用のNotionライクなメモアプリケーシ�
 
 <table>
   <tr>
-    <td><img alt="スクリーンショット 2025-10-26 20:18:00" src="https://github.com/user-attachments/assets/59fcc89b-29c5-4e77-bc8a-5088c302f212" width="100%"></td>
+    <td><img alt="スクリーンショット 2025-10-26 20:18:00" src="https://github.com/user-attachments/assets/59fcc89b-29c5-4e77-bc8a-5088c302f212](https://github.com/user-attachments/assets/3ea6473a-17bc-4c15-b15a-b097f32ce2c9" width="100%"></td>
     <td><img alt="スクリーンショット 2025-10-26 21:19:44" src="https://github.com/user-attachments/assets/f75851f3-08c3-4baa-9589-2ab255d32c7d" width="100%"></td>
   </tr>
 </table>
