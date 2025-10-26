@@ -10,9 +10,6 @@ Djangoで構築された一人用のNotionライクなメモアプリケーシ�
   </tr>
 </table>
 
-
-<img width="2152" height="1430" alt="スクリーンショット 2025-10-27 0 02 28" src="https://github.com/user-attachments/assets/dc68ee48-64d6-456b-81d9-996494c1d39b" />
-
 ## 特徴
 
 - 階層構造を持つページ管理
