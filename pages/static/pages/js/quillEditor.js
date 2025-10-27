@@ -4,6 +4,7 @@
 const BlockEmbed = Quill.import('blots/block/embed');
 
 class VideoBlot extends BlockEmbed {
+    // 動画要素（iframe または video タグ）を作成
     static create(value) {
         const node = super.create();
         // URLがYouTube/Vimeoの場合はiframe、それ以外は<video>タグ
@@ -32,6 +33,7 @@ class VideoBlot extends BlockEmbed {
         return node;
     }
     
+    // 動画要素からURLを取得
     static value(node) {
         const iframe = node.querySelector('iframe');
         const video = node.querySelector('video source');
@@ -45,6 +47,7 @@ VideoBlot.className = 'video-wrapper';
 
 Quill.register(VideoBlot);
 
+// 新規ページ作成用のQuillエディタを初期化
 export function initCreateEditor(imageHandler, videoHandler, addImageResizeHandlers, addDragDropImageUpload, addDragDropVideoUpload) {
     // カスタムフォントサイズを登録
     const Size = Quill.import('attributors/style/size');
@@ -86,6 +89,37 @@ export function initCreateEditor(imageHandler, videoHandler, addImageResizeHandl
         placeholder: 'コンテンツを入力してください...'
     });
     
+    // デフォルトのフォントサイズを16pxに設定
+    createQuill.format('size', '16px');
+    
+    // ツールバーのフォントサイズピッカーを16pxに設定
+    setTimeout(() => {
+        const toolbar = createQuill.getModule('toolbar');
+        const container = toolbar.container;
+        const sizePicker = container.querySelector('.ql-size');
+        if (sizePicker) {
+            const pickerLabel = sizePicker.querySelector('.ql-picker-label');
+            if (pickerLabel) {
+                // data-value属性を設定するだけ（CSSの::beforeが自動で表示）
+                pickerLabel.setAttribute('data-value', '16px');
+            }
+        }
+    }, 0);
+    
+    // テキスト入力時にデフォルトフォントサイズを適用
+    createQuill.on('text-change', function(delta, oldDelta, source) {
+        if (source === 'user') {
+            const selection = createQuill.getSelection();
+            if (selection) {
+                const format = createQuill.getFormat(selection.index);
+                // サイズが設定されていない場合、16pxを適用
+                if (!format.size) {
+                    createQuill.formatText(selection.index, 0, 'size', '16px');
+                }
+            }
+        }
+    });
+    
     // SIMPLE FIX: Just boost z-index, don't move anything
     setTimeout(() => {
         const container = document.querySelector('#createEditor.ql-container');
@@ -107,9 +141,13 @@ export function initCreateEditor(imageHandler, videoHandler, addImageResizeHandl
     // Add drag and drop video upload
     addDragDropVideoUpload(createQuill, true);
     
+    // Add link keyboard shortcut (Ctrl+K / Cmd+K) and auto-link detection
+    addLinkShortcuts(createQuill);
+    
     return createQuill;
 }
 
+// 既存ページのコンテンツ表示・編集用のQuillエディタを初期化
 export function initContentEditor(initialContent, imageHandler, videoHandler, addImageResizeHandlers, addDragDropImageUpload, addDragDropVideoUpload) {
     // カスタムフォントサイズを登録
     const Size = Quill.import('attributors/style/size');
@@ -168,6 +206,37 @@ export function initContentEditor(initialContent, imageHandler, videoHandler, ad
         contentQuill.root.innerHTML = initialContent;
     }
     
+    // デフォルトのフォントサイズを16pxに設定
+    contentQuill.format('size', '16px');
+    
+    // ツールバーのフォントサイズピッカーを16pxに設定
+    setTimeout(() => {
+        const toolbar = contentQuill.getModule('toolbar');
+        const container = toolbar.container;
+        const sizePicker = container.querySelector('.ql-size');
+        if (sizePicker) {
+            const pickerLabel = sizePicker.querySelector('.ql-picker-label');
+            if (pickerLabel) {
+                // data-value属性を設定するだけ（CSSの::beforeが自動で表示）
+                pickerLabel.setAttribute('data-value', '16px');
+            }
+        }
+    }, 0);
+    
+    // テキスト入力時にデフォルトフォントサイズを適用
+    contentQuill.on('text-change', function(delta, oldDelta, source) {
+        if (source === 'user') {
+            const selection = contentQuill.getSelection();
+            if (selection) {
+                const format = contentQuill.getFormat(selection.index);
+                // サイズが設定されていない場合、16pxを適用
+                if (!format.size) {
+                    contentQuill.formatText(selection.index, 0, 'size', '16px');
+                }
+            }
+        }
+    });
+    
     // Add custom image resize functionality
     addImageResizeHandlers(contentQuill);
     
@@ -177,9 +246,13 @@ export function initContentEditor(initialContent, imageHandler, videoHandler, ad
     // Add drag and drop video upload
     addDragDropVideoUpload(contentQuill, false);
     
+    // Add link keyboard shortcut (Ctrl+K / Cmd+K) and auto-link detection
+    addLinkShortcuts(contentQuill);
+    
     return contentQuill;
 }
 
+// YouTube/Vimeo URL または ローカル動画ファイルを挿入するハンドラ
 export function videoHandler(currentPageId, getCreateQuill) {
     const self = this;
     const createQuill = getCreateQuill();
@@ -314,6 +387,7 @@ export function videoHandler(currentPageId, getCreateQuill) {
     }
 }
 
+// 画像ファイルを選択してアップロード・挿入するハンドラ
 export function imageHandler(currentPageId, getCreateQuill) {
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
@@ -382,7 +456,7 @@ export function imageHandler(currentPageId, getCreateQuill) {
     };
 }
 
-// Add drag and drop image upload functionality
+// エディタに画像のドラッグ&ドロップアップロード機能を追加
 export function addDragDropImageUpload(quill, isCreateModal, currentPageId) {
     const editor = quill.root;
     
@@ -391,6 +465,7 @@ export function addDragDropImageUpload(quill, isCreateModal, currentPageId) {
         editor.addEventListener(eventName, preventDefaults, false);
     });
     
+    // ドラッグイベントのデフォルト動作を防止
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -415,6 +490,27 @@ export function addDragDropImageUpload(quill, isCreateModal, currentPageId) {
         const files = dt.files;
         
         if (files.length === 0) return;
+        
+        // ドロップした位置を取得
+        const range = quill.getSelection(true);
+        let insertIndex = range ? range.index : quill.getLength();
+        
+        // マウス位置から正確な挿入位置を計算
+        const editorBounds = editor.getBoundingClientRect();
+        const dropY = e.clientY - editorBounds.top;
+        const dropX = e.clientX - editorBounds.left;
+        
+        // Quillの内部APIを使用して正確な位置を取得
+        try {
+            const blot = quill.scroll.find(e.target);
+            if (blot) {
+                const offset = blot.offset(quill.scroll);
+                insertIndex = offset;
+            }
+        } catch (err) {
+            // フォールバック: 現在の選択位置を使用
+            insertIndex = range ? range.index : quill.getLength();
+        }
         
         // Process each file
         for (let i = 0; i < files.length; i++) {
@@ -462,10 +558,11 @@ export function addDragDropImageUpload(quill, isCreateModal, currentPageId) {
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Insert image at the end of the editor
-                    const length = quill.getLength();
-                    quill.insertEmbed(length - 1, 'image', data.url);
-                    quill.insertText(length, '\n'); // Add newline after image
+                    // ドロップした位置に画像を挿入
+                    quill.insertEmbed(insertIndex, 'image', data.url);
+                    quill.insertText(insertIndex + 1, '\n'); // 画像の後に改行を追加
+                    // 次の画像用にインデックスを更新
+                    insertIndex += 2; // 画像 + 改行
                 } else {
                     alert('画像のアップロードに失敗しました: ' + (data.error || '不明なエラー'));
                 }
@@ -476,7 +573,7 @@ export function addDragDropImageUpload(quill, isCreateModal, currentPageId) {
     }, false);
 }
 
-// Add drag and drop video upload functionality
+// エディタに動画のドラッグ&ドロップアップロード機能を追加
 export function addDragDropVideoUpload(quill, isCreateModal, currentPageId) {
     const editor = quill.root;
     
@@ -485,6 +582,7 @@ export function addDragDropVideoUpload(quill, isCreateModal, currentPageId) {
         editor.addEventListener(eventName, preventDefaults, false);
     });
     
+    // ドラッグイベントのデフォルト動作を防止
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -509,6 +607,27 @@ export function addDragDropVideoUpload(quill, isCreateModal, currentPageId) {
         const files = dt.files;
         
         if (files.length === 0) return;
+        
+        // ドロップした位置を取得
+        const range = quill.getSelection(true);
+        let insertIndex = range ? range.index : quill.getLength();
+        
+        // マウス位置から正確な挿入位置を計算
+        const editorBounds = editor.getBoundingClientRect();
+        const dropY = e.clientY - editorBounds.top;
+        const dropX = e.clientX - editorBounds.left;
+        
+        // Quillの内部APIを使用して正確な位置を取得
+        try {
+            const blot = quill.scroll.find(e.target);
+            if (blot) {
+                const offset = blot.offset(quill.scroll);
+                insertIndex = offset;
+            }
+        } catch (err) {
+            // フォールバック: 現在の選択位置を使用
+            insertIndex = range ? range.index : quill.getLength();
+        }
         
         // Process each file
         for (let i = 0; i < files.length; i++) {
@@ -556,10 +675,11 @@ export function addDragDropVideoUpload(quill, isCreateModal, currentPageId) {
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Insert video at the end of the editor
-                    const length = quill.getLength();
-                    quill.insertEmbed(length - 1, 'video', data.url);
-                    quill.insertText(length, '\n'); // Add newline after video
+                    // ドロップした位置に動画を挿入
+                    quill.insertEmbed(insertIndex, 'video', data.url);
+                    quill.insertText(insertIndex + 1, '\n'); // 動画の後に改行を追加
+                    // 次の動画用にインデックスを更新
+                    insertIndex += 2; // 動画 + 改行
                 } else {
                     alert('動画のアップロードに失敗しました: ' + (data.error || '不明なエラー'));
                 }
@@ -570,7 +690,7 @@ export function addDragDropVideoUpload(quill, isCreateModal, currentPageId) {
     }, false);
 }
 
-// Custom image and video resize functionality
+// エディタに画像のリサイズ機能を追加（8方向のハンドルで拡大縮小）
 export function addImageResizeHandlers(quill) {
     const editor = quill.root;
     let selectedElement = null; // Changed from selectedImage to support both img and iframe
@@ -596,6 +716,7 @@ export function addImageResizeHandlers(quill) {
         }
     });
     
+    // 画像を選択状態にしてリサイズハンドルを表示
     function selectElement(element) {
         deselectElement();
         selectedElement = element;
@@ -607,11 +728,12 @@ export function addImageResizeHandlers(quill) {
         }
     }
     
+    // 画像の周囲に8方向のリサイズハンドルを作成
     function createResizeHandles(element) {
         const rect = element.getBoundingClientRect();
         const editorRect = editor.getBoundingClientRect();
         
-        // Create container for handles
+        // ハンドル用のコンテナを作成する
         const container = document.createElement('div');
         container.className = 'image-resize-container';
         container.style.position = 'absolute';
@@ -621,7 +743,7 @@ export function addImageResizeHandlers(quill) {
         container.style.height = rect.height + 'px';
         container.style.pointerEvents = 'none';
         
-        // Create 8 handles
+        // 8つのハンドルを作成する
         const handles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
         handles.forEach(pos => {
             const handle = document.createElement('div');
@@ -638,6 +760,7 @@ export function addImageResizeHandlers(quill) {
         resizeHandles = container;
     }
     
+    // リサイズ操作を開始（初期位置とサイズを記録）
     function startResize(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -658,6 +781,7 @@ export function addImageResizeHandlers(quill) {
         document.addEventListener('mouseup', stopResize);
     }
     
+    // マウス移動に応じて画像のサイズを変更（アスペクト比を維持）
     function doResize(e) {
         if (!isResizing || !selectedElement) return;
         
@@ -707,6 +831,7 @@ export function addImageResizeHandlers(quill) {
         updateHandlesPosition();
     }
     
+    // リサイズ操作を終了してイベントリスナーを削除
     function stopResize() {
         if (isResizing) {
             isResizing = false;
@@ -718,6 +843,7 @@ export function addImageResizeHandlers(quill) {
         }
     }
     
+    // リサイズハンドルの位置を画像の新しいサイズに合わせて更新
     function updateHandlesPosition() {
         if (!selectedElement || !resizeHandles) return;
         
@@ -730,6 +856,7 @@ export function addImageResizeHandlers(quill) {
         resizeHandles.style.height = rect.height + 'px';
     }
     
+    // 画像の選択を解除してリサイズハンドルを削除
     function deselectElement() {
         if (selectedElement) {
             selectedElement.classList.remove('selected', 'resizing');
@@ -741,14 +868,14 @@ export function addImageResizeHandlers(quill) {
         }
     }
     
-    // Deselect when clicking outside
+    // 外側をクリックした時に選択を解除する
     document.addEventListener('click', (e) => {
         if (!editor.contains(e.target) && !e.target.classList.contains('resize-handle')) {
             deselectElement();
         }
     });
     
-    // Delete selected element (image or iframe) with Delete/Backspace key
+    // 選択した要素（画像またはiframe）をDelete/Backspaceキーで削除
     document.addEventListener('keydown', (e) => {
         if (selectedElement && (e.key === 'Delete' || e.key === 'Backspace')) {
             if (document.activeElement === editor || editor.contains(document.activeElement)) {
@@ -759,10 +886,114 @@ export function addImageResizeHandlers(quill) {
         }
     });
     
-    // Update handles on scroll
+    // スクロール時にハンドルを更新する
     editor.addEventListener('scroll', () => {
         if (selectedElement) {
             updateHandlesPosition();
+        }
+    });
+}
+
+// リンクのキーボードショートカット（Ctrl+K / Cmd+K）と自動リンク検出、色のショートカットを追加
+export function addLinkShortcuts(quill) {
+    const editor = quill.root;
+    
+    // キーボードショートカット
+    editor.addEventListener('keydown', (e) => {
+        // Ctrl+K / Cmd+K でリンクダイアログを開く
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'k') {
+            e.preventDefault();
+            
+            const range = quill.getSelection();
+            if (range) {
+                // テキストが選択されている場合
+                if (range.length > 0) {
+                    const text = quill.getText(range.index, range.length);
+                    const url = prompt('リンクのURLを入力してください:', 'https://');
+                    
+                    if (url && url !== 'https://') {
+                        // 選択されたテキストにリンクを適用
+                        quill.formatText(range.index, range.length, 'link', url);
+                    }
+                } else {
+                    // テキストが選択されていない場合
+                    const url = prompt('リンクのURLを入力してください:', 'https://');
+                    
+                    if (url && url !== 'https://') {
+                        // URLをテキストとして挿入してリンク化
+                        quill.insertText(range.index, url, 'link', url);
+                        quill.setSelection(range.index + url.length);
+                    }
+                }
+            }
+        }
+        
+        // Ctrl+Shift+; / Cmd+Shift+; で文字を赤色に（確実にバッティングしないショートカット）
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === ';' || e.key === ':' || e.code === 'Semicolon')) {
+            e.preventDefault();
+            
+            const range = quill.getSelection();
+            if (range && range.length > 0) {
+                // テキストが選択されている場合のみ色を適用
+                const currentFormat = quill.getFormat(range);
+                
+                // 現在赤色の場合は解除、そうでなければ赤色を適用
+                if (currentFormat.color === '#ff0000' || currentFormat.color === 'red' || currentFormat.color === 'rgb(255, 0, 0)') {
+                    quill.formatText(range.index, range.length, 'color', false);
+                } else {
+                    quill.formatText(range.index, range.length, 'color', '#ff0000');
+                }
+            }
+        }
+        
+        // Ctrl+Shift+' / Cmd+Shift+' で文字を青色に
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '\'' || e.key === '"' || e.code === 'Quote')) {
+            e.preventDefault();
+            
+            const range = quill.getSelection();
+            if (range && range.length > 0) {
+                // テキストが選択されている場合のみ色を適用
+                const currentFormat = quill.getFormat(range);
+                
+                // 現在青色の場合は解除、そうでなければ青色を適用
+                if (currentFormat.color === '#0000ff' || currentFormat.color === 'blue' || currentFormat.color === 'rgb(0, 0, 255)') {
+                    quill.formatText(range.index, range.length, 'color', false);
+                } else {
+                    quill.formatText(range.index, range.length, 'color', '#0000ff');
+                }
+            }
+        }
+    });
+    
+    // URLを入力したら自動的にリンクに変換
+    quill.on('text-change', (delta, oldDelta, source) => {
+        if (source !== 'user') return;
+        
+        const selection = quill.getSelection();
+        if (!selection) return;
+        
+        // カーソル位置の前の単語を取得
+        const cursorPosition = selection.index;
+        const text = quill.getText(0, cursorPosition);
+        
+        // URLパターンにマッチするか確認（スペースまたは改行で区切られたURL）
+        const urlPattern = /(?:^|[\s\n])(https?:\/\/[^\s\n]+)$/;
+        const match = text.match(urlPattern);
+        
+        if (match) {
+            const url = match[1];
+            const urlStartIndex = cursorPosition - url.length;
+            
+            // 現在の文字がスペースまたは改行の場合のみ自動リンク化
+            const currentChar = quill.getText(cursorPosition - 1, 1);
+            if (currentChar === ' ' || currentChar === '\n') {
+                // URLの前にスペースがある場合は除外
+                const beforeUrl = quill.getText(urlStartIndex - 1, 1);
+                const actualStartIndex = (beforeUrl === ' ' || beforeUrl === '\n') ? urlStartIndex : urlStartIndex;
+                
+                // URLにリンクフォーマットを適用
+                quill.formatText(actualStartIndex, url.length, 'link', url);
+            }
         }
     });
 }

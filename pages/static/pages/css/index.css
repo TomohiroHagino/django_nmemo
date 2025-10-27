@@ -118,7 +118,7 @@ body {
     font-size: 14px;
     font-weight: 600;
     color: #37352f;
-    margin: 0;
+    margin-bottom: 10px;
 }
 
 .page-title-main {
@@ -652,7 +652,19 @@ body {
 
 .ql-editor {
     min-height: 250px;
-    font-size: 14px;
+    font-size: 16px;
+}
+
+/* Quillエディタ内のすべての要素にデフォルトフォントサイズを適用 */
+.ql-editor p,
+.ql-editor span,
+.ql-editor div {
+    font-size: 16px;
+}
+
+/* サイズが明示的に設定されていない要素にデフォルトを適用 */
+.ql-editor *:not([style*="font-size"]) {
+    font-size: 16px !important;
 }
 
 .ql-toolbar {
