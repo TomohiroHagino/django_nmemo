@@ -1,4 +1,4 @@
-"""Management command to fix images in page_temp folder"""
+"""page_tempフォルダ内の画像を修正するためのコマンド"""
 
 from django.core.management.base import BaseCommand
 from pages.models import Page
@@ -21,11 +21,11 @@ class Command(BaseCommand):
         fixed_count = 0
         
         for page in pages:
-            # Check if content contains page_temp images
+            # コンテンツにpage_temp画像が含まれているか確認する
             if page.content and 'page_temp' in page.content:
                 self.stdout.write(f'ページ {page.id}: {page.title} を修正中...')
                 
-                # Update the page (this will trigger the image move)
+                # ページを更新する（これにより画像の移動がトリガーされます）
                 dto = UpdatePageDTO(
                     page_id=page.id,
                     title=page.title,

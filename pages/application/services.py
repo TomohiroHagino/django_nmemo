@@ -335,6 +335,9 @@ class PageApplicationService:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{entity.title}</title>
+    <!-- Highlight.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
         body {{
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -343,6 +346,7 @@ class PageApplicationService:
             margin: 0 auto;
             padding: 20px;
             color: #333;
+            background-color: #fff;
         }}
         h1 {{
             border-bottom: 2px solid #eee;
@@ -364,6 +368,20 @@ class PageApplicationService:
         p {{
             margin: 10px 0;
         }}
+        /* コードブロック用スタイル */
+        pre {{
+            padding: 1em;
+            overflow-x: auto;
+            margin: 1em 0;
+        }}
+        pre code {{
+            display: block;
+            padding: 0;
+        }}
+        /* Quillのコードブロック背景をオーバーライド */
+        .ql-syntax {{
+            background: transparent !important;
+        }}
     </style>
 </head>
 <body>
@@ -375,9 +393,14 @@ class PageApplicationService:
     <div class="content">
         {embedded_content}
     </div>
+    <script>
+        // ページロード時にシンタックスハイライトを適用
+        document.addEventListener('DOMContentLoaded', function() {{
+            hljs.highlightAll();
+        }});
+    </script>
 </body>
 </html>'''
-        
         return html
     
     def export_page(self, page_id: int) -> Optional[str]:

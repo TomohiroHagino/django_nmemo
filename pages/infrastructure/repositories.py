@@ -1,4 +1,4 @@
-"""Repository implementations using Django ORM"""
+"""Django ORM を用いたリポジトリ実装"""
 
 from typing import Optional, List
 from datetime import datetime
@@ -10,10 +10,10 @@ from ..domain.repositories import PageRepositoryInterface
 
 
 class PageRepository(PageRepositoryInterface):
-    """Page repository implementation"""
+    """Page リポジトリの実装"""
     
     def _to_entity(self, page: Page, load_children: bool = False) -> PageEntity:
-        """Convert Django model to domain entity"""
+        """Django のモデルをドメインエンティティへ変換"""
         entity = PageEntity(
             id=page.id,
             title=page.title,
@@ -32,7 +32,7 @@ class PageRepository(PageRepositoryInterface):
         return entity
     
     def _to_model(self, entity: PageEntity, existing_page: Optional[Page] = None) -> Page:
-        """Convert domain entity to Django model"""
+        """ドメインエンティティを Django モデルへ変換"""
         if existing_page:
             page = existing_page
             page.title = entity.title
@@ -51,7 +51,7 @@ class PageRepository(PageRepositoryInterface):
         return page
     
     def find_by_id(self, page_id: int) -> Optional[PageEntity]:
-        """Find page by ID"""
+        """ID でページを検索"""
         try:
             page = Page.objects.get(id=page_id)
             return self._to_entity(page)
@@ -59,33 +59,33 @@ class PageRepository(PageRepositoryInterface):
             return None
     
     def find_all_root_pages(self) -> List[PageEntity]:
-        """Find all root pages"""
+        """ルート直下のページをすべて取得"""
         pages = Page.objects.filter(parent=None).order_by('order', 'created_at')
         return [self._to_entity(page) for page in pages]
     
     def find_all_pages(self) -> List[PageEntity]:
-        """Find all pages"""
+        """全ページを取得"""
         pages = Page.objects.all().order_by('order', 'created_at')
         return [self._to_entity(page) for page in pages]
     
     def find_children(self, page_id: int) -> List[PageEntity]:
-        """Find all children of a page"""
+        """指定ページの子ページをすべて取得"""
         pages = Page.objects.filter(parent_id=page_id).order_by('order', 'created_at')
         return [self._to_entity(page) for page in pages]
     
     def save(self, entity: PageEntity) -> PageEntity:
-        """Save page entity"""
+        """ページエンティティを保存"""
         entity.validate()
         
         if entity.id:
-            # Update existing
+            # 既存レコードを更新
             try:
                 existing_page = Page.objects.get(id=entity.id)
                 page = self._to_model(entity, existing_page)
             except Page.DoesNotExist:
                 page = self._to_model(entity)
         else:
-            # Create new
+            # 新規作成
             page = self._to_model(entity)
         
         page.save()
@@ -93,11 +93,12 @@ class PageRepository(PageRepositoryInterface):
     
     @transaction.atomic
     def delete(self, page_id: int) -> None:
-        """Delete page and all its children recursively"""
+        """ページとその子孫を再帰的に削除"""
         try:
             page = Page.objects.get(id=page_id)
             
             def delete_recursive(p: Page):
+                # 再帰的に子を削除してから自身を削除
                 for child in p.children.all():
                     delete_recursive(child)
                 p.delete()
@@ -107,10 +108,9 @@ class PageRepository(PageRepositoryInterface):
             pass
     
     def find_with_all_descendants(self, page_id: int) -> Optional[PageEntity]:
-        """Find page with all descendants loaded"""
+        """指定ページを、全ての子孫を読み込んだ状態で取得"""
         try:
             page = Page.objects.get(id=page_id)
             return self._to_entity(page, load_children=True)
         except Page.DoesNotExist:
             return None
-
