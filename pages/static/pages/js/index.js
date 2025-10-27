@@ -521,6 +521,7 @@ function initCreateEditor() {
     }
     
     createQuill = new Quill('#createEditor', {
+        syntax: 'highlight.js',
         theme: 'snow',
         modules: {
             toolbar: {
@@ -562,6 +563,7 @@ function initContentEditor(initialContent) {
     }
     
     contentQuill = new Quill('#contentEditor', {
+        syntax: 'highlight.js',
         theme: 'snow',
         modules: {
             toolbar: {

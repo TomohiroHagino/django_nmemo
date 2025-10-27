@@ -25,6 +25,22 @@ document.addEventListener('keydown', (e) => {
     // 保存: Mac は Cmd+S、Windows/Linux は Ctrl+S
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
+        
+        // 新規作成モーダルが開いている場合
+        const createModal = document.getElementById('createModal');
+        if (createModal && createModal.style.display === 'block') {
+            // フォームを送信
+            const createForm = document.getElementById('createForm');
+            if (createForm) {
+                const formEvent = new Event('submit', { bubbles: true, cancelable: true });
+                if (createForm.dispatchEvent(formEvent)) {
+                    handleCreatePage(formEvent);
+                }
+            }
+            return;
+        }
+        
+        // 既存ページ編集の場合
         const currentPageId = getCurrentPageId();
         if (currentPageId && contentQuill) {
             savePage(contentQuill, showSaveIndicator);

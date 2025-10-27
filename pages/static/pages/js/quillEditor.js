@@ -5,6 +5,9 @@ import { videoHandler, imageHandler } from './quill_editor_modules/handlers.js';
 import { addDragDropImageUpload, addDragDropVideoUpload } from './quill_editor_modules/dragDrop.js';
 import { addImageResizeHandlers } from './quill_editor_modules/imageResize.js';
 import { addLinkShortcuts } from './quill_editor_modules/shortcuts.js';
+import { applySyntaxHighlight } from './quill_editor_modules/syntaxHighlight.js';
+
+// VideoBlot を登録
 
 // VideoBlot を登録
 registerVideoBlot();
@@ -103,9 +106,12 @@ export function initCreateEditor(imageHandlerFn, videoHandlerFn, addImageResizeH
     
     // 動画のドラッグ＆ドロップアップロードを追加
     addDragDropVideoUploadFn(createQuill, true);
-    
+
     // リンクのキーボードショートカット（Ctrl+K / Cmd+K）と自動リンク検出を追加
     addLinkShortcuts(createQuill);
+    
+    // シンタックスハイライトを適用
+    applySyntaxHighlight(createQuill);
     
     return createQuill;
 }
@@ -212,6 +218,9 @@ export function initContentEditor(initialContent, imageHandlerFn, videoHandlerFn
     
     // リンクのキーボードショートカット（Ctrl+K / Cmd+K）と自動リンク検出を追加
     addLinkShortcuts(contentQuill);
+    
+    // シンタックスハイライトを適用
+    applySyntaxHighlight(contentQuill);
     
     return contentQuill;
 }

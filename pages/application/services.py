@@ -92,6 +92,9 @@ class PageApplicationService:
             # 新しい画像URLでコンテンツを更新
             saved_entity = self.repository.save(saved_entity)
         
+        # ページフォルダにHTMLファイルを保存（この行を追加）
+        self._save_html_to_folder(saved_entity)
+        
         return self._entity_to_dto(saved_entity)
     
     def update_page(self, dto: UpdatePageDTO) -> Optional[PageDTO]:

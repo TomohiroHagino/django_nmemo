@@ -896,6 +896,21 @@ body {
     transform: translateZ(0);
 }
 
+/* Quillのデフォルトのコードブロック背景色をオーバーライド */
+.ql-snow .ql-editor code,
+.ql-snow .ql-editor pre.ql-code-block {
+    background: transparent !important;
+}
+
+.ql-snow .ql-editor pre.ql-code-block {
+    background: transparent !important;
+    padding: 1em;
+}
+
+.ql-snow .ql-editor pre.ql-code-block code {
+    background: transparent !important;
+}
+
 /* ========================================
    レスポンシブデザイン
    ======================================== */

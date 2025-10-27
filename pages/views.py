@@ -1,4 +1,4 @@
-"""Views for pages (Presentation Layer)"""
+"""ページ用ビュー（プレゼンテーション層）"""
 
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponse, Http404
@@ -14,13 +14,13 @@ from .infrastructure.repositories import PageRepository
 
 
 def _get_service() -> PageApplicationService:
-    """Get application service instance"""
+    """アプリケーションサービスのインスタンスを取得"""
     repository = PageRepository()
     return PageApplicationService(repository)
 
 
 def index(request):
-    """Index page - display all pages in tree structure"""
+    """インデックスページ：ページツリーを表示"""
     service = _get_service()
     tree_data = service.get_page_tree()
     return render(request, 'pages/index.html', tree_data)
@@ -28,7 +28,7 @@ def index(request):
 
 @require_http_methods(["POST"])
 def page_create(request):
-    """Create a new page"""
+    """ページを新規作成"""
     title = request.POST.get('title', '').strip()
     content = request.POST.get('content', '')
     parent_id = request.POST.get('parent_id')
@@ -38,7 +38,7 @@ def page_create(request):
             return JsonResponse({'success': False, 'error': 'タイトルは必須です'}, status=400)
         return redirect('pages:index')
     
-    # Convert parent_id to int or None
+    # parent_id を int もしくは None に変換
     try:
         parent_id = int(parent_id) if parent_id and parent_id.strip() else None
     except (ValueError, AttributeError):
@@ -57,7 +57,7 @@ def page_create(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': True, 'page_id': page.id})
         
-        # Redirect to index page (will show the new page in the tree)
+        # インデックスにリダイレクト（新規ページはツリーに反映される）
         return redirect('pages:index')
     
     except ValueError as e:
@@ -68,7 +68,7 @@ def page_create(request):
 
 @require_http_methods(["POST"])
 def page_update(request, page_id):
-    """Update a page"""
+    """ページを更新"""
     title = request.POST.get('title', '').strip()
     content = request.POST.get('content', '')
     
@@ -103,10 +103,10 @@ def page_update(request, page_id):
 
 @require_http_methods(["POST"])
 def page_delete(request, page_id):
-    """Delete a page and all its children"""
+    """ページとその子ページを削除"""
     service = _get_service()
     
-    # Get parent ID before deletion
+    # 削除前に親IDを取得
     page = service.get_page_detail(page_id)
     parent_id = page.parent_id if page else None
     
@@ -127,10 +127,10 @@ def page_delete(request, page_id):
 
 @require_http_methods(["POST"])
 def page_move(request, page_id):
-    """Move a page to a different parent"""
+    """ページを別の親の配下へ移動"""
     service = _get_service()
     
-    # Get new parent ID from request (None for root level)
+    # リクエストから新しい親IDを取得（ルートに移動する場合は None）
     new_parent_id = request.POST.get('new_parent_id')
     if new_parent_id:
         try:
@@ -140,24 +140,24 @@ def page_move(request, page_id):
     else:
         new_parent_id = None
     
-    # Get the page
+    # 対象ページを取得
     page = service.get_page_detail(page_id)
     if page is None:
         return JsonResponse({'success': False, 'error': 'ページが見つかりません'}, status=404)
     
-    # Check for circular reference
+    # 循環参照の防止チェック
     if new_parent_id is not None:
         if new_parent_id == page_id:
             return JsonResponse({'success': False, 'error': '自分自身を親にはできません'}, status=400)
         
-        # Check if new parent is a descendant of current page
+        # 新しい親が現在のページの子孫でないことを確認
         current = service.get_page_detail(new_parent_id)
         while current and current.parent_id:
             if current.parent_id == page_id:
                 return JsonResponse({'success': False, 'error': '子孫ページを親にはできません'}, status=400)
             current = service.get_page_detail(current.parent_id)
     
-    # Update the page
+    # ページ情報の更新（タイトルや本文は現状維持）
     from .application.dto import UpdatePageDTO
     dto = UpdatePageDTO(
         page_id=page_id,
@@ -165,7 +165,7 @@ def page_move(request, page_id):
         content=page.content
     )
     
-    # Update parent directly in the model
+    # モデルを直接更新して親を付け替え
     from .models import Page as PageModel
     try:
         page_model = PageModel.objects.get(id=page_id)
@@ -180,7 +180,7 @@ def page_move(request, page_id):
 
 
 def export_page(request, page_id):
-    """Export page and all children as JSON"""
+    """ページと子孫を JSON としてエクスポート"""
     service = _get_service()
     json_data = service.export_page(page_id)
     
@@ -197,18 +197,18 @@ def export_page(request, page_id):
 
 
 def export_page_html(request, page_id):
-    """Export page as standalone HTML file with embedded images"""
+    """ページを埋め込み画像付きの単一 HTML としてエクスポート"""
     service = _get_service()
     html_content = service.export_page_as_html(page_id)
     
     if html_content is None:
         raise Http404('ページが見つかりません')
     
-    # Get page title for filename
+    # ダウンロード用のファイル名にページタイトルを使用
     page = service.get_page_detail(page_id)
     filename = f'{page.title}.html' if page else f'page_{page_id}.html'
     
-    # Sanitize filename
+    # ファイル名をサニタイズ
     import re
     filename = re.sub(r'[<>:"/\\|?*]', '_', filename)
     
@@ -222,7 +222,7 @@ def export_page_html(request, page_id):
 
 
 def api_page_detail(request, page_id):
-    """API endpoint to get page detail as JSON"""
+    """ページ詳細を JSON で返す API エンドポイント"""
     service = _get_service()
     page = service.get_page_detail(page_id)
     
@@ -242,35 +242,35 @@ def api_page_detail(request, page_id):
 
 @require_http_methods(["POST"])
 def upload_image(request):
-    """Upload image for rich text editor"""
+    """リッチテキストエディタ用：画像アップロード"""
     if 'image' not in request.FILES:
         return JsonResponse({'error': '画像ファイルが必要です'}, status=400)
     
-    # Get page_id from request
+    # リクエストから page_id を取得
     page_id = request.POST.get('page_id')
     if not page_id:
         return JsonResponse({'error': 'ページIDが必要です'}, status=400)
     
     image = request.FILES['image']
     
-    # Validate file type
+    # ファイル種別の検証
     allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     if image.content_type not in allowed_types:
         return JsonResponse({'error': '許可されていないファイル形式です'}, status=400)
     
-    # Validate file size (max 5MB)
+    # ファイルサイズの検証（最大 5MB）
     if image.size > 5 * 1024 * 1024:
         return JsonResponse({'error': 'ファイルサイズは5MB以下にしてください'}, status=400)
     
-    # Generate unique filename and save in page-specific folder
+    # 一意のファイル名を生成し、ページごとのディレクトリに保存
     ext = os.path.splitext(image.name)[1]
     filename = f"{uuid.uuid4()}{ext}"
     filepath = os.path.join('uploads', f'page_{page_id}', filename)
     
-    # Save file
+    # 保存
     saved_path = default_storage.save(filepath, image)
     
-    # Return URL
+    # URL を返却
     image_url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
     
     return JsonResponse({
@@ -281,35 +281,35 @@ def upload_image(request):
 
 @require_http_methods(["POST"])
 def upload_video(request):
-    """Upload video for rich text editor"""
+    """リッチテキストエディタ用：動画アップロード"""
     if 'video' not in request.FILES:
         return JsonResponse({'error': '動画ファイルが必要です'}, status=400)
     
-    # Get page_id from request
+    # リクエストから page_id を取得
     page_id = request.POST.get('page_id')
     if not page_id:
         return JsonResponse({'error': 'ページIDが必要です'}, status=400)
     
     video = request.FILES['video']
     
-    # Validate file type
+    # ファイル種別の検証
     allowed_types = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
     if video.content_type not in allowed_types:
         return JsonResponse({'error': '許可されていないファイル形式です（mp4, webm, ogg, mov）'}, status=400)
     
-    # Validate file size (max 250MB)
+    # ファイルサイズの検証（最大 250MB）
     if video.size > 250 * 1024 * 1024:
         return JsonResponse({'error': 'ファイルサイズは250MB以下にしてください'}, status=400)
     
-    # Generate unique filename and save in page-specific folder
+    # 一意のファイル名を生成し、ページごとのディレクトリに保存
     ext = os.path.splitext(video.name)[1]
     filename = f"{uuid.uuid4()}{ext}"
     filepath = os.path.join('uploads', f'page_{page_id}', filename)
     
-    # Save file
+    # 保存
     saved_path = default_storage.save(filepath, video)
     
-    # Return URL
+    # URL を返却
     video_url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
     
     return JsonResponse({
@@ -320,10 +320,10 @@ def upload_video(request):
 
 @require_http_methods(["POST"])
 def page_update_icon(request, page_id):
-    """Update page icon"""
+    """ページのアイコンを更新"""
     icon = request.POST.get('icon', '📄')
     
-    # Validate icon (should be a single character/emoji)
+    # アイコンの検証（1文字・絵文字想定。長すぎる値は拒否）
     if len(icon) > 10:
         return JsonResponse({'success': False, 'error': '無効なアイコンです'}, status=400)
     
@@ -333,7 +333,7 @@ def page_update_icon(request, page_id):
     if page is None:
         return JsonResponse({'success': False, 'error': 'ページが見つかりません'}, status=404)
     
-    # Update icon directly in the model
+    # モデルを直接更新してアイコンを保存
     from .models import Page as PageModel
     try:
         page_model = PageModel.objects.get(id=page_id)
@@ -349,11 +349,11 @@ def page_update_icon(request, page_id):
 
 @require_http_methods(["POST"])
 def page_reorder(request, page_id):
-    """Reorder pages by inserting before or after target"""
+    """ページの並び替え：ターゲットの前後に挿入"""
     from .models import Page as PageModel
     
     target_page_id = request.POST.get('target_page_id')
-    position = request.POST.get('position', 'before')  # 'before' or 'after'
+    position = request.POST.get('position', 'before')  # 'before' または 'after'
     
     if not target_page_id:
         return JsonResponse({'success': False, 'error': 'ターゲットページIDが必要です'}, status=400)
@@ -367,16 +367,16 @@ def page_reorder(request, page_id):
         page = PageModel.objects.get(id=page_id)
         target_page = PageModel.objects.get(id=target_page_id)
         
-        # ページの親をターゲットページと同じ親に変更
+        # 親をターゲットページと同じに変更
         page.parent = target_page.parent
         
-        # Get all siblings (pages with same parent as target, including the moved page)
+        # 兄弟（同一親配下のページ、移動対象を含む）を取得
         siblings = list(PageModel.objects.filter(parent=target_page.parent).order_by('order', 'created_at'))
         
-        # Remove the page from its current position in the list
+        # 現在位置から移動対象を除去
         siblings = [s for s in siblings if s.id != page_id]
         
-        # Find target position and insert
+        # ターゲット位置を見つけて前後に挿入
         new_siblings = []
         inserted = False
         for sibling in siblings:
@@ -391,13 +391,13 @@ def page_reorder(request, page_id):
             else:
                 new_siblings.append(sibling)
         
-        # If target was not found (shouldn't happen), append at the end
+        # 万が一ターゲットが見つからない場合は末尾に追加（通常は発生しない想定）
         if not inserted:
             new_siblings.append(page)
         
-        # Update order for all siblings
+        # 並び順を一括更新（10刻みで設定し、後続の並び替えを容易にする）
         for idx, sibling in enumerate(new_siblings):
-            sibling.order = idx * 10  # Use increments of 10 for easier reordering
+            sibling.order = idx * 10
             sibling.save()
         
         return JsonResponse({'success': True})
