@@ -10,6 +10,14 @@ export function openCreateModal() {
     modalTitle.textContent = '新しいページを作成';
     parentIdInput.value = '';
     modal.style.display = 'block';
+    
+    // タイトルフィールドにフォーカスを当てる
+    setTimeout(() => {
+        const titleInput = document.getElementById('newPageTitle');
+        if (titleInput) {
+            titleInput.focus();
+        }
+    }, 100);
 }
 
 export function openCreateChildModal(parentId, parentTitle) {
@@ -20,6 +28,14 @@ export function openCreateChildModal(parentId, parentTitle) {
     modalTitle.textContent = `「${parentTitle}」の子ページを作成`;
     parentIdInput.value = parentId;
     modal.style.display = 'block';
+    
+    // タイトルフィールドにフォーカスを当てる
+    setTimeout(() => {
+        const titleInput = document.getElementById('newPageTitle');
+        if (titleInput) {
+            titleInput.focus();
+        }
+    }, 100);
 }
 
 export function closeCreateModal() {
