@@ -191,14 +191,45 @@ function handleDragOver(e) {
         dropIndicator.style.right = 'auto';
         dropIndicator.style.width = (rect.width) + 'px';
         
-        if (position === 'before') {
-            dropIndicator.style.top = (rect.top - sidebarRect.top + scrollTop) + 'px';
-        } else if (position === 'after') {
-            dropIndicator.style.top = (rect.bottom - sidebarRect.top + scrollTop) + 'px';
-        } else {
-            // child の場合は、ヘッダーの中央下部に表示
-            dropIndicator.style.top = (rect.bottom - sidebarRect.top + scrollTop - 2) + 'px';
+        // child の場合は drop-target クラスを追加（青い背景）
+        e.currentTarget.classList.remove('drop-target');
+        if (position === 'child') {
+            e.currentTarget.classList.add('drop-target');
         }
+        
+        // ドロップ位置インジケータを表示
+        if (dropIndicator) {
+            // 常にsidebar-contentを基準にする
+            const sidebarContent = document.querySelector('.sidebar-content');
+            
+            if (!dropIndicator.parentNode && sidebarContent) {
+                sidebarContent.appendChild(dropIndicator);
+            }
+            
+            // child の場合はインジケーターを非表示
+            if (position === 'child') {
+                dropIndicator.style.display = 'none';
+            } else {
+                dropIndicator.style.display = 'block';
+                
+                const sidebarRect = sidebarContent.getBoundingClientRect();
+                const scrollTop = sidebarContent.scrollTop || 0;
+                
+                // インジケーターの左右位置を現在のページアイテムに合わせる
+                dropIndicator.style.left = (rect.left - sidebarRect.left) + 'px';
+                dropIndicator.style.right = 'auto';
+                dropIndicator.style.width = (rect.width) + 'px';
+                
+                if (position === 'before') {
+                    dropIndicator.style.top = (rect.top - sidebarRect.top + scrollTop) + 'px';
+                } else if (position === 'after') {
+                    dropIndicator.style.top = (rect.bottom - sidebarRect.top + scrollTop) + 'px';
+                }
+            }
+        }
+        
+        e.dataTransfer.dropEffect = 'move';
+        return false;
     }
     
     e.dataTransfer.dropEffect = 'move';
