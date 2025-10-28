@@ -15,6 +15,7 @@ class PageEntity:
     created_at: datetime
     updated_at: datetime
     icon: str = '📄'
+    order: int = 0
     children: List['PageEntity'] = field(default_factory=list)
 
     def validate(self) -> None:

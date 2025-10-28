@@ -20,6 +20,7 @@ class PageRepository(PageRepositoryInterface):
             content=page.content,
             icon=getattr(page, 'icon', '📄'),
             parent_id=page.parent_id,
+            order=page.order,
             created_at=page.created_at,
             updated_at=page.updated_at,
             children=[]
@@ -38,6 +39,7 @@ class PageRepository(PageRepositoryInterface):
             page.title = entity.title
             page.content = entity.content
             page.icon = entity.icon
+            page.order = entity.order  # 追加
             if entity.parent_id:
                 page.parent_id = entity.parent_id
         else:
@@ -45,7 +47,8 @@ class PageRepository(PageRepositoryInterface):
                 title=entity.title,
                 content=entity.content,
                 icon=entity.icon,
-                parent_id=entity.parent_id
+                parent_id=entity.parent_id,
+                order=entity.order  # 追加
             )
         
         return page

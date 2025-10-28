@@ -73,6 +73,17 @@ class PageApplicationService:
     
     def create_page(self, dto: CreatePageDTO) -> PageDTO:
         """新規ページを作成する"""
+        
+        # 親の子ページの中で最大の order を取得して +10
+        max_order = 0
+        if dto.parent_id:
+            siblings = self.repository.find_children(dto.parent_id)
+        else:
+            siblings = self.repository.find_all_root_pages()
+        
+        if siblings:
+            max_order = max((child.order for child in siblings), default=0)
+        
         entity = PageEntity(
             id=None,
             title=dto.title.strip(),
@@ -80,6 +91,7 @@ class PageApplicationService:
             parent_id=dto.parent_id,
             created_at=datetime.now(),
             updated_at=datetime.now(),
+            order=max_order + 10,  # 追加
             children=[]
         )
         
