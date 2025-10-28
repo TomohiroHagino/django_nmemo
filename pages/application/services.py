@@ -369,6 +369,10 @@ class PageApplicationService:
             color: #666;
             font-size: 0.9em;
             margin-bottom: 30px;
+            display: flex;
+        }}
+        .meta p {{
+            margin-right: 20px;
         }}
         .content {{
             margin-top: 20px;

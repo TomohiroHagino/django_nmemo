@@ -72,6 +72,18 @@ export function initPageTreeDragDrop() {
                 
                 // ルートへ移動（parent_id = null）
                 if (draggedPageId) {
+                    // DOMの見た目を即座に更新
+                    const draggedElement = document.getElementById('header-' + draggedPageId);
+                    if (draggedElement) {
+                        const draggedPageItem = draggedElement.closest('.page-item');
+                        const pageTree = document.getElementById('pageTree');
+                        
+                        if (draggedPageItem && pageTree) {
+                            // ドラッグされた要素をページツリーの末尾に移動
+                            pageTree.appendChild(draggedPageItem);
+                        }
+                    }
+                    
                     movePage(draggedPageId, null);
                 }
             }
@@ -285,7 +297,55 @@ function handleDrop(e) {
     }
     
     // position が 'child' の場合は、子階層に入れる
+    // if (position === 'child') {
+    //     // サーバーに親変更を通知
+    //     movePage(draggedPageId, targetPageId);
+        
+    //     e.currentTarget.classList.remove('drop-target');
+    //     e.currentTarget.removeAttribute('data-drop-position');
+    //     return false;
+    // }
+
+    // position が 'child' の場合は、子階層に入れる
     if (position === 'child') {
+        // DOMの見た目を即座に更新
+        const draggedElement = document.getElementById('header-' + draggedPageId);
+        const targetElement = document.getElementById('header-' + targetPageId);
+        
+        if (draggedElement && targetElement) {
+            const draggedPageItem = draggedElement.closest('.page-item');
+            const targetPageItem = targetElement.closest('.page-item');
+            
+            if (draggedPageItem && targetPageItem) {
+                // 親の子コンテナを取得または作成
+                let childrenContainer = document.getElementById('children-' + targetPageId);
+                
+                if (!childrenContainer) {
+                    // 子コンテナが存在しない場合は作成
+                    const toggleBtn = targetElement.querySelector('.toggle-btn');
+                    toggleBtn.id = 'toggle-' + targetPageId;
+                    toggleBtn.classList.remove('empty');
+                    toggleBtn.classList.add('collapsed');
+                    toggleBtn.setAttribute('onclick', `event.stopPropagation(); toggleChildren(${targetPageId})`);
+                    
+                    childrenContainer = document.createElement('div');
+                    childrenContainer.id = 'children-' + targetPageId;
+                    childrenContainer.className = 'children';
+                    targetPageItem.appendChild(childrenContainer);
+                }
+                
+                // ドラッグされた要素を子コンテナに移動
+                childrenContainer.appendChild(draggedPageItem);
+                
+                // 子コンテナを展開して移動が見えるように
+                childrenContainer.classList.add('expanded');
+                const toggleBtn = document.getElementById('toggle-' + targetPageId);
+                if (toggleBtn) {
+                    toggleBtn.classList.remove('collapsed');
+                }
+            }
+        }
+        
         // サーバーに親変更を通知
         movePage(draggedPageId, targetPageId);
         
@@ -371,8 +431,8 @@ function movePage(pageId, newParentId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // ツリーを更新して反映
-            window.location.reload();
+            // DOMは既に更新されているので、ドラッグ＆ドロップイベントハンドラを再アタッチ
+            attachDragDropToPageItems();
         } else {
             alert('移動に失敗しました: ' + (data.error || '不明なエラー'));
         }
