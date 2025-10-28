@@ -29,7 +29,7 @@ BOX_PATH = os.getenv('BOX_PATH', str(BASE_DIR / 'local_storage'))
 # 本番向けチェックリスト: https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # 【重要】本番環境では SECRET_KEY を外部に漏らさないこと
-SECRET_KEY = 'django-insecure-isso%1evuuff97ajyt0)kf_ji#_5@nd=9nm93rp_i_yhf2h$o3'
+SECRET_KEY = os.getenv('SECRET_KEY', 'hoge')
 
 # 【重要】本番で DEBUG=True のままにしないこと
 DEBUG = True
