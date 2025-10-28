@@ -1,18 +1,25 @@
 # Nmemo Notionライクなメモアプリ
 
-Djangoで構築された一人用のNotionライクなメモアプリケーションです。
-クラウドストレージを保存先として利用でき、自動でHTMLページとメディアファイルがエクスポートされます。
+Djangoで構築された一人用のNotionライクなSPAメモアプリケーションです。
+クラウドストレージを保存先として利用でき、保存時に自動でHTMLページとメディアファイルが保存先にエクスポートされます。
 
 <table>
   <tr>
-    <td><img alt="スクリーンショット 2025-10-26 20:18:00" src="https://github.com/user-attachments/assets/3ea6473a-17bc-4c15-b15a-b097f32ce2c9" width="100%"></td>
-    <td><img alt="スクリーンショット 2025-10-26 21:19:44" src="https://github.com/user-attachments/assets/f75851f3-08c3-4baa-9589-2ab255d32c7d" width="100%"></td>
+    <td><img alt="スクリーンショット 2025-10-26 20:18:00" src="https://github.com/user-attachments/assets/5b6c3c67-07fa-4a2f-a7eb-3eb3f4c03e37" width="100%"></td>
   </tr>
 </table>
 
+<table>
+  <tr>
+    <td><img alt="スクリーンショット 2025-10-26 21:19:44" src="https://github.com/user-attachments/assets/958cea5f-0449-468f-a02c-db51d4aa7a7d" width="100%"></td>
+    <td><img alt="スクリーンショット 2025-10-26 21:19:44" src="https://github.com/user-attachments/assets/21c07c0e-3bb1-43a9-876c-30f0f9afd532"></td>
+  </tr>
+</table>
+
+
 ## 特徴
 
-- 階層構造を持つページ管理
+- **階層構造を持つページ管理**
   - ドラッグ&ドロップでページの並び替え・親子関係の変更
   - ページアイコンのカスタマイズ（絵文字）
 - 子ページの作成と表示
@@ -25,10 +32,10 @@ Djangoで構築された一人用のNotionライクなメモアプリケーシ�
 - **クラウドストレージ対応**
   - データベースと画像をBox等のクラウドストレージに保存可能
   - 環境変数で保存先を柔軟に設定
-- エクスポート機能
+- **エクスポート機能**
   - JSON形式でページと子ページを一括エクスポート
   - HTML形式で画像を埋め込んだスタンドアロンファイルを自動生成
-- Notion風の直感的なUI
+- **Notion風の直感的なUI**
   - リサイズ可能なサイドバー（ドラッグで幅を調整）
   - インライン編集機能
   - リサイズ可能なモーダル

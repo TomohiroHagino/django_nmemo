@@ -1,7 +1,6 @@
 // シンタックスハイライト機能
 
 export function applySyntaxHighlight(quill) {
-
     const highlightCodeBlocks = () => {
         console.debug('=== Highlight function called ===');
         
