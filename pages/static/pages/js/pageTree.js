@@ -120,7 +120,7 @@ function handleDragEnd(e) {
     
     // すべての drop-target クラスを除去
     document.querySelectorAll('.page-item-header').forEach(header => {
-        header.classList.remove('drop-target');
+        header.classList.remove('drop-target', 'drop-target-child', 'drop-target-before', 'drop-target-after');
         header.removeAttribute('data-drop-position');
     });
     
@@ -149,14 +149,28 @@ function handleDragOver(e) {
     }
     
     // マウス位置から挿入位置を判定
-    // 上部50%をbefore、下部50%をafterとする
+    // 上部33%をbefore、中央34%をchild、下部33%をafterとする
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top;
     const height = rect.height;
-    const position = y < height * 0.5 ? 'before' : 'after';
+    let position;
+    
+    if (y < height * 0.2) {
+        position = 'before';
+    } else if (y < height * 0.8) {
+        position = 'child';
+    } else {
+        position = 'after';
+    }
     
     // 判定結果を要素の属性に保持
     e.currentTarget.setAttribute('data-drop-position', position);
+    
+    // child の場合は drop-target クラスを追加（青い背景）
+    e.currentTarget.classList.remove('drop-target');
+    if (position === 'child') {
+        e.currentTarget.classList.add('drop-target');
+    }
     
     // ドロップ位置インジケータを表示
     if (dropIndicator) {
@@ -179,8 +193,11 @@ function handleDragOver(e) {
         
         if (position === 'before') {
             dropIndicator.style.top = (rect.top - sidebarRect.top + scrollTop) + 'px';
-        } else {
+        } else if (position === 'after') {
             dropIndicator.style.top = (rect.bottom - sidebarRect.top + scrollTop) + 'px';
+        } else {
+            // child の場合は、ヘッダーの中央下部に表示
+            dropIndicator.style.top = (rect.bottom - sidebarRect.top + scrollTop - 2) + 'px';
         }
     }
     
@@ -196,14 +213,21 @@ function handleDragEnter(e) {
         return;
     }
     
-    // インジケータを使うため、ここでは drop-target クラスは付けない
-    // e.currentTarget.classList.add('drop-target');
+    // 位置に応じたクラスを追加
+    const position = e.currentTarget.getAttribute('data-drop-position');
+    if (position === 'child') {
+        e.currentTarget.classList.add('drop-target-child');
+    } else if (position === 'before') {
+        e.currentTarget.classList.add('drop-target-before');
+    } else {
+        e.currentTarget.classList.add('drop-target-after');
+    }
 }
 
 function handleDragLeave(e) {
     // 子要素に移動しただけでなく、実際に領域外へ出たときのみ除去
     if (!e.currentTarget.contains(e.relatedTarget)) {
-        e.currentTarget.classList.remove('drop-target');
+        e.currentTarget.classList.remove('drop-target', 'drop-target-child', 'drop-target-before', 'drop-target-after');
     }
 }
 
@@ -227,6 +251,16 @@ function handleDrop(e) {
         alert('子孫ページを親にはできません');
         e.currentTarget.classList.remove('drop-target');
         return;
+    }
+    
+    // position が 'child' の場合は、子階層に入れる
+    if (position === 'child') {
+        // サーバーに親変更を通知
+        movePage(draggedPageId, targetPageId);
+        
+        e.currentTarget.classList.remove('drop-target');
+        e.currentTarget.removeAttribute('data-drop-position');
+        return false;
     }
     
     // DOMの見た目を即座に更新

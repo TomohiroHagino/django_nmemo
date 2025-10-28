@@ -252,10 +252,18 @@ body {
 
 .page-item-header.drop-target {
     background: #e3f2fd !important;
-    outline: 2px solid #2196F3;
     outline-offset: -2px;
     border-radius: 4px;
 }
+
+.page-item-header.drop-target-before {
+    background: #e3f2fd !important;
+}
+
+.page-item-header.drop-target-after {
+    background: #e3f2fd !important;
+}
+
 
 /* Drop indicator (created dynamically by JavaScript) */
 .drop-indicator {
@@ -911,6 +919,10 @@ body {
     background: transparent !important;
 }
 
+.mobile-menu-btn {
+    display: none;
+}
+
 /* ========================================
    レスポンシブデザイン
    ======================================== */
@@ -1037,14 +1049,7 @@ body {
         width: 24px;
         height: 24px;
     }
-}
 
-/* ハンバーガーメニューボタン（スマホ用） */
-.mobile-menu-btn {
-    display: none;
-}
-
-@media screen and (max-width: 480px) {
     .mobile-menu-btn {
         display: flex;
         position: fixed;
@@ -1069,10 +1074,7 @@ body {
         transform: scale(0.95);
         background: #1976d2;
     }
-}
-
-/* オーバーレイ（スマホでサイドバーが開いているとき） */
-@media screen and (max-width: 480px) {
+    
     .sidebar-overlay {
         display: none;
         position: fixed;
