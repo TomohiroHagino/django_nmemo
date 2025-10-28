@@ -79,8 +79,3 @@ export function applySyntaxHighlight(quill) {
       highlightCodeBlocks();
   }, 1500);
 }
-
-export function initSyntaxHighlight(quill) {
-  console.log('initSyntaxHighlight called');
-  applySyntaxHighlight(quill);
-}

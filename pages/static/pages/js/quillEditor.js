@@ -8,8 +8,6 @@ import { addLinkShortcuts } from './quill_editor_modules/shortcuts.js';
 import { applySyntaxHighlight } from './quill_editor_modules/syntaxHighlight.js';
 
 // VideoBlot を登録
-
-// VideoBlot を登録
 registerVideoBlot();
 
 // 新規ページ作成用の Quill エディタを初期化

@@ -73,30 +73,30 @@ export function addLinkShortcuts(quill) {
     quill.on('text-change', (delta, oldDelta, source) => {
         if (source !== 'user') return;
         
-        const selection = quill.getSelection();
-        if (!selection) return;
+        // 変更内容を確認
+        const deltaOps = delta.ops;
+        if (!deltaOps || deltaOps.length === 0) return;
         
-        // カーソル位置の前の単語を取得
-        const cursorPosition = selection.index;
-        const text = quill.getText(0, cursorPosition);
-        
-        // URLパターンにマッチするか確認（スペースまたは改行で区切られたURL）
-        const urlPattern = /(?:^|[\s\n])(https?:\/\/[^\s\n]+)$/;
-        const match = text.match(urlPattern);
-        
-        if (match) {
-            const url = match[1];
-            const urlStartIndex = cursorPosition - url.length;
+        // 最後の操作が挿入で、スペースまたは改行が追加されたかを確認
+        const lastOp = deltaOps[deltaOps.length - 1];
+        if (lastOp && lastOp.insert && (lastOp.insert === ' ' || lastOp.insert === '\n')) {
+            const selection = quill.getSelection();
+            if (!selection) return;
             
-            // 現在の文字がスペースまたは改行の場合のみ自動リンク化
-            const currentChar = quill.getText(cursorPosition - 1, 1);
-            if (currentChar === ' ' || currentChar === '\n') {
-                // URLの前にスペースがある場合は除外
-                const beforeUrl = quill.getText(urlStartIndex - 1, 1);
-                const actualStartIndex = (beforeUrl === ' ' || beforeUrl === '\n') ? urlStartIndex : urlStartIndex;
+            // カーソル位置から前に遡ってURLを探す
+            const cursorPosition = selection.index;
+            const text = quill.getText(0, cursorPosition - 1);
+            
+            // URLパターンにマッチするか確認
+            const urlPattern = /(https?:\/\/[^\s\n]+)$/;
+            const match = text.match(urlPattern);
+            
+            if (match) {
+                const url = match[1];
+                const urlStartIndex = text.lastIndexOf(match[0]);
                 
                 // URLにリンクフォーマットを適用
-                quill.formatText(actualStartIndex, url.length, 'link', url);
+                quill.formatText(urlStartIndex, url.length, 'link', url);
             }
         }
     });
