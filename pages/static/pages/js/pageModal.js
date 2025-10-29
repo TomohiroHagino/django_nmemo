@@ -1,6 +1,7 @@
 // Page creation modal management
 
 let createQuill = null;
+let titleInputEnterPressed = false;
 
 export function openCreateModal() {
     const modal = document.getElementById('createModal');
@@ -16,6 +17,22 @@ export function openCreateModal() {
         const titleInput = document.getElementById('newPageTitle');
         if (titleInput) {
             titleInput.focus();
+            titleInputEnterPressed = false;
+            
+            // エンターキーでQuillエディタにフォーカスを移すハンドラーを設定
+            titleInput.addEventListener('keydown', function handleTitleEnter(e) {
+                if (e.key === 'Enter' && document.activeElement === titleInput) {
+                    titleInputEnterPressed = true;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    if (createQuill) {
+                        createQuill.focus();
+                    }
+                    // ハンドラーを削除（モーダルを閉じるまで無効化）
+                    titleInput.removeEventListener('keydown', handleTitleEnter);
+                }
+            }, true); // capture phaseで実行
         }
     }, 100);
 }
@@ -34,6 +51,22 @@ export function openCreateChildModal(parentId, parentTitle) {
         const titleInput = document.getElementById('newPageTitle');
         if (titleInput) {
             titleInput.focus();
+            titleInputEnterPressed = false;
+            
+            // エンターキーでQuillエディタにフォーカスを移すハンドラーを設定
+            titleInput.addEventListener('keydown', function handleTitleEnter(e) {
+                if (e.key === 'Enter' && document.activeElement === titleInput) {
+                    titleInputEnterPressed = true;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    if (createQuill) {
+                        createQuill.focus();
+                    }
+                    // ハンドラーを削除（モーダルを閉じるまで無効化）
+                    titleInput.removeEventListener('keydown', handleTitleEnter);
+                }
+            }, true); // capture phaseで実行
         }
     }, 100);
 }
@@ -44,6 +77,7 @@ export function closeCreateModal() {
     
     modal.style.display = 'none';
     document.getElementById('newPageTitle').value = '';
+    titleInputEnterPressed = false;
     
     if (createQuill) {
         createQuill.setContents([]);
@@ -58,6 +92,13 @@ export function closeCreateModal() {
 }
 
 export function handleCreatePage(event, addPageToTree, showSaveIndicator, escapeHtml) {
+    // タイトル入力欄からエンターキーで送信された場合は防ぐ
+    if (titleInputEnterPressed) {
+        event.preventDefault();
+        titleInputEnterPressed = false;
+        return false;
+    }
+    
     event.preventDefault();
     
     // Get content from Quill editor
