@@ -2,7 +2,7 @@
 
 import { registerVideoBlot } from './quill_editor_modules/videoBlot.js';
 import { videoHandler, imageHandler, codeBlockNoHighlight } from './quill_editor_modules/handlers.js';
-import { addDragDropImageUpload, addDragDropVideoUpload } from './quill_editor_modules/dragDrop.js';
+import { addDragDropImageUpload, addDragDropVideoUpload, addDragDropExcelUpload } from './quill_editor_modules/dragDrop.js';
 import { addImageResizeHandlers } from './quill_editor_modules/imageResize.js';
 import { addLinkShortcuts } from './quill_editor_modules/shortcuts.js';
 import { applySyntaxHighlight } from './quill_editor_modules/syntaxHighlight.js';
@@ -11,7 +11,7 @@ import { applySyntaxHighlight } from './quill_editor_modules/syntaxHighlight.js'
 registerVideoBlot();
 
 // 新規ページ作成用の Quill エディタを初期化
-export function initCreateEditor(imageHandlerFn, videoHandlerFn, addImageResizeHandlersFn, addDragDropImageUploadFn, addDragDropVideoUploadFn) {
+export function initCreateEditor(imageHandlerFn, videoHandlerFn, addImageResizeHandlersFn, addDragDropImageUploadFn, addDragDropVideoUploadFn, addDragDropExcelUploadFn) {
     // カスタムフォントサイズを登録
     const Size = Quill.import('attributors/style/size');
     Size.whitelist = ['10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
@@ -106,6 +106,9 @@ export function initCreateEditor(imageHandlerFn, videoHandlerFn, addImageResizeH
     
     // 動画のドラッグ＆ドロップアップロードを追加
     addDragDropVideoUploadFn(createQuill, true);
+    
+    // エクセルファイルのドラッグ＆ドロップアップロードを追加
+    addDragDropExcelUploadFn(createQuill, true);
 
     // リンクのキーボードショートカット（Ctrl+K / Cmd+K）と自動リンク検出を追加
     addLinkShortcuts(createQuill);
@@ -117,7 +120,7 @@ export function initCreateEditor(imageHandlerFn, videoHandlerFn, addImageResizeH
 }
 
 // 既存ページの表示・編集用 Quill エディタを初期化
-export function initContentEditor(initialContent, imageHandlerFn, videoHandlerFn, addImageResizeHandlersFn, addDragDropImageUploadFn, addDragDropVideoUploadFn) {
+export function initContentEditor(initialContent, imageHandlerFn, videoHandlerFn, addImageResizeHandlersFn, addDragDropImageUploadFn, addDragDropVideoUploadFn, addDragDropExcelUploadFn) {
     // カスタムフォントサイズを登録
     const Size = Quill.import('attributors/style/size');
     Size.whitelist = ['10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
@@ -218,6 +221,10 @@ export function initContentEditor(initialContent, imageHandlerFn, videoHandlerFn
     // 動画のドラッグ＆ドロップアップロードを追加
     addDragDropVideoUploadFn(contentQuill, false);
     
+    // エクセルファイルのドラッグ＆ドロップアップロードを追加
+    if (addDragDropExcelUploadFn) {
+        addDragDropExcelUploadFn(contentQuill, false);
+    }
     // リンクのキーボードショートカット（Ctrl+K / Cmd+K）と自動リンク検出を追加
     addLinkShortcuts(contentQuill);
     
@@ -228,4 +235,4 @@ export function initContentEditor(initialContent, imageHandlerFn, videoHandlerFn
 }
 
 // エクスポート: ハンドラ関数
-export { videoHandler, imageHandler, addDragDropImageUpload, addDragDropVideoUpload, addImageResizeHandlers };
+export { videoHandler, imageHandler, addDragDropImageUpload, addDragDropVideoUpload, addDragDropExcelUpload, addImageResizeHandlers };

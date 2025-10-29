@@ -317,6 +317,52 @@ def upload_video(request):
         'url': video_url
     })
 
+@require_http_methods(["POST"])
+def upload_excel(request):
+    """リッチテキストエディタ用：エクセルファイルアップロード"""
+    if 'excel' not in request.FILES:
+        return JsonResponse({'error': 'エクセルファイルが必要です'}, status=400)
+    
+    # リクエストから page_id を取得
+    page_id = request.POST.get('page_id')
+    if not page_id:
+        return JsonResponse({'error': 'ページIDが必要です'}, status=400)
+    
+    excel_file = request.FILES['excel']
+    
+    # ファイル種別の検証
+    allowed_types = [
+        'application/vnd.ms-excel',  # .xls
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',  # .xlsx
+        'application/vnd.ms-excel.sheet.macroEnabled.12',  # .xlsm
+    ]
+    # 拡張子でも検証（MIMEタイプが正しく設定されていない場合に備える）
+    file_extension = os.path.splitext(excel_file.name)[1].lower()
+    allowed_extensions = ['.xls', '.xlsx', '.xlsm']
+    
+    if excel_file.content_type not in allowed_types and file_extension not in allowed_extensions:
+        return JsonResponse({'error': '許可されていないファイル形式です（.xls, .xlsx, .xlsm）'}, status=400)
+    
+    # ファイルサイズの検証（最大 50MB）
+    if excel_file.size > 50 * 1024 * 1024:
+        return JsonResponse({'error': 'ファイルサイズは50MB以下にしてください'}, status=400)
+    
+    # 一意のファイル名を生成し、ページごとのディレクトリに保存
+    ext = os.path.splitext(excel_file.name)[1] or file_extension or '.xlsx'
+    filename = f"{uuid.uuid4()}{ext}"
+    filepath = os.path.join('uploads', f'page_{page_id}', filename)
+    
+    # 保存
+    saved_path = default_storage.save(filepath, excel_file)
+    
+    # URL を返却
+    excel_url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
+    
+    return JsonResponse({
+        'success': True,
+        'url': excel_url,
+        'filename': excel_file.name
+    })
 
 @require_http_methods(["POST"])
 def page_update_icon(request, page_id):

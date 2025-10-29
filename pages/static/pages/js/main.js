@@ -3,7 +3,7 @@
 import { initPageTreeDragDrop, toggleChildren, addPageToTree } from './pageTree.js';
 import { openIconModal, closeIconModal, confirmIconChange } from './iconModal.js';
 import { openCreateModal, openCreateChildModal, closeCreateModal, handleCreatePage, setCreateQuill, getCreateQuill, initModalResize } from './pageModal.js';
-import { initCreateEditor, initContentEditor, imageHandler, videoHandler, addDragDropImageUpload, addDragDropVideoUpload, addImageResizeHandlers } from './quillEditor.js';
+import { initCreateEditor, initContentEditor, imageHandler, videoHandler, addDragDropImageUpload, addDragDropVideoUpload, addDragDropExcelUpload, addImageResizeHandlers } from './quillEditor.js';
 import { getCurrentPageId, loadPage, savePage, cancelEdit, deletePage } from './pageOperations.js';
 import { escapeHtml, formatDate, showSaveIndicator } from './utils.js';
 import { initSidebarResize } from './sidebarResize.js';
@@ -67,7 +67,8 @@ window.addEventListener('load', () => {
         },
         addImageResizeHandlers,
         (quill, isCreate) => addDragDropImageUpload(quill, isCreate, getCurrentPageId()),
-        (quill, isCreate) => addDragDropVideoUpload(quill, isCreate, getCurrentPageId())
+        (quill, isCreate) => addDragDropVideoUpload(quill, isCreate, getCurrentPageId()),
+        (quill, isCreate) => addDragDropExcelUpload(quill, isCreate, getCurrentPageId())
     );
     setCreateQuill(createQuill);
     
@@ -101,7 +102,8 @@ window.loadPage = function(pageId) {
             },
             addImageResizeHandlers,
             (quill, isCreate) => addDragDropImageUpload(quill, isCreate, getCurrentPageId()),
-            (quill, isCreate) => addDragDropVideoUpload(quill, isCreate, getCurrentPageId())
+            (quill, isCreate) => addDragDropVideoUpload(quill, isCreate, getCurrentPageId()),
+            (quill, isCreate) => addDragDropExcelUpload(quill, isCreate, getCurrentPageId())
         ),
         escapeHtml,
         formatDate

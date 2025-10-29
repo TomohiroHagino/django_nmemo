@@ -18,5 +18,6 @@ urlpatterns = [
     path('api/page/<int:page_id>/', views.api_page_detail, name='api_page_detail'),
     path('api/upload-image/', views.upload_image, name='upload_image'),
     path('api/upload-video/', views.upload_video, name='upload_video'),
+    path('api/upload-excel/', views.upload_excel, name='upload_excel'),
 ]
 
