@@ -33,6 +33,7 @@ db.sqlite3-journal
 # Environment variables
 .env
 django_nmemo_data
+django_nmemo_data_backup_*
 
 # IDE
 .vscode/
