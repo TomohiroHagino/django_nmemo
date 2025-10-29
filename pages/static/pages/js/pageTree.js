@@ -95,19 +95,29 @@ function attachDragDropToPageItems() {
     const pageItems = document.querySelectorAll('.page-item-header');
     
     pageItems.forEach(header => {
-        // ドラッグ可能にする
-        header.setAttribute('draggable', 'true');
-        
-        // ドラッグ関連イベント
-        header.addEventListener('dragstart', handleDragStart);
-        header.addEventListener('dragend', handleDragEnd);
-        
-        // ドロップ関連イベント
-        header.addEventListener('dragover', handleDragOver);
-        header.addEventListener('dragenter', handleDragEnter);
-        header.addEventListener('dragleave', handleDragLeave);
-        header.addEventListener('drop', handleDrop);
+        attachDragDropToPageItem(header);
     });
+}
+
+function attachDragDropToPageItem(header) {
+    if (!header) return;
+    
+    // ドラッグ可能にする
+    header.setAttribute('draggable', 'true');
+    
+    // 既存のイベントリスナーを削除（重複を防ぐ）
+    header.replaceWith(header.cloneNode(true));
+    const newHeader = document.getElementById(header.id);
+    
+    // ドラッグ関連イベント
+    newHeader.addEventListener('dragstart', handleDragStart);
+    newHeader.addEventListener('dragend', handleDragEnd);
+    
+    // ドロップ関連イベント
+    newHeader.addEventListener('dragover', handleDragOver);
+    newHeader.addEventListener('dragenter', handleDragEnter);
+    newHeader.addEventListener('dragleave', handleDragLeave);
+    newHeader.addEventListener('drop', handleDrop);
 }
 
 function handleDragStart(e) {
@@ -531,7 +541,12 @@ export function addPageToTree(pageId, title, parentId, escapeHtml) {
         }
         
         // 子コンテナの末尾に追加
+        // 子コンテナの末尾に追加
         childrenContainer.insertAdjacentHTML('beforeend', pageItemHtml);
+        
+        // 新しく追加されたページアイテムにドラッグ＆ドロップをアタッチ
+        const newPageHeader = document.getElementById('header-' + pageId);
+        attachDragDropToPageItem(newPageHeader);
         
         // 追加が見えるように親を展開
         childrenContainer.classList.add('expanded');
@@ -557,6 +572,18 @@ export function addPageToTree(pageId, title, parentId, escapeHtml) {
             newTree.id = 'pageTree';
             newTree.innerHTML = pageItemHtml;
             sidebarContent.appendChild(newTree);
+            
+            // 新しく追加されたページアイテムにドラッグ＆ドロップをアタッチ
+            const newPageHeader = document.getElementById('header-' + pageId);
+            attachDragDropToPageItem(newPageHeader);
+            
+            // ページツリーのドラッグ＆ドロップを初期化
+            initPageTreeDragDrop();
+            return;
         }
+        
+        // ルート追加の場合もドラッグ＆ドロップをアタッチ
+        const newPageHeader = document.getElementById('header-' + pageId);
+        attachDragDropToPageItem(newPageHeader);
     }
 }
