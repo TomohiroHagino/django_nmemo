@@ -1,4 +1,7 @@
 // YouTube/Vimeo URL または ローカル動画ファイルを挿入するハンドラ
+
+import { applySyntaxHighlight } from './syntaxHighlight.js';
+
 export function videoHandler(currentPageId, getCreateQuill) {
     const self = this;
     const createQuill = getCreateQuill();
@@ -130,6 +133,55 @@ export function videoHandler(currentPageId, getCreateQuill) {
         });
         
         input.click();
+    }
+}
+
+// ハイライトしないコードブロックを挿入するハンドラ
+export function codeBlockNoHighlight() {
+    const quill = this.quill;
+    const range = quill.getSelection(true);
+    
+    // 現在の範囲を取得
+    const [line, offset] = quill.getLine(range.index);
+    
+    // コードブロックのコードを取得（空白の場合もある）
+    const text = line ? (line.domNode ? line.domNode.textContent : '') : '';
+    
+    // 現在の行がコードブロックかチェック
+    let isCodeBlock = false;
+    let codeBlockPre = null;
+    
+    if (line && line.domNode && line.domNode.classList.contains('ql-syntax')) {
+        isCodeBlock = true;
+        codeBlockPre = line.domNode;
+    }
+    
+    if (isCodeBlock && codeBlockPre) {
+        // 既存のコードブロックにno-highlightクラスを追加/削除
+        if (codeBlockPre.classList.contains('no-highlight')) {
+            codeBlockPre.classList.remove('no-highlight');
+            alert('このコードブロックのハイライトを有効にしました');
+        } else {
+            codeBlockPre.classList.add('no-highlight');
+            alert('このコードブロックのハイライトを無効にしました');
+            // シンタックスハイライトを再適用（このブロックはスキップされる）
+            setTimeout(() => {
+                applySyntaxHighlight(quill);
+            }, 100);
+        }
+    } else {
+        // コードブロックを挿入し、no-highlightクラスを追加
+        quill.insertText(range.index, '\n');
+        quill.formatLine(range.index, 1, 'code-block', true);
+        
+        // 挿入後にno-highlightクラスを追加
+        setTimeout(() => {
+            const codeBlocks = quill.root.querySelectorAll('pre.ql-syntax');
+            const lastCodeBlock = codeBlocks[codeBlocks.length - 1];
+            if (lastCodeBlock) {
+                lastCodeBlock.classList.add('no-highlight');
+            }
+        }, 100);
     }
 }
 

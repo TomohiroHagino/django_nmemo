@@ -68,7 +68,7 @@ export function addLinkShortcuts(quill) {
             }
         }
     });
-    
+
     // URLを入力したら自動的にリンクに変換
     quill.on('text-change', (delta, oldDelta, source) => {
         if (source !== 'user') return;
@@ -83,20 +83,34 @@ export function addLinkShortcuts(quill) {
             const selection = quill.getSelection();
             if (!selection) return;
             
-            // カーソル位置から前に遡ってURLを探す
             const cursorPosition = selection.index;
-            const text = quill.getText(0, cursorPosition - 1);
             
-            // URLパターンにマッチするか確認
+            // スケールバーを使わずに、直接テキスト全体を取得して検索
+            const allText = quill.getText(0);
+            const textBeforeCursor = allText.substring(0, cursorPosition - 1);
+            
+            // URLパターンでマッチング
             const urlPattern = /(https?:\/\/[^\s\n]+)$/;
-            const match = text.match(urlPattern);
+            const match = textBeforeCursor.match(urlPattern);
             
             if (match) {
-                const url = match[1];
-                const urlStartIndex = text.lastIndexOf(match[0]);
+                const url = match[0];
+                
+                // マッチしたURLがテキスト内のどこから始まるかを正確に計算
+                const urlStartIndex = textBeforeCursor.length - url.length;
+                
+                // すでにリンク化されているかチェック
+                const format = quill.getFormat(urlStartIndex, url.length);
+                if (format.link) {
+                    return;
+                }
                 
                 // URLにリンクフォーマットを適用
-                quill.formatText(urlStartIndex, url.length, 'link', url);
+                // 念のため、長さを1追加して確実に全体をカバー
+                quill.formatText(urlStartIndex, url.length + 1, 'link', url);
+                
+                // カーソル位置をリセット
+                quill.setSelection(cursorPosition);
             }
         }
     });

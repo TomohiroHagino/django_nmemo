@@ -765,13 +765,22 @@ body {
     display: block !important;
 }
 
-/* スマホ表示では幅を100%に */
-@media (max-width: 768px) {
-    .ql-editor .ql-video {
-        width: 100% !important;
-        height: auto !important;
-        min-height: 200px !important;
-    }
+/* カスタムツールバーボタン: ハイライトしないコードブロック */
+.ql-code-block-no-highlight {
+    width: 28px;
+}
+
+.ql-code-block-no-highlight:before {
+    content: '</>';
+    font-size: 18px;
+}
+
+/* ボタンのSVGアイコン（シンプルなコードブロックアイコン） */
+.ql-code-block-no-highlight svg,
+.ql-code-block-no-highlight svg line,
+.ql-code-block-no-highlight svg path {
+    fill: currentColor;
+    stroke: currentColor;
 }
 
 /* Quillエディタのフォントサイズドロップダウンのスタイル */
@@ -928,6 +937,14 @@ body {
    ======================================== */
 
 /* タブレット（768px以下） */
+@media (max-width: 768px) {
+    .ql-editor .ql-video {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 200px !important;
+    }
+}
+
 @media screen and (max-width: 768px) {
     .sidebar {
         width: 250px;

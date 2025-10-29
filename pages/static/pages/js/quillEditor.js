@@ -1,7 +1,7 @@
 // Quill エディタの初期化と画像/動画ハンドリング
 
 import { registerVideoBlot } from './quill_editor_modules/videoBlot.js';
-import { videoHandler, imageHandler } from './quill_editor_modules/handlers.js';
+import { videoHandler, imageHandler, codeBlockNoHighlight } from './quill_editor_modules/handlers.js';
 import { addDragDropImageUpload, addDragDropVideoUpload } from './quill_editor_modules/dragDrop.js';
 import { addImageResizeHandlers } from './quill_editor_modules/imageResize.js';
 import { addLinkShortcuts } from './quill_editor_modules/shortcuts.js';
@@ -22,6 +22,7 @@ export function initCreateEditor(imageHandlerFn, videoHandlerFn, addImageResizeH
         [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline', 'strike'],
         ['code', 'code-block'],
+        ['code-block-no-highlight'],  // 新しいボタン
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         [{ 'color': [] }, { 'background': [] }],
         [{ 'align': [] }],
@@ -41,7 +42,8 @@ export function initCreateEditor(imageHandlerFn, videoHandlerFn, addImageResizeH
                 container: toolbarOptions,
                 handlers: {
                     image: imageHandlerFn,
-                    video: videoHandlerFn
+                    video: videoHandlerFn,
+                    'code-block-no-highlight': codeBlockNoHighlight
                 }
             },
             imageResize: {
@@ -126,6 +128,7 @@ export function initContentEditor(initialContent, imageHandlerFn, videoHandlerFn
         [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline', 'strike'],
         ['code', 'code-block'],
+        ['code-block-no-highlight'],  // 新しいボタン
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         [{ 'color': [] }, { 'background': [] }],
         [{ 'align': [] }],
@@ -145,7 +148,8 @@ export function initContentEditor(initialContent, imageHandlerFn, videoHandlerFn
                 container: toolbarOptions,
                 handlers: {
                     image: imageHandlerFn,
-                    video: videoHandlerFn
+                    video: videoHandlerFn,
+                    'code-block-no-highlight': codeBlockNoHighlight
                 }
             },
             imageResize: {
