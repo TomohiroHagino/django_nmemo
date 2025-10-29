@@ -17,7 +17,7 @@
 以下のコマンドでデータベースをマイグレーションする必要があります:
 
 ```bash
-cd /Users/tomohirohagino/python3/django_nmemo_lite
+cd /Users/tomohirohagino/python3/django_nmemo_data
 python manage.py migrate
 ```
 
@@ -26,11 +26,11 @@ python manage.py migrate
 エラーが発生した場合:
 ```bash
 # データベースファイルの権限を確認
-ls -la ~/Library/CloudStorage/Box-Box/000_メインアカ50GB\ marspeoplehg@gmail.com/django_nmemo_lite/db/
+ls -la ~/Library/CloudStorage/Box-Box/000_メインアカ50GB\ marspeoplehg@gmail.com/django_nmemo_data/db/
 
 # 必要に応じて権限を変更
-chmod 644 ~/Library/CloudStorage/Box-Box/000_メインアカ50GB\ marspeoplehg@gmail.com/django_nmemo_lite/db/db.sqlite3
-chmod 755 ~/Library/CloudStorage/Box-Box/000_メインアカ50GB\ marspeoplehg@gmail.com/django_nmemo_lite/db/
+chmod 644 ~/Library/CloudStorage/Box-Box/000_メインアカ50GB\ marspeoplehg@gmail.com/django_nmemo_data/db/db.sqlite3
+chmod 755 ~/Library/CloudStorage/Box-Box/000_メインアカ50GB\ marspeoplehg@gmail.com/django_nmemo_data/db/
 ```
 
 ### 3. フロントエンドの機能

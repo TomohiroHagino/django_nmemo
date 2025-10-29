@@ -118,7 +118,7 @@ http://127.0.0.1:8000/admin/
 ## プロジェクト構造（DDD アーキテクチャ）
 
 ```
-django_nmemo_lite/
+django_nmemo_data/
 ├── nmemo/                      # プロジェクト設定
 │   ├── settings.py
 │   ├── urls.py

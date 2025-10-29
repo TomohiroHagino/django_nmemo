@@ -90,7 +90,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         # Box ストレージが存在する場合はその配下を使用し、なければローカルの db.sqlite3 を使用
-        'NAME': Path(BOX_PATH) / 'django_nmemo_lite' / 'db' / 'db.sqlite3' if os.path.exists(BOX_PATH) else BASE_DIR / 'db.sqlite3',
+        'NAME': Path(BOX_PATH) / 'django_nmemo_data' / 'db' / 'db.sqlite3' if os.path.exists(BOX_PATH) else BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -136,7 +136,7 @@ MEDIA_URL = '/media/'
 # メディアファイルの保存先
 # Box ストレージが使用可能ならそちらを、なければローカルの media ディレクトリを使用
 if os.path.exists(BOX_PATH):
-    MEDIA_ROOT = Path(BOX_PATH) / 'django_nmemo_lite' / 'media'
+    MEDIA_ROOT = Path(BOX_PATH) / 'django_nmemo_data' / 'media'
 else:
     MEDIA_ROOT = BASE_DIR / 'media'
 

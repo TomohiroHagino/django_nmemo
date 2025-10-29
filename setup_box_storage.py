@@ -10,7 +10,7 @@ from pathlib import Path
 BOX_PATH = os.getenv('BOX_PATH', os.path.expanduser('~/Box'))
 
 # プロジェクトディレクトリ
-PROJECT_DIR = Path(BOX_PATH) / 'django_nmemo_lite'
+PROJECT_DIR = Path(BOX_PATH) / 'django_nmemo_data'
 
 def setup_box_storage():
     """Boxストレージにプロジェクトディレクトリを作成"""

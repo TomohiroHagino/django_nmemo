@@ -53,7 +53,7 @@ python setup_box_storage.py
 
 これにより以下のディレクトリが作成されます：
 ```
-~/Box/django_nmemo_lite/
+~/Box/django_nmemo_data/
 ├── db.sqlite3          # データベース（マイグレーション後）
 └── media/
     └── uploads/        # アップロードされた画像
@@ -77,7 +77,7 @@ BOX_PATH = os.getenv('BOX_PATH', os.path.expanduser('~/Box'))
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': Path(BOX_PATH) / 'django_nmemo_lite' / 'db.sqlite3' 
+        'NAME': Path(BOX_PATH) / 'django_nmemo_data' / 'db.sqlite3' 
                if os.path.exists(BOX_PATH) 
                else BASE_DIR / 'db.sqlite3',
     }
@@ -85,7 +85,7 @@ DATABASES = {
 
 # メディアファイル
 if os.path.exists(BOX_PATH):
-    MEDIA_ROOT = Path(BOX_PATH) / 'django_nmemo_lite' / 'media'
+    MEDIA_ROOT = Path(BOX_PATH) / 'django_nmemo_data' / 'media'
 else:
     MEDIA_ROOT = BASE_DIR / 'media'
 ```
@@ -143,10 +143,10 @@ ls -la ~/Library/CloudStorage/ | grep Box
 
 ```bash
 # 既存のデータベースをBoxにコピー
-cp db.sqlite3 ~/Box/django_nmemo_lite/
+cp db.sqlite3 ~/Box/django_nmemo_data/
 
 # 既存のメディアファイルをBoxにコピー
-cp -r media ~/Box/django_nmemo_lite/
+cp -r media ~/Box/django_nmemo_data/
 ```
 
 

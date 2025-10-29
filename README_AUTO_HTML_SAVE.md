@@ -18,7 +18,7 @@
 
 ```
 Box/000_メインアカ50GB/
-└── django_nmemo_lite/
+└── django_nmemo_data/
     └── media/
         └── uploads/
             └── page_1/
