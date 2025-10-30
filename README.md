@@ -157,6 +157,44 @@ django_nmemo_data/
 └── manage.py
 ```
 
+### フロントエンド
+
+```
+## プロジェクト構造（静的ファイル：フロントエンド）
+
+pages/static/pages/js/
+├── main.js
+├── pageTree.js                      # 各種ラッパー
+├── responsive.js                    # ...
+├── sidebarResize.js                 # ...
+├── iconModal.js                     # ...
+├── quillEditor.js                   # ...
+├── pageModal.js                     # ...
+├── pageOperations.js                # ...
+├── api/                             # API呼び出しを集約
+│   ├── client.js
+│   └── pages.js
+├── features/
+│   ├── page-tree/
+│   │   ├── index.js                 # initPageTreeDragDrop, toggleChildren, addPageToTree
+│   │   ├── dnd.js                   # D&D本体（DOM移動 + API呼び出し）
+│   │   └── dom.js                   # DOMユーティリティ
+│   ├── responsive/
+│   │   └── index.js                 # initResponsive（多重初期化防止）
+│   ├── sidebar-resize/
+│   │   └── index.js                 # initSidebarResize（多重初期化防止）
+│   ├── icon-modal/
+│   │   └── index.js                 # open/close/confirm アイコンモーダル
+│   └── quill-editor/
+│       ├── index.js
+│       ├── ...
+│       ├── ...
+│       └── ...
+└── shared/
+    └── quill/
+        └── insert.js                # 共通Quillヘルパ
+```
+
 ### DDD レイヤー構造
 
 #### 1. Domain Layer（ドメイン層）
