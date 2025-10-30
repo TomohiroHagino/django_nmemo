@@ -68,7 +68,7 @@ export function addLinkShortcuts(quill) {
             }
         }
     });
-
+  
     // URLを入力したら自動的にリンクに変換
     quill.on('text-change', (delta, oldDelta, source) => {
         if (source !== 'user') return;
@@ -115,4 +115,3 @@ export function addLinkShortcuts(quill) {
         }
     });
 }
-

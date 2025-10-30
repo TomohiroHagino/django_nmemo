@@ -1,6 +1,6 @@
 // YouTube/Vimeo URL または ローカル動画ファイルを挿入するハンドラ
 
-import { applySyntaxHighlight } from './syntaxHighlight.js';
+import { applySyntaxHighlight } from './syntax-highlight.js';
 
 export function videoHandler(currentPageId, getCreateQuill) {
     const self = this;

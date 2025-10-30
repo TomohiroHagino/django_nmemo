@@ -5,7 +5,9 @@ import { openIconModal, closeIconModal, confirmIconChange } from './iconModal.js
 import { openCreateModal, openCreateChildModal, closeCreateModal, handleCreatePage, setCreateQuill, getCreateQuill, initModalResize } from './pageModal.js';
 import { initCreateEditor, initContentEditor, imageHandler, videoHandler, addDragDropImageUpload, addDragDropVideoUpload, addDragDropExcelUpload, addImageResizeHandlers } from './quillEditor.js';
 import { getCurrentPageId, loadPage, savePage, cancelEdit, deletePage } from './pageOperations.js';
-import { escapeHtml, formatDate, showSaveIndicator } from './utils.js';
+
+import { escapeHtml, formatDate } from './utils/format.js';
+import { showSaveIndicator } from './utils/notify.js';
 import { initSidebarResize } from './sidebarResize.js';
 import { initResponsive } from './responsive.js';
 
