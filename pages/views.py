@@ -274,8 +274,8 @@ def upload_image(request):
     # 保存
     saved_path = default_storage.save(filepath, image)
     
-    # URL を返却
-    image_url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
+    # URL を返却（相対パス：ファイル名のみ）
+    image_url = f'/media/uploads/page_{page_id}/{filename}'
     
     return JsonResponse({
         'success': True,

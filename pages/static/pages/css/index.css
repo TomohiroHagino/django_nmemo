@@ -246,10 +246,6 @@ body {
 }
 
 /* Drag and drop styles for page tree */
-.page-item-header[draggable="true"] {
-    cursor: move;
-}
-
 .page-item-header.drop-target {
     background: #e3f2fd !important;
     outline-offset: -2px;
