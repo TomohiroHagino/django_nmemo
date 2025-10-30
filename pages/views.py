@@ -254,8 +254,12 @@ def upload_image(request):
     image = request.FILES['image']
     
     # ファイル種別の検証
-    allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-    if image.content_type not in allowed_types:
+    allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+    # 拡張子でも検証（MIMEタイプが正しく設定されていない場合に備える）
+    file_extension = os.path.splitext(image.name)[1].lower()
+    allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']
+    
+    if image.content_type not in allowed_types and file_extension not in allowed_extensions:
         return JsonResponse({'error': '許可されていないファイル形式です'}, status=400)
     
     # ファイルサイズの検証（最大 5MB）
@@ -362,6 +366,178 @@ def upload_excel(request):
         'success': True,
         'url': excel_url,
         'filename': excel_file.name
+    })
+
+@require_http_methods(["POST"])
+def upload_zip(request):
+    """リッチテキストエディタ用：ZIPファイルアップロード"""
+    if 'zip' not in request.FILES:
+        return JsonResponse({'error': 'ZIPファイルが必要です'}, status=400)
+    
+    # リクエストから page_id を取得
+    page_id = request.POST.get('page_id')
+    if not page_id:
+        return JsonResponse({'error': 'ページIDが必要です'}, status=400)
+    
+    zip_file = request.FILES['zip']
+    
+    # ファイル種別の検証
+    allowed_types = [
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/x-zip',
+    ]
+    # 拡張子でも検証（MIMEタイプが正しく設定されていない場合に備える）
+    file_extension = os.path.splitext(zip_file.name)[1].lower()
+    allowed_extensions = ['.zip']
+    
+    if zip_file.content_type not in allowed_types and file_extension not in allowed_extensions:
+        return JsonResponse({'error': '許可されていないファイル形式です（.zip）'}, status=400)
+    
+    # ファイルサイズの検証（最大 100MB）
+    if zip_file.size > 100 * 1024 * 1024:
+        return JsonResponse({'error': 'ファイルサイズは100MB以下にしてください'}, status=400)
+    
+    # 元のファイル名を取得し、危険な文字をサニタイズ
+    import re
+    original_filename = zip_file.name
+    # 拡張子を分離
+    name_without_ext, ext = os.path.splitext(original_filename)
+    # 危険な文字をアンダースコアに置換
+    safe_name = re.sub(r'[<>:"/\\|?*]', '_', name_without_ext)
+    # 拡張子を付けて完全なファイル名を作成
+    safe_filename = safe_name + (ext or file_extension or '.zip')
+    
+    # 同じファイル名が既に存在する場合、重複を避けるために番号を追加
+    filepath = os.path.join('uploads', f'page_{page_id}', safe_filename)
+    counter = 1
+    while default_storage.exists(filepath):
+        name_without_ext = safe_name
+        safe_filename = f"{name_without_ext}_{counter}{ext or file_extension or '.zip'}"
+        filepath = os.path.join('uploads', f'page_{page_id}', safe_filename)
+        counter += 1
+    
+    # 保存
+    saved_path = default_storage.save(filepath, zip_file)
+    
+    # URL を返却
+    zip_url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
+    
+    return JsonResponse({
+        'success': True,
+        'url': zip_url,
+        'filename': zip_file.name
+    })
+
+@require_http_methods(["POST"])
+def upload_sketch(request):
+    """リッチテキストエディタ用：Sketchファイルアップロード"""
+    if 'sketch' not in request.FILES:
+        return JsonResponse({'error': 'Sketchファイルが必要です'}, status=400)
+    
+    # リクエストから page_id を取得
+    page_id = request.POST.get('page_id')
+    if not page_id:
+        return JsonResponse({'error': 'ページIDが必要です'}, status=400)
+    
+    sketch_file = request.FILES['sketch']
+    
+    # ファイル種別の検証（拡張子で判定）
+    file_extension = os.path.splitext(sketch_file.name)[1].lower()
+    allowed_extensions = ['.sketch']
+    
+    if file_extension not in allowed_extensions:
+        return JsonResponse({'error': '許可edoriteれていないファイル形式です（.sketch）'}, status=400)
+    
+    # ファイルサイズの検証（最大 100MB）
+    if sketch_file.size > 100 * 1024 * 1024:
+        return JsonResponse({'error': 'ファイルサイズは100MB以下にしてください'}, status=400)
+    
+    # 元のファイル名を取得し、危険な文字をサニタイズ
+    import re
+    original_filename = sketch_file.name
+    # 拡張子を分離
+    name_without_ext, ext = os.path.splitext(original_filename)
+    # 危険な文字をアンダースコアに置換
+    safe_name = re.sub(r'[<>:"/\\|?*]', '_', name_without_ext)
+    # 拡張子を付けて完全なファイル名を作成
+    safe_filename = safe_name + (ext or file_extension or '.sketch')
+    
+    # 同じファイル名が既に存在する場合、重複を避けるために番号を追加
+    filepath = os.path.join('uploads', f'page_{page_id}', safe_filename)
+    counter = 1
+    while default_storage.exists(filepath):
+        name_without_ext = safe_name
+        safe_filename = f"{name_without_ext}_{counter}{ext or file_extension or '.sketch'}"
+        filepath = os.path.join('uploads', f'page_{page_id}', safe_filename)
+        counter += 1
+    
+    # 保存
+    saved_path = default_storage.save(filepath, sketch_file)
+    
+    # URL を返却
+    sketch_url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
+    
+    return JsonResponse({
+        'success': True,
+        'url': sketch_url,
+        'filename': sketch_file.name
+    })
+
+
+@require_http_methods(["POST"])
+def upload_ico(request):
+    """リッチテキストエディタ用：ICOファイルアップロード"""
+    if 'ico' not in request.FILES:
+        return JsonResponse({'error': 'ICOファイルが必要です'}, status=400)
+    
+    # リクエストから page_id を取得
+    حدث_id = request.POST.get('page_id')
+    if not page_id:
+        return JsonResponse({'error': 'ページIDが必要です'}, status=400)
+    
+    ico_file = request.FILES['ico']
+    
+    # ファイル種別の検証（拡張子で判定）
+    file_extension = os.path.splitext(ico_file.name)[1].lower()
+    allowed_extensions = ['.ico']
+    
+    if file_extension not in allowed_extensions:
+        return JsonResponse({'error': '許可されていないファイル形式です（.ico）'}, status=400)
+    
+    # ファイルサイズの検証（最大 10MB）
+    if ico_file.size > 10 * 1024 * 1024:
+        return JsonResponse({'error': 'ファイルサイズは10MB以下にしてください'}, status=400)
+    
+    # 元のファイル名を取得し、危険な文字をサニタイズ
+    import re
+    original_filename = ico_file.name
+    # 拡張子を分離
+    name_without_ext, ext = os.path.splitext(original_filename)
+    # 危険な文字をアンダースコアに置換
+    safe_name = re.sub(r'[<>:"/\\|?*]', '_', name_without_ext)
+    # 拡張子を付けて完全なファイル名を作成
+    safe_filename = safe_name + (ext or file_extension or '.ico')
+    
+    # 同じファイル名が既に存在する場合、重複を避けるために番号を追加
+    filepath = os.path.join('uploads', f'page_{page_id}', safe_filename)
+    counter = 1
+    while default_storage.exists(filepath):
+        name_without_ext = safe_name
+        safe_filename = f"{name_without_ext}_{counter}{ext or file_extension or '.ico'}"
+        filepath = os.path.join('uploads', f'page_{page_id}', safe_filename)
+        counter += 1
+    
+    # 保存
+    saved_path = default_storage.save(filepath, ico_file)
+    
+    # URL を返却
+    ico_url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
+    
+    return JsonResponse({
+        'success': True,
+        'url': ico_url,
+        'filename': ico_file.name
     })
 
 @require_http_methods(["POST"])

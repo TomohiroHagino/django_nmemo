@@ -151,16 +151,25 @@ export function addDragDropFileUpload(quill, isCreateModal, currentPageId) {
                     alert('動画のアップロードに失敗しました');
                 }
             }
-            // エクセルファイルの処理
+            // エクセルファイルとZIPファイルの処理
             else {
                 const excelMimeTypes = [
                     'application/vnd.ms-excel',
                     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                     'application/vnd.ms-excel.sheet.macroEnabled.12'
                 ];
+                const zipMimeTypes = [
+                    'application/zip',
+                    'application/x-zip-compressed',
+                    'application/x-zip'
+                ];
                 const fileExtension = file.name.split('.').pop().toLowerCase();
                 const isExcelFile = excelMimeTypes.includes(file.type) || 
                                   ['xls', 'xlsx', 'xlsm'].includes(fileExtension);
+                const isZipFile = zipMimeTypes.includes(file.type) || 
+                                 fileExtension === 'zip';
+                const isSketchFile = fileExtension === 'sketch';
+                const isIcoFile = fileExtension === 'ico';
                 
                 if (isExcelFile) {
                     if (file.size > 50 * 1024 * 1024) {
@@ -194,6 +203,108 @@ export function addDragDropFileUpload(quill, isCreateModal, currentPageId) {
                         }
                     } catch (error) {
                         alert('エクセルファイルのアップロードに失敗しました');
+                    }
+                }
+                else if (isZipFile) {
+                    if (file.size > 100 * 1024 * 1024) {
+                        alert(`ファイル "${file.name}" のサイズは100MB以下にしてください`);
+                        continue;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append('zip', file);
+                    formData.append('page_id', pageId);
+                    
+                    try {
+                        const response = await fetch('/api/upload-zip/', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            const linkText = `📦 ${data.filename || file.name}`;
+                            quill.insertText(insertIndex, linkText, 'link', data.url);
+                            quill.insertText(insertIndex + linkText.length, '\n');
+                            insertIndex += linkText.length + 1;
+                            quill.setSelection(insertIndex);
+                        } else {
+                            alert('ZIPファイルのアップロードに失敗しました: ' + (data.error || '不明なエラー'));
+                        }
+                    } catch (error) {
+                        alert('ZIPファイルのアップロードに失敗しました');
+                    }
+                }
+                else if (isSketchFile) {
+                    if (file.size > 100 * 1024 * 1024) {
+                        alert(`ファイル "${file.name}" のサイズは100MB以下にしてください`);
+                        continue;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append('sketch', file);
+                    formData.append('page_id', pageId);
+                    
+                    try {
+                        const response = await fetch('/api/upload-sketch/', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            const linkText = `🎨 ${data.filename || file.name}`;
+                            quill.insertText(insertIndex, linkText, 'link', data.url);
+                            quill.insertText(insertIndex + linkText.length, '\n');
+                            insertIndex += linkText.length + 1;
+                            quill.setSelection(insertIndex);
+                        } else {
+                            alert('Sketchファイルのアップロードに失敗しました: ' + (data.error || '不明なエラー'));
+                        }
+                    } catch (error) {
+                        alert('Sketchファイルのアップロードに失敗しました');
+                    }
+                }
+                else if (isIcoFile) {
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert(`ファイル "${file.name}" のサイズは10MB以下にしてください`);
+                        continue;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append('ico', file);
+                    formData.append('page_id', pageId);
+                    
+                    try {
+                        const response = await fetch('/api/upload-ico/', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            const linkText = `🔲 ${data.filename || file.name}`;
+                            quill.insertText(insertIndex, linkText, 'link', data.url);
+                            quill.insertText(insertIndex + linkText.length, '\n');
+                            insertIndex += linkText.length + 1;
+                            quill.setSelection(insertIndex);
+                        } else {
+                            alert('ICOファイルのアップロードに失敗しました: ' + (data.error || '不明なエラー'));
+                        }
+                    } catch (error) {
+                        alert('ICOファイルのアップロードに失敗しました');
                     }
                 }
             }

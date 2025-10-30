@@ -19,5 +19,7 @@ urlpatterns = [
     path('api/upload-image/', views.upload_image, name='upload_image'),
     path('api/upload-video/', views.upload_video, name='upload_video'),
     path('api/upload-excel/', views.upload_excel, name='upload_excel'),
+    path('api/upload-zip/', views.upload_zip, name='upload_zip'),
+    path('api/upload-sketch/', views.upload_sketch, name='upload_sketch'),
+    path('api/upload-ico/', views.upload_ico, name='upload_ico'),
 ]
-
