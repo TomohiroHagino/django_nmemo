@@ -1,6 +1,6 @@
 // メインエントリーポイント - すべてのモジュールを読み込み、初期化する
 
-import { initPageTreeDragDrop, toggleChildren, addPageToTree } from './pageTree.js';
+import { initPageTreeDragDrop, toggleChildren, addPageToTree } from './features/page-tree/index.js';
 import { openIconModal, closeIconModal, confirmIconChange } from './iconModal.js';
 import { openCreateModal, openCreateChildModal, closeCreateModal, handleCreatePage, setCreateQuill, getCreateQuill, initModalResize } from './pageModal.js';
 import { initCreateEditor, initContentEditor, imageHandler, videoHandler, addDragDropImageUpload, addDragDropVideoUpload, addDragDropExcelUpload, addImageResizeHandlers } from './quillEditor.js';

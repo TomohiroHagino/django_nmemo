@@ -35,3 +35,28 @@ export function removePage(pageId, csrfToken) {
         }
     }).then(r => r.json());
 }
+
+export async function movePageApi(pageId, newParentId) {
+  const form = new FormData();
+  form.append('new_parent_id', newParentId == null ? '' : newParentId);
+  const data = await post(`/page/${pageId}/move/`, form, { asJson: true });
+  if (!data.success) throw new Error(data.error || 'move failed');
+  return data;
+}
+
+export async function reorderPageApi(pageId, targetPageId, position) {
+  const form = new FormData();
+  form.append('target_page_id', targetPageId);
+  form.append('position', position);
+  const data = await post(`/page/${pageId}/reorder/`, form, { asJson: true });
+  if (!data.success) throw new Error(data.error || 'reorder failed');
+  return data;
+}
+
+export async function setPageIcon(pageId, icon) {
+  const form = new FormData();
+  form.append('icon', icon);
+  const data = await post(`/page/${pageId}/icon/`, form, { asJson: true });
+  if (!data.success) throw new Error(data.error || 'icon update failed');
+  return data;
+}

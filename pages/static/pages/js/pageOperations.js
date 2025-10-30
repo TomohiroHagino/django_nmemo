@@ -1,4 +1,3 @@
-// pages/static/pages/js/pageOperations.js
 export {
     getCurrentPageId,
     loadPage,

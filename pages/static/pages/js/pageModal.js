@@ -1,4 +1,3 @@
-// Page creation modal management
 export {
   openCreateModal,
   openCreateChildModal,
