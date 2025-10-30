@@ -1,1 +1,5 @@
-export { openIconModal, closeIconModal, confirmIconChange } from './features/icon-modal/index.js';
+export {
+    openIconModal,
+    closeIconModal,
+    confirmIconChange
+} from './features/icon-modal/index.js';
