@@ -63,3 +63,35 @@ class PageHierarchy:
                 return True
         
         return False
+    
+    @staticmethod
+    def can_move_to_parent(
+        page: 'PageAggregate',
+        new_parent_id: Optional[int],
+        all_pages: List['PageAggregate']
+    ) -> bool:
+        """ページを新しい親に移動できるかチェック（循環参照を防止）"""
+        if page.id is None:
+            return False
+        
+        # 自分自身を親にはできない
+        if new_parent_id == page.id:
+            return False
+        
+        # 新しい親が現在のページの子孫でないことを確認
+        if new_parent_id is not None:
+            # 新しい親のページを検索
+            new_parent = None
+            for p in all_pages:
+                if p.id == new_parent_id:
+                    new_parent = p
+                    break
+            
+            if new_parent:
+                # 新しい親が現在のページの子孫かチェック
+                descendants = PageHierarchy.get_all_descendants(page)
+                for descendant in descendants:
+                    if descendant.id == new_parent_id:
+                        return False
+        
+        return True

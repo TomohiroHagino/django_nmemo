@@ -104,3 +104,36 @@ class PageAggregate:
         Note: 既存のPageEntityとの互換性のために用意
         """
         return PageConverter.from_entity_tree(entity)
+
+    def reorder(self, target_page_id: int, position: str, siblings: List['PageAggregate']) -> List['PageAggregate']:
+        """並び順を変更する（target_page_idの前または後）。更新された兄弟リストを返す"""
+        # siblingsから自分自身を除外
+        siblings_without_self = [s for s in siblings if s.id != self.id]
+        
+        # ターゲット位置を見つけて前後に挿入
+        new_order = []
+        inserted = False
+        for sibling in siblings_without_self:
+            if sibling.id == target_page_id:
+                if position == 'before':
+                    new_order.append(self)
+                    new_order.append(sibling)
+                else:  # after
+                    new_order.append(sibling)
+                    new_order.append(self)
+                inserted = True
+            else:
+                new_order.append(sibling)
+        
+        # 万が一ターゲットが見つからない場合は末尾に追加
+        if not inserted:
+            new_order.append(self)
+        
+        # 並び順を一括更新（10刻みで設定）
+        for idx, page in enumerate(new_order):
+            page.order = idx * 10
+        
+        self.updated_at = datetime.now()
+        
+        # 新しい順序のリストを返す（自分自身を含む）
+        return new_order

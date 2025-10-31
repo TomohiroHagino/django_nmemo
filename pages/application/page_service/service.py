@@ -65,6 +65,18 @@ class PageApplicationService:
         """ページとその子孫、関連画像を削除する"""
         return self.command_service.delete_page(page_id)
     
+    def move_page(self, page_id: int, new_parent_id: Optional[int]) -> Optional[PageDTO]:
+        """ページを別の親の配下へ移動する"""
+        return self.command_service.move_page(page_id, new_parent_id)
+    
+    def update_page_icon(self, page_id: int, icon: str) -> Optional[PageDTO]:
+        """ページのアイコンを更新する"""
+        return self.command_service.update_page_icon(page_id, icon)
+    
+    def reorder_page(self, page_id: int, target_page_id: int, position: str) -> Optional[PageDTO]:
+        """ページの並び替え：ターゲットの前後に挿入"""
+        return self.command_service.reorder_page(page_id, target_page_id, position)
+    
     # エクスポート操作の委譲
     def export_page(self, page_id: int) -> Optional[str]:
         """ページとその子孫をJSONとしてエクスポートする"""
