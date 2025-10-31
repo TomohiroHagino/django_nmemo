@@ -125,16 +125,35 @@ django_nmemo_data/
 │   └── wsgi.py
 ├── pages/                      # ページアプリケーション
 │   ├── domain/                 # Domain Layer（ドメイン層）
-│   │   ├── entities.py         # PageEntity（ビジネスロジックを含む）
-│   │   ├── repositories.py     # Repository Interface（抽象クラス）
-│   │   └── services.py         # Domain Service（ドメインサービス）
+│   │   ├── page_aggregate/     # ページ集約パッケージ
+│   │   │   ├── aggregate.py    # PageAggregate（集約ルート）
+│   │   │   ├── entities.py     # PageEntity（エンティティ）
+│   │   │   ├── page_validator.py      # バリデーション
+│   │   │   ├── page_hierarchy.py      # 階層操作
+│   │   │   ├── page_converter.py      # 変換処理
+│   │   │   ├── page_tree_builder.py   # ツリー構築
+│   │   │   └── page_domain_service.py # ドメインサービス
+│   │   └── repositories.py     # Repository Interface（抽象クラス）
 │   ├── application/            # Application Layer（アプリケーション層）
 │   │   ├── dto.py              # Data Transfer Objects
-│   │   └── services.py         # Application Service（ユースケース）
+│   │   └── page_service/       # ページアプリケーションサービスパッケージ
+│   │       ├── service.py      # PageApplicationService（メイン）
+│   │       ├── page_query.py   # クエリ操作
+│   │       ├── page_command.py # コマンド操作（作成・更新・削除）
+│   │       ├── page_export.py  # エクスポート操作
+│   │       ├── media_service.py        # メディアファイル操作
+│   │       ├── html_generator.py       # HTML生成
+│   │       └── dto_converter.py        # DTO/Entity変換
 │   ├── infrastructure/         # Infrastructure Layer（インフラ層）
 │   │   └── repositories.py     # Repository実装（Django ORM）
+│   ├── views/                  # Presentation Layer（プレゼンテーション層）
+│   │   ├── page_views.py       # ページCRUD操作
+│   │   ├── page_operations.py  # ページ操作（移動、並び替え、アイコン）
+│   │   ├── export_views.py     # エクスポート
+│   │   ├── api_views.py        # API
+│   │   ├── upload_views.py     # ファイルアップロード
+│   │   └── utils.py            # 共通ユーティリティ
 │   ├── models.py               # Django Model（Page）
-│   ├── views.py                # Presentation Layer（プレゼンテーション層）
 │   ├── urls.py                 # URL設定
 │   ├── admin.py                # 管理画面設定
 │   ├── static/pages/           # 静的ファイル
@@ -198,21 +217,48 @@ pages/static/pages/js/
 ### DDD レイヤー構造
 
 #### 1. Domain Layer（ドメイン層）
-- **PageEntity**: ビジネスロジックを含むエンティティ（バリデーション、階層構造の操作）
-- **PageRepositoryInterface**: リポジトリのインターフェース定義
-- **PageDomainService**: ドメインサービス（エンティティ横断的なロジック）
+
+**`page_aggregate`パッケージ** - ページ集約に関連するドメインロジック
+
+- **`PageAggregate`**: 集約ルート（不変条件の保証、階層構造の管理）
+- **`PageEntity`**: エンティティ（ビジネスロジックを含む）
+- **`PageValidator`**: バリデーションロジック
+- **`PageHierarchy`**: 階層構造の操作（子孫取得、循環参照チェック等）
+- **`PageConverter`**: Entity/Aggregateとの変換処理
+- **`PageTreeBuilder`**: フラットリストからツリー構造を構築
+- **`PageDomainService`**: ドメインサービス（エンティティ横断的なロジック）
+
+**`repositories.py`**: リポジトリのインターフェース定義
 
 #### 2. Application Layer（アプリケーション層）
-- **PageApplicationService**: ユースケースの実装
-- **DTO**: データ転送オブジェクト（CreatePageDTO、UpdatePageDTO、PageDTO）
+
+**`page_service`パッケージ** - ページ関連のアプリケーションサービス
+
+- **`PageApplicationService`**: メインのアプリケーションサービス（各サービスのオーケストレーション）
+- **`PageQueryService`**: クエリ操作（取得系）
+- **`PageCommandService`**: コマンド操作（作成・更新・削除）
+- **`PageExportService`**: エクスポート操作
+- **`MediaService`**: メディアファイル操作（移動、削除、URL抽出）
+- **`HtmlGenerator`**: HTML生成（Base64埋め込み）
+- **`DtoConverter`**: DTOとEntity/Aggregateの変換
+
+**`dto.py`**: データ転送オブジェクト（CreatePageDTO、UpdatePageDTO、PageDTO）
 
 #### 3. Infrastructure Layer（インフラ層）
-- **PageRepository**: リポジトリの実装（Django ORMを使用）
-- ModelとEntityの変換を担当
+
+- **`PageRepository`**: リポジトリの実装（Django ORMを使用）
+  - ModelとEntityの変換を担当
 
 #### 4. Presentation Layer（プレゼンテーション層）
-- **Views**: アプリケーションサービスを呼び出すだけのシンプルなビュー
-- テンプレートへのレンダリング
+
+**`views`パッケージ** - ビュー
+
+- **`page_views.py`**: ページCRUD操作（index, page_create, page_update, page_delete）
+- **`page_operations.py`**: ページ操作（page_move, page_update_icon, page_reorder）
+- **`export_views.py`**: エクスポート（export_page, export_page_html）
+- **`api_views.py`**: API（api_page_detail）
+- **`upload_views.py`**: ファイルアップロード（画像、動画、Excel、ZIP、Sketch、ICO）
+- **`utils.py`**: 共通ユーティリティ（_get_service）
 
 ## 主な機能
 
@@ -254,7 +300,7 @@ pages/static/pages/js/
 ### 画像管理
 - ページごとに専用フォルダで画像を管理
 - 削除された画像は自動的にクリーンアップ
-- 一時フォルダからの自動移動
+- 一時フォルダ（`page_temp`）からの自動移動
 - 孤立した画像ファイルの自動削除
 
 ## モデル設計
@@ -268,6 +314,11 @@ pages/static/pages/js/
 - `created_at`: 作成日時
 - `updated_at`: 更新日時
 
+### PageAggregate（集約ルート）
+- ページとその子孫を1つの集約として管理
+- 不変条件の保証（バリデーション、循環参照の防止）
+- 階層構造の操作（`get_all_descendants()`, `collect_all_page_ids()`等）
+
 ### PageEntity（Domain Entity）
 - ビジネスロジックを含むドメインエンティティ
 - バリデーション機能（`validate()`）
@@ -277,16 +328,31 @@ pages/static/pages/js/
 
 ### 依存関係の方向
 ```
-Presentation Layer (views.py)
+Presentation Layer (views/)
     ↓ 依存
-Application Layer (services.py, dto.py)
+Application Layer (page_service/)
     ↓ 依存
-Domain Layer (entities.py, repositories.py, services.py)
+Domain Layer (page_aggregate/)
     ↑ 実装
 Infrastructure Layer (repositories.py)
 ```
 
 Domain LayerはどのLayerにも依存せず、純粋なビジネスロジックのみを持ちます。
+
+## テスト
+
+テストを実行するには：
+
+```bash
+# すべてのテストを実行
+python manage.py test
+
+# pagesアプリのテストのみ実行
+python manage.py test pages
+
+# 詳細な出力で実行
+python manage.py test pages --verbosity=2
+```
 
 ## ライセンス
 
