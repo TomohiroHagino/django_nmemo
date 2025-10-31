@@ -11,9 +11,6 @@ import {
     initContentEditor,
 } from './features/quill-editor/index.js';
 
-// 旧挙動維持のため（init.jsで登録済みなら削除可）
-registerVideoBlot();
-
 export {
     initCreateEditor,
     initContentEditor,
