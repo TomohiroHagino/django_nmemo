@@ -12,7 +12,9 @@ def page_move(request, page_id):
     service = _get_service()
     
     # リクエストから新しい親IDを取得（ルートに移動する場合は None）
-    new_parent_id = request.POST.get('new_parent_id')
+    new_parent_id = request.POST.get('new_parent_id', '').strip()
+    
+    # 空文字列または None の場合はルートに移動
     if new_parent_id:
         try:
             new_parent_id = int(new_parent_id)
