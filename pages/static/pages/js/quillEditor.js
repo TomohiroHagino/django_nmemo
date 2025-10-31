@@ -1,6 +1,5 @@
 // pages/static/pages/js/quillEditor.js
 import {
-    registerVideoBlot,
     videoHandler,
     imageHandler,
     addImageResizeHandlers,
