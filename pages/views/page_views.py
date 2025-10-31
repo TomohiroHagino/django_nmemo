@@ -2,7 +2,6 @@
 
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, Http404
-from django.urls import resolve
 from django.views import View
 from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
@@ -19,85 +18,153 @@ def index(request):
 
 
 @method_decorator(require_http_methods(["POST"]), name='dispatch')
-class PageView(View):
-    """ページのCRUD操作ビュー（責務をメソッドで分離）"""
+class PageCreateView(View):
+    """ページ作成ビュー（責務をメソッドで分離）"""
     
-    def post(self, request, page_id=None):
-        """POSTリクエストのルーティング（URL名から判定）"""
-        if page_id is None:
-            # page/create/ の場合
-            return self._create(request)
-        else:
-            # URL名から判定（削除と更新を区別）
-            url_name = resolve(request.path).url_name
-            if url_name == 'page_delete':
-                return self._delete(request, page_id)
-            else:
-                # page_update の場合
-                return self._update(request, page_id)
-    
-    # ========== CRUD操作メソッド ==========
-    
-    def _create(self, request):
-        """ページを作成"""
-        form_data = self._extract_form_data_for_create(request)
+    def post(self, request):
+        # 1. リクエストデータの取得（プレゼンテーション層）
+        form_data = self._extract_form_data(request)
         
+        # 2. プレゼンテーション層でのバリデーション
         validation_error = self._validate_form_data(form_data)
         if validation_error:
             return self._build_error_response(request, validation_error)
         
-        dto = CreatePageDTO(
-            title=form_data['title'],
-            content=form_data['content'],
-            parent_id=form_data['parent_id']
-        )
+        # 3. DTOの作成（プレゼンテーション層）
+        dto = self._create_dto(form_data)
         
+        # 4. ビジネスロジックの実行（サービス層に委譲）
         try:
-            service = _get_service()
-            page = service.create_page(dto)
+            page = self._execute_service(dto)
             return self._build_success_response(request, page_id=page.id)
         except ValueError as e:
             return self._build_error_response(request, str(e))
     
-    def _update(self, request, page_id):
-        """ページを更新"""
-        form_data = self._extract_form_data_for_update(request)
+    def _extract_form_data(self, request):
+        """リクエストからフォームデータを取得・変換（プレゼンテーション層の責務）"""
+        return {
+            'title': request.POST.get('title', '').strip(),
+            'content': request.POST.get('content', ''),
+            'parent_id': self._parse_parent_id(request.POST.get('parent_id'))
+        }
+    
+    def _parse_parent_id(self, parent_id_str):
+        """parent_idをintまたはNoneに変換（プレゼンテーション層の責務）"""
+        if not parent_id_str or not parent_id_str.strip():
+            return None
+        try:
+            return int(parent_id_str)
+        except (ValueError, AttributeError):
+            return None
+    
+    def _validate_form_data(self, form_data):
+        """フォームデータのバリデーション（プレゼンテーション層の責務）"""
+        if not form_data.get('title'):
+            return 'タイトルは必須です'
+        return None
+    
+    def _create_dto(self, form_data):
+        """DTOを作成（プレゼンテーション層の責務）"""
+        return CreatePageDTO(
+            title=form_data['title'],
+            content=form_data['content'],
+            parent_id=form_data['parent_id']
+        )
+    
+    def _execute_service(self, dto):
+        """サービス層を実行（ビジネスロジック層への橋渡し）"""
+        service = _get_service()
+        return service.create_page(dto)
+    
+    def _is_ajax_request(self, request):
+        """AJAXリクエストかどうかを判定"""
+        return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    def _build_success_response(self, request, **kwargs):
+        """成功レスポンスを生成（プレゼンテーション層の責務）"""
+        if self._is_ajax_request(request):
+            response_data = {'success': True}
+            if 'page_id' in kwargs:
+                response_data['page_id'] = kwargs['page_id']
+            return JsonResponse(response_data)
+        return redirect('pages:index')
+    
+    def _build_error_response(self, request, error_message, redirect_url='pages:index'):
+        """エラーレスポンスを生成（プレゼンテーション層の責務）"""
+        if self._is_ajax_request(request):
+            return JsonResponse({'success': False, 'error': error_message}, status=400)
+        return redirect(redirect_url)
+
+
+@method_decorator(require_http_methods(["POST"]), name='dispatch')
+class PageUpdateView(View):
+    """ページ更新ビュー"""
+    
+    def post(self, request, page_id):
+        form_data = self._extract_form_data(request)
         
         validation_error = self._validate_form_data(form_data)
         if validation_error:
-            return self._build_error_response(
-                request, validation_error,
-                redirect_url='pages:page_detail',
-                redirect_kwargs={'page_id': page_id}
-            )
+            return self._build_error_response(request, validation_error, page_id)
         
-        dto = UpdatePageDTO(
+        dto = self._create_dto(form_data, page_id)
+        
+        try:
+            page = self._execute_service(dto)
+            if page is None:
+                raise Http404('ページが見つかりません')
+            return self._build_success_response(request, page_id)
+        except ValueError as e:
+            return self._build_error_response(request, str(e), page_id)
+    
+    def _extract_form_data(self, request):
+        """リクエストからフォームデータを取得"""
+        return {
+            'title': request.POST.get('title', '').strip(),
+            'content': request.POST.get('content', '')
+        }
+    
+    def _validate_form_data(self, form_data):
+        """フォームデータのバリデーション"""
+        if not form_data.get('title'):
+            return 'タイトルは必須です'
+        return None
+    
+    def _create_dto(self, form_data, page_id):
+        """DTOを作成"""
+        return UpdatePageDTO(
             page_id=page_id,
             title=form_data['title'],
             content=form_data['content']
         )
-        
-        try:
-            service = _get_service()
-            page = service.update_page(dto)
-            
-            if page is None:
-                raise Http404('ページが見つかりません')
-            
-            return self._build_success_response(
-                request,
-                redirect_url='pages:page_detail',
-                redirect_kwargs={'page_id': page_id}
-            )
-        except ValueError as e:
-            return self._build_error_response(
-                request, str(e),
-                redirect_url='pages:page_detail',
-                redirect_kwargs={'page_id': page_id}
-            )
     
-    def _delete(self, request, page_id):
-        """ページを削除"""
+    def _execute_service(self, dto):
+        """サービス層を実行"""
+        service = _get_service()
+        return service.update_page(dto)
+    
+    def _is_ajax_request(self, request):
+        """AJAXリクエストかどうかを判定"""
+        return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    def _build_success_response(self, request, page_id):
+        """成功レスポンスを生成"""
+        if self._is_ajax_request(request):
+            return JsonResponse({'success': True})
+        return redirect('pages:page_detail', page_id=page_id)
+    
+    def _build_error_response(self, request, error_message, page_id):
+        """エラーレスポンスを生成"""
+        if self._is_ajax_request(request):
+            return JsonResponse({'success': False, 'error': error_message}, status=400)
+        return redirect('pages:page_detail', page_id=page_id)
+
+
+@method_decorator(require_http_methods(["POST"]), name='dispatch')
+class PageDeleteView(View):
+    """ページ削除ビュー"""
+    
+    def post(self, request, page_id):
         service = _get_service()
         
         # 削除前に親IDを取得
@@ -114,74 +181,19 @@ class PageView(View):
                 )
             raise Http404('ページが見つかりません')
         
-        if parent_id:
-            return self._build_success_response(
-                request,
-                redirect_url='pages:page_detail',
-                redirect_kwargs={'page_id': parent_id}
-            )
+        if self._is_ajax_request(request):
+            return JsonResponse({'success': True})
         
-        return self._build_success_response(request)
-    
-    # ========== 共通のヘルパーメソッド（プレゼンテーション層の責務） ==========
-    
-    def _extract_form_data_for_create(self, request):
-        """作成用フォームデータを取得"""
-        return {
-            'title': request.POST.get('title', '').strip(),
-            'content': request.POST.get('content', ''),
-            'parent_id': self._parse_parent_id(request.POST.get('parent_id'))
-        }
-    
-    def _extract_form_data_for_update(self, request):
-        """更新用フォームデータを取得"""
-        return {
-            'title': request.POST.get('title', '').strip(),
-            'content': request.POST.get('content', '')
-        }
-    
-    def _parse_parent_id(self, parent_id_str):
-        """parent_idをintまたはNoneに変換"""
-        if not parent_id_str or not parent_id_str.strip():
-            return None
-        try:
-            return int(parent_id_str)
-        except (ValueError, AttributeError):
-            return None
-    
-    def _validate_form_data(self, form_data):
-        """フォームデータのバリデーション"""
-        if not form_data.get('title'):
-            return 'タイトルは必須です'
-        return None
+        if parent_id:
+            return redirect('pages:page_detail', page_id=parent_id)
+        return redirect('pages:index')
     
     def _is_ajax_request(self, request):
         """AJAXリクエストかどうかを判定"""
         return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    
-    def _build_success_response(self, request, page_id=None, redirect_url='pages:index', redirect_kwargs=None):
-        """成功レスポンスを生成"""
-        if self._is_ajax_request(request):
-            response_data = {'success': True}
-            if page_id:
-                response_data['page_id'] = page_id
-            return JsonResponse(response_data)
-        
-        if redirect_kwargs:
-            return redirect(redirect_url, **redirect_kwargs)
-        return redirect(redirect_url)
-    
-    def _build_error_response(self, request, error_message, redirect_url='pages:index', redirect_kwargs=None):
-        """エラーレスポンスを生成"""
-        if self._is_ajax_request(request):
-            return JsonResponse({'success': False, 'error': error_message}, status=400)
-        
-        if redirect_kwargs:
-            return redirect(redirect_url, **redirect_kwargs)
-        return redirect(redirect_url)
 
 
 # 関数ベースビューとして公開（後方互換性のため）
-page_create = PageView.as_view()
-page_update = PageView.as_view()
-page_delete = PageView.as_view()
+page_create = PageCreateView.as_view()
+page_update = PageUpdateView.as_view()
+page_delete = PageDeleteView.as_view()
