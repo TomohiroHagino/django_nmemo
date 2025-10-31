@@ -43,8 +43,21 @@ VideoBlot.blotName = 'video';
 VideoBlot.tagName = 'div';
 VideoBlot.className = 'video-wrapper';
 
+// 登録状態を追跡するモジュールレベルの変数
+let isRegistered = false;
+
 // VideoBlotを登録
 export function registerVideoBlot() {
-    Quill.register(VideoBlot);
+    if (isRegistered) {
+        return; // 既に登録済みの場合は何もしない
+    }
+    
+    try {
+        Quill.register(VideoBlot, true); // 第2引数にtrueを指定してオーバーライドを明示
+        isRegistered = true;
+    } catch (e) {
+        // 登録に失敗した場合（既に登録済みなど）は無視
+        console.debug('VideoBlot registration skipped:', e.message);
+    }
 }
 

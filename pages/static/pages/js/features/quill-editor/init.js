@@ -9,6 +9,11 @@ import { applySyntaxHighlight } from './syntax-highlight.js';
 // VideoBlot をモジュール読み込み時に登録（従来のグローバル登録相当）
 registerVideoBlot();
 
+// ImageResize モジュールを一度だけ登録
+if (window.ImageResize && !Quill.imports['modules/imageResize']) {
+  Quill.register('modules/imageResize', window.ImageResize.default);
+}
+
 // 新規ページ作成用エディタ
 export function initCreateEditor(
     imageHandlerFn,
@@ -34,10 +39,6 @@ export function initCreateEditor(
         ['link', 'image', 'video'],
         ['clean'],
     ];
-
-    if (window.ImageResize) {
-        Quill.register('modules/imageResize', window.ImageResize.default);
-    }
 
     const createQuill = new Quill('#createEditor', {
         theme: 'snow',
@@ -129,10 +130,6 @@ export function initContentEditor(
         ['link', 'image', 'video'],
         ['clean'],
     ];
-
-    if (window.ImageResize) {
-        Quill.register('modules/imageResize', window.ImageResize.default);
-    }
 
     const contentQuill = new Quill('#contentEditor', {
         theme: 'snow',
