@@ -5,7 +5,7 @@ from django.urls import reverse
 from datetime import datetime
 from .models import Page
 from .application.dto import CreatePageDTO, UpdatePageDTO
-from .domain.entities import PageEntity
+from .domain.page_aggregate import PageEntity
 
 
 class PageModelTest(TestCase):

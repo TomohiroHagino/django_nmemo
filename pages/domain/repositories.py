@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Optional, List
-from .entities import PageEntity
+from .page_aggregate import PageEntity
 
 
 class PageRepositoryInterface(ABC):

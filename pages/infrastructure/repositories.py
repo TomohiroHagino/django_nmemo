@@ -5,7 +5,7 @@ from datetime import datetime
 from django.db import transaction
 
 from ..models import Page
-from ..domain.entities import PageEntity
+from ..domain.page_aggregate import PageEntity
 from ..domain.repositories import PageRepositoryInterface
 
 

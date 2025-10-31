@@ -2,7 +2,7 @@
 
 from django.core.management.base import BaseCommand
 from pages.models import Page
-from pages.application.services import PageApplicationService
+from pages.application.page_service import PageApplicationService
 from pages.infrastructure.repositories import PageRepository
 from pages.application.dto import UpdatePageDTO
 

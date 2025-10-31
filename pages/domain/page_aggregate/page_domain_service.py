@@ -1,7 +1,8 @@
-"""ドメインサービス"""
+"""ページドメインサービス"""
 
-from typing import List
+from typing import List, Optional
 from .entities import PageEntity
+from .page_tree_builder import PageTreeBuilder
 
 
 class PageDomainService:
@@ -10,21 +11,17 @@ class PageDomainService:
     @staticmethod
     def build_page_tree(pages: List[PageEntity]) -> List[PageEntity]:
         """フラットなページ一覧から階層ツリーを構築する"""
-        page_map = {page.id: page for page in pages if page.id is not None}
-        root_pages = []
-        
-        for page in pages:
-            if page.parent_id is None:
-                root_pages.append(page)
-            elif page.parent_id in page_map:
-                parent = page_map[page.parent_id]
-                parent.add_child(page)
-        
-        return root_pages
+        # PageTreeBuilderに委譲
+        return PageTreeBuilder.build_page_tree(pages)
     
     @staticmethod
-    def validate_hierarchy(parent_id: Optional[int], page_id: Optional[int], all_pages: List[PageEntity]) -> bool:
+    def validate_hierarchy(
+        parent_id: Optional[int],
+        page_id: Optional[int],
+        all_pages: List[PageEntity]
+    ) -> bool:
         """親子関係を設定しても循環参照が発生しないことを検証する"""
+        # このメソッドは変更せずそのまま残す（現在の実装を維持）
         if parent_id is None:
             return True
         
