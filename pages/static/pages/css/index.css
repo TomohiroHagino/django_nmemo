@@ -317,6 +317,13 @@ body {
     transition: opacity 0.2s;
 }
 
+.actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
 .page-item__children {
     margin-left: 24px;
     display: none;
