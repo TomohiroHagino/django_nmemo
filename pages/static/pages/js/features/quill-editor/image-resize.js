@@ -1,6 +1,8 @@
 // エディタに画像のリサイズ機能を追加（8方向のハンドルで拡大縮小）
 export function addImageResizeHandlers(quill) {
     const editor = quill.root;
+    // エディタコンテナを取得（ハンドルを配置する親要素）
+    const editorContainer = editor.closest('.ql-container') || editor.parentElement || document.body;
     let selectedElement = null; // Changed from selectedImage to support both img and iframe
     let resizeHandles = null;
     let isResizing = false;
@@ -29,28 +31,41 @@ export function addImageResizeHandlers(quill) {
     function selectElement(element) {
         deselectElement();
         selectedElement = element;
-        element.classList.add('selected');
         
-        // Create resize handles (画像のみ)
-        if (element.tagName === 'IMG') {
-            createResizeHandles(element);
-        }
+        // Quillの内部処理と競合しないように非同期でクラスを追加
+        setTimeout(() => {
+            if (selectedElement === element && element.isConnected) {
+                try {
+                    element.classList.add('selected');
+                    
+                    // Create resize handles (画像のみ)
+                    if (element.tagName === 'IMG') {
+                        createResizeHandles(element);
+                    }
+                } catch (e) {
+                    console.warn('Error selecting element:', e);
+                }
+            }
+        }, 0);
     }
     
     // 画像の周囲に8方向のリサイズハンドルを作成
     function createResizeHandles(element) {
         const rect = element.getBoundingClientRect();
         const editorRect = editor.getBoundingClientRect();
+        const containerRect = editorContainer.getBoundingClientRect();
         
-        // ハンドル用のコンテナを作成する
+        // ハンドル用のコンテナを作成する（エディタの外側に配置）
         const container = document.createElement('div');
         container.className = 'image-resize-container';
         container.style.position = 'absolute';
-        container.style.left = (rect.left - editorRect.left + editor.scrollLeft) + 'px';
-        container.style.top = (rect.top - editorRect.top + editor.scrollTop) + 'px';
+        // エディタコンテナを基準にした位置を計算
+        container.style.left = (rect.left - containerRect.left + editorContainer.scrollLeft) + 'px';
+        container.style.top = (rect.top - containerRect.top + editorContainer.scrollTop) + 'px';
         container.style.width = rect.width + 'px';
         container.style.height = rect.height + 'px';
         container.style.pointerEvents = 'none';
+        container.style.zIndex = '10000';
         
         // 8つのハンドルを作成する
         const handles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
@@ -64,8 +79,9 @@ export function addImageResizeHandlers(quill) {
             container.appendChild(handle);
         });
         
-        editor.style.position = 'relative';
-        editor.appendChild(container);
+        // エディタコンテナに配置（エディタの外側）
+        editorContainer.style.position = 'relative';
+        editorContainer.appendChild(container);
         resizeHandles = container;
     }
     
@@ -84,7 +100,12 @@ export function addImageResizeHandlers(quill) {
         startHeight = rect.height;
         aspectRatio = startWidth / startHeight;
         
-        selectedElement.classList.add('resizing');
+        // クラス追加も非同期で行う
+        setTimeout(() => {
+            if (selectedElement) {
+                selectedElement.classList.add('resizing');
+            }
+        }, 0);
         
         document.addEventListener('mousemove', doResize);
         document.addEventListener('mouseup', stopResize);
@@ -145,7 +166,12 @@ export function addImageResizeHandlers(quill) {
         if (isResizing) {
             isResizing = false;
             resizeHandle = null;
-            selectedElement.classList.remove('resizing');
+            
+            setTimeout(() => {
+                if (selectedElement) {
+                    selectedElement.classList.remove('resizing');
+                }
+            }, 0);
             
             document.removeEventListener('mousemove', doResize);
             document.removeEventListener('mouseup', stopResize);
@@ -158,9 +184,10 @@ export function addImageResizeHandlers(quill) {
         
         const rect = selectedElement.getBoundingClientRect();
         const editorRect = editor.getBoundingClientRect();
+        const containerRect = editorContainer.getBoundingClientRect();
         
-        resizeHandles.style.left = (rect.left - editorRect.left + editor.scrollLeft) + 'px';
-        resizeHandles.style.top = (rect.top - editorRect.top + editor.scrollTop) + 'px';
+        resizeHandles.style.left = (rect.left - containerRect.left + editorContainer.scrollLeft) + 'px';
+        resizeHandles.style.top = (rect.top - containerRect.top + editorContainer.scrollTop) + 'px';
         resizeHandles.style.width = rect.width + 'px';
         resizeHandles.style.height = rect.height + 'px';
     }
@@ -168,7 +195,11 @@ export function addImageResizeHandlers(quill) {
     // 画像の選択を解除してリサイズハンドルを削除
     function deselectElement() {
         if (selectedElement) {
-            selectedElement.classList.remove('selected', 'resizing');
+            setTimeout(() => {
+                if (selectedElement) {
+                    selectedElement.classList.remove('selected', 'resizing');
+                }
+            }, 0);
             selectedElement = null;
         }
         if (resizeHandles) {
@@ -196,6 +227,13 @@ export function addImageResizeHandlers(quill) {
     });
     
     // スクロール時にハンドルを更新する
+    editorContainer.addEventListener('scroll', () => {
+        if (selectedElement) {
+            updateHandlesPosition();
+        }
+    });
+    
+    // エディタのスクロールも監視
     editor.addEventListener('scroll', () => {
         if (selectedElement) {
             updateHandlesPosition();

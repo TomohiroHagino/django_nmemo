@@ -751,6 +751,10 @@ body {
     stroke: currentColor;
 }
 
+.ql-snow .ql-editor img {
+    display: inline;
+}
+
 .ql-snow .ql-editor code,
 .ql-snow .ql-editor pre.ql-code-block {
     background: transparent !important;
