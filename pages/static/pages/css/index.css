@@ -846,7 +846,7 @@ body {
 .image-resize-handle.e { top: 50%; right: -5px; transform: translateY(-50%); cursor: e-resize; }
 
 /* ========================================
-   リサイズハンドルブロック（非BEM）
+   リサイズハンドルブロック
    ======================================== */
 .resize-handle {
     position: absolute;
@@ -856,31 +856,31 @@ body {
     cursor: nwse-resize;
 }
 
-.resize-handle-br {
+.resize-handle--br {
     bottom: 0;
     right: 0;
     cursor: nwse-resize;
 }
 
-.resize-handle-bl {
+.resize-handle--bl {
     bottom: 0;
     left: 0;
     cursor: nesw-resize;
 }
 
-.resize-handle-tr {
+.resize-handle--tr {
     top: 0;
     right: 0;
     cursor: nesw-resize;
 }
 
-.resize-handle-tl {
+.resize-handle--tl {
     top: 0;
     left: 0;
     cursor: nwse-resize;
 }
 
-.resize-handle-t {
+.resize-handle--t {
     top: 0;
     left: 50%;
     transform: translateX(-50%);
@@ -889,7 +889,7 @@ body {
     cursor: ns-resize;
 }
 
-.resize-handle-b {
+.resize-handle--b {
     bottom: 0;
     left: 0;
     width: 100%;
@@ -897,7 +897,7 @@ body {
     cursor: ns-resize;
 }
 
-.resize-handle-l {
+.resize-handle--l {
     left: 0;
     top: 50%;
     transform: translateY(-50%);
@@ -906,7 +906,7 @@ body {
     cursor: ew-resize;
 }
 
-.resize-handle-r {
+.resize-handle--r {
     right: 0;
     top: 50%;
     transform: translateY(-50%);
@@ -1008,15 +1008,8 @@ body {
 }
 
 /* ========================================
-   アクションブロック（非BEM）
+   アクションブロック
    ======================================== */
-.actions {
-    display: flex;
-    gap: 4px;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
 .action-buttons {
     display: flex;
     gap: 10px;
@@ -1029,18 +1022,6 @@ body {
     margin-top: 20px;
     padding: 10px 0;
     border-top: 1px solid #e5e5e5;
-}
-
-/* ========================================
-   子要素ブロック（非BEM）
-   ======================================== */
-.children {
-    margin-left: 24px;
-    display: none;
-}
-
-.children.expanded {
-    display: block;
 }
 
 /* ========================================

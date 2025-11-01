@@ -21,11 +21,11 @@ export function moveDomAsChild(draggedId, parentId) {
         }
         children = document.createElement('div');
         children.id = 'children-' + parentId;
-        children.className = 'children';
+        children.className = 'page-item__children';
         parentItem.appendChild(children);
     }
     children.appendChild(draggedItem);
-    children.classList.add('expanded');
+    children.classList.add('page-item__children--expanded');
     const t = document.getElementById('toggle-' + parentId);
     if (t) t.classList.remove('collapsed');
 }
@@ -55,11 +55,11 @@ export function toggleChildren(pageId) {
     const toggleBtn = document.getElementById('toggle-' + pageId);
     if (!children) return;
 
-    if (children.classList.contains('expanded')) {
-        children.classList.remove('expanded');
+    if (children.classList.contains('page-item__children--expanded')) {
+        children.classList.remove('page-item__children--expanded');
         if (toggleBtn) toggleBtn.classList.add('collapsed');
     } else {
-        children.classList.add('expanded');
+        children.classList.add('page-item__children--expanded');
         if (toggleBtn) toggleBtn.classList.remove('collapsed');
     }
 }
@@ -97,14 +97,14 @@ export function addPageToTree(pageId, title, parentId, escapeHtml) {
 
             children = document.createElement('div');
             children.id = 'children-' + parentId;
-            children.className = 'children';
+            children.className = 'page-item__children';
             if (parentItem) parentItem.appendChild(children);
         }
 
         children.insertAdjacentHTML('beforeend', pageItemHtml);
         const newHeader = document.getElementById('header-' + pageId);
         attachDragDropToPageItem(newHeader);
-        children.classList.add('expanded');
+        children.classList.add('page-item__children--expanded');
         const t = document.getElementById('toggle-' + parentId);
         if (t) t.classList.remove('collapsed');
     } else {

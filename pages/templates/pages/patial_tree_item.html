@@ -19,7 +19,7 @@
         </div>
     </div>
     {% if page.children %}
-        <div id="children-{{ page.id }}" class="children">
+        <div id="children-{{ page.id }}" class="page-item__children">
             {% for child in page.children %}
                 {% include 'pages/patial_tree_item.html' with page=child %}
             {% endfor %}
