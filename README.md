@@ -5,7 +5,7 @@ Djangoで構築された一人用のNotionライクなSPAメモアプリケー�
 
 <table>
   <tr>
-    <td><img alt="スクリーンショット 2025-10-26 20:18:00" src="https://github.com/user-attachments/assets/5b6c3c67-07fa-4a2f-a7eb-3eb3f4c03e37" width="100%"></td>
+    <td><img alt="スクリーンショット 2025-10-26 20:18:00" src="https://github.com/user-attachments/assets/736a8082-b08b-41b8-b307-8cd28f78584b" width="100%"></td>
   </tr>
 </table>
 
