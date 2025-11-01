@@ -36,6 +36,23 @@ export function openCreateChildModal(parentId, parentTitle) {
     modalTitle.textContent = `「${parentTitle}」の子ページを作成`;
     parentIdInput.value = parentId;
     modal.style.display = 'block';
+
+    setTimeout(() => {
+        const titleInput = document.getElementById('newPageTitle');
+        if (!titleInput) return;
+        titleInput.focus();
+        setTitleEnterPressed(false);
+        titleInput.addEventListener('keydown', function handle(e) {
+            if (e.key === 'Enter' && document.activeElement === titleInput) {
+                setTitleEnterPressed(true);
+                e.preventDefault();
+                e.stopPropagation();
+                const q = getCreateQuill();
+                if (q) focus(q);
+                titleInput.removeEventListener('keydown', handle);
+            }
+        }, true);
+    }, 100);
 }
 
 export function closeCreateModal() {
