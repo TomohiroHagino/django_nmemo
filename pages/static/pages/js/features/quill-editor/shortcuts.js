@@ -83,6 +83,10 @@ export function addLinkShortcuts(quill) {
             const selection = quill.getSelection();
             if (!selection) return;
             
+            // スクロール位置を保存
+            const scrollContainer = quill.root.parentElement;
+            const scrollTop = scrollContainer ? scrollContainer.scrollTop : window.pageYOffset || document.documentElement.scrollTop;
+            
             const cursorPosition = selection.index;
             
             // スケールバーを使わずに、直接テキスト全体を取得して検索
@@ -109,8 +113,31 @@ export function addLinkShortcuts(quill) {
                 // 念のため、長さを1追加して確実に全体をカバー
                 quill.formatText(urlStartIndex, url.length + 1, 'link', url);
                 
-                // カーソル位置をリセット
-                quill.setSelection(cursorPosition);
+                // カーソル位置とスクロール位置を復元
+                const pageScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+                const contentBody = document.querySelector('.content-body');
+                const savedScrollTop = contentBody ? contentBody.scrollTop : pageScrollY;
+                
+                setTimeout(() => {
+                    const currentSelection = quill.getSelection();
+                    if (currentSelection && currentSelection.index !== cursorPosition) {
+                        // APIモードでsetSelection（スクロールを無効化）
+                        quill.setSelection(cursorPosition, 'api');
+                        
+                        // setSelection後、スクロール位置を復元
+                        requestAnimationFrame(() => {
+                            if (contentBody) {
+                                contentBody.scrollTop = savedScrollTop;
+                            } else {
+                                window.scrollTo({
+                                    top: savedScrollTop,
+                                    behavior: 'instant'
+                                });
+                                document.documentElement.scrollTop = savedScrollTop;
+                            }
+                        });
+                    }
+                }, 0);
             }
         }
     });

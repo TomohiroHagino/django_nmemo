@@ -32,6 +32,11 @@ export function applySyntaxHighlight(quill) {
                     return;
                 }
                 
+                // カーソル位置とスクロール位置を保存
+                const selection = quill.getSelection();
+                const scrollContainer = quill.root.parentElement;
+                const scrollTop = scrollContainer ? scrollContainer.scrollTop : window.pageYOffset || document.documentElement.scrollTop;
+                
                 // すべての既存の子要素（code要素など）を削除
                 pre.innerHTML = '';
                 
@@ -41,6 +46,27 @@ export function applySyntaxHighlight(quill) {
                 pre.appendChild(code);
                 
                 hljs.highlightElement(code);
+                
+                // カーソル位置とスクロール位置を復元
+                if (selection) {
+                    setTimeout(() => {
+                        // スクロール位置を復元
+                        if (scrollContainer) {
+                            scrollContainer.scrollTop = scrollTop;
+                        } else {
+                            window.scrollTo(0, scrollTop);
+                        }
+                        quill.setSelection(selection, 'api');
+                        // setSelection後に再度スクロール位置を復元
+                        requestAnimationFrame(() => {
+                            if (scrollContainer) {
+                                scrollContainer.scrollTop = scrollTop;
+                            } else {
+                                window.scrollTo(0, scrollTop);
+                            }
+                        });
+                    }, 0);
+                }
             } catch (error) {
                 console.error(`Failed to highlight block ${index}:`, error);
             }
