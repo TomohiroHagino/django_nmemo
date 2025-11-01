@@ -1,7 +1,6 @@
 """ページエクスポート操作"""
 
 from typing import Optional
-
 from ...domain.page_aggregate import PageAggregate, PageEntity
 from ...domain.repositories import PageRepositoryInterface
 from .html_generator import HtmlGenerator

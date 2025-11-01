@@ -4,7 +4,6 @@ import traceback
 from typing import Optional, Set
 from datetime import datetime
 from django.db import transaction
-
 from ...domain.page_aggregate import PageAggregate
 from ...domain.repositories import PageRepositoryInterface
 from ..dto import PageDTO

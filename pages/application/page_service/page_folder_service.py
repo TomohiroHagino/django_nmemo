@@ -1,7 +1,6 @@
 """ページフォルダ管理サービス（ファサード）"""
 
 from typing import Optional
-
 from ...domain.repositories import PageRepositoryInterface
 from .media_service import MediaService
 from .folder_move_service import FolderMoveService

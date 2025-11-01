@@ -1,7 +1,6 @@
 """メディアファイル操作サービス（後方互換性のためのラッパー）"""
 
 from typing import Optional
-
 from ...domain.repositories import PageRepositoryInterface
 from .media_path_service import MediaPathService
 from .media_url_extractor import MediaUrlExtractor

@@ -1,7 +1,6 @@
 """ページクエリ操作"""
 
 from typing import Optional, List
-
 from ...domain.repositories import PageRepositoryInterface
 from ...domain.page_aggregate import PageDomainService, PageEntity
 from ..dto import PageDTO

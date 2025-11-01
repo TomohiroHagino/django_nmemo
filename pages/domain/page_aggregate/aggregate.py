@@ -3,7 +3,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, List
-
 from .page_validator import PageValidator
 from .page_hierarchy import PageHierarchy
 from .page_converter import PageConverter
