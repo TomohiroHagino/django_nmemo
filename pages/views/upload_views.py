@@ -7,6 +7,16 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.files.storage import default_storage
 from django.conf import settings
+from pages.infrastructure.repositories import PageRepository
+from pages.application.page_service.media_service import MediaService
+
+
+def _get_page_folder_path(page_id: int) -> str:
+    """ページIDから階層構造のフォルダパスを取得"""
+    repository = PageRepository()
+    media_service = MediaService(repository)
+    folder_path = media_service.get_page_folder_path_by_id(page_id)
+    return str(folder_path).replace('\\', '/')
 
 
 def _validate_and_save_file(
@@ -24,6 +34,14 @@ def _validate_and_save_file(
     page_id = request.POST.get('page_id')
     if not page_id:
         return JsonResponse({'error': 'ページIDが必要です'}, status=400)
+    
+    try:
+        page_id = int(page_id)
+    except ValueError:
+        return JsonResponse({'error': '無効なページIDです'}, status=400)
+    
+    # ページの階層構造フォルダパスを取得
+    folder_path = _get_page_folder_path(page_id)
     
     file = request.FILES[file_key]
     
@@ -47,25 +65,25 @@ def _validate_and_save_file(
         safe_filename = safe_name + (ext or file_extension)
         
         # 同じファイル名が既に存在する場合、重複を避けるために番号を追加
-        filepath = os.path.join('uploads', f'page_{page_id}', safe_filename)
+        filepath = os.path.join('uploads', folder_path, safe_filename)
         counter = 1
         while default_storage.exists(filepath):
             safe_filename = f"{safe_name}_{counter}{ext or file_extension}"
-            filepath = os.path.join('uploads', f'page_{page_id}', safe_filename)
+            filepath = os.path.join('uploads', folder_path, safe_filename)
             counter += 1
     else:
         # UUIDベースのファイル名
         ext = os.path.splitext(file.name)[1] or file_extension
         filename = f"{uuid.uuid4()}{ext}"
-        filepath = os.path.join('uploads', f'page_{page_id}', filename)
+        filepath = os.path.join('uploads', folder_path, filename)
     
     # 保存
     saved_path = default_storage.save(filepath, file)
     
     # URL を返却
     if file_key == 'image':
-        # 画像は相対パス
-        file_url = f'/media/uploads/page_{page_id}/{os.path.basename(saved_path)}'
+        # 画像は相対パス（階層構造のパスを使用）
+        file_url = f'/media/uploads/{folder_path}/{os.path.basename(saved_path)}'
     else:
         # その他は絶対URL
         file_url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
