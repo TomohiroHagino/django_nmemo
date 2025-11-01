@@ -89,9 +89,24 @@ class PageCommandService:
             
             # フォルダが作成されたかチェック（move_temp_images_to_page_folder内で作成される）
             if updated_entity:
-                page_folder_relative = self.media_service.get_page_folder_path(updated_entity)
-                page_folder = self.media_service.uploads_dir / page_folder_relative
-                if page_folder.exists() and page_folder.is_dir():
+                # get_page_folder_pathを使わず、実際のフォルダパスを計算
+                if updated_entity.parent_id:
+                    parent_entity = self.repository.find_by_id(updated_entity.parent_id)
+                    if parent_entity:
+                        # _get_page_folder_absolute_pathを使う（get_page_folder_pathは使わない）
+                        parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                        safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', updated_entity.title)
+                        folder_name = f'{updated_entity.order}_page_{updated_entity.id}_{safe_title}'
+                        page_folder = parent_folder / folder_name
+                    else:
+                        page_folder = None
+                else:
+                    # ルートページの場合
+                    safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', updated_entity.title)
+                    folder_name = f'{updated_entity.order}_page_{updated_entity.id}_{safe_title}'
+                    page_folder = self.media_service.uploads_dir / folder_name
+                
+                if page_folder and page_folder.exists() and page_folder.is_dir():
                     # フォルダが空かどうかをチェック（新規作成の可能性がある）
                     if not any(page_folder.iterdir()):
                         created_folders.append(page_folder)
@@ -111,8 +126,8 @@ class PageCommandService:
                     if saved_entity.parent_id:
                         parent_entity = self.repository.find_by_id(saved_entity.parent_id)
                         if parent_entity:
-                            parent_folder_path = self.media_service.get_page_folder_path(parent_entity)
-                            parent_folder = self.media_service.uploads_dir / parent_folder_path
+                            # _get_page_folder_absolute_pathを使う（get_page_folder_pathは使わない）
+                            parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
                             
                             # 親フォルダが存在しない場合はエラー（空フォルダを作成しない）
                             if not parent_folder.exists() or not parent_folder.is_dir():
@@ -129,30 +144,24 @@ class PageCommandService:
                                 created_folders.append(new_folder)
                         else:
                             # 親が見つからない場合（通常は発生しない）
-                            new_folder_path = self.media_service.get_page_folder_path(saved_entity)
-                            new_folder = self.media_service.uploads_dir / new_folder_path
-                            if not new_folder.exists():
-                                new_folder.mkdir(parents=True, exist_ok=True)
-                                created_folders.append(new_folder)
+                            # get_page_folder_pathを使わず、子フォルダ名を直接計算してエラーを発生させる
+                            raise ValueError(f'親ページ（ID: {saved_entity.parent_id}）が見つかりません。')
                     else:
                         # ルートページの場合
-                        new_folder_path = self.media_service.get_page_folder_path(saved_entity)
-                        new_folder = self.media_service.uploads_dir / new_folder_path
+                        # get_page_folder_pathを使わず、子フォルダ名を直接計算
+                        safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', saved_entity.title)
+                        folder_name = f'{saved_entity.order}_page_{saved_entity.id}_{safe_title}'
+                        new_folder = self.media_service.uploads_dir / folder_name
                         if not new_folder.exists():
-                            new_folder.mkdir(parents=True, exist_ok=True)
+                            new_folder.mkdir(parents=False, exist_ok=True)
                             created_folders.append(new_folder)
-                    
-                    print(f"DEBUG: Title changed for page {saved_entity.id}")
-                    print(f"DEBUG: Old title: {old_title}")
-                    print(f"DEBUG: New title: {saved_entity.title}")
-                    print(f"DEBUG: Created new folder at: {new_folder}")
                     
                     # 親フォルダの直下に誤作成フォルダを削除（事前に）
                     if saved_entity.parent_id:
                         parent_entity = self.repository.find_by_id(saved_entity.parent_id)
                         if parent_entity:
-                            parent_folder_path = self.media_service.get_page_folder_path(parent_entity)
-                            parent_folder = self.media_service.uploads_dir / parent_folder_path
+                            # _get_page_folder_absolute_pathを使う（get_page_folder_pathは使わない）
+                            parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
                             
                             if parent_folder.exists() and parent_folder.is_dir():
                                 # 古いフォルダ名
@@ -279,65 +288,64 @@ class PageCommandService:
             if entity.parent_id:
                 parent_entity = self.repository.find_by_id(entity.parent_id)
                 if parent_entity:
-                    parent_folder_path = self.media_service.get_page_folder_path(parent_entity)
+                    # _get_page_folder_absolute_pathを使う（get_page_folder_pathは使わない）
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    
+                    # 親フォルダが存在することを確認
+                    if not parent_folder.exists() or not parent_folder.is_dir():
+                        print(f"ERROR: Parent folder does not exist for page {entity.id}")
+                        return
+                    
+                    # 子フォルダ名を直接計算
                     safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
                     folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
-                    new_folder_path = parent_folder_path / folder_name
+                    
+                    # 親フォルダの直下の子フォルダパスを作成
+                    new_folder = parent_folder / folder_name
                 else:
                     print(f"ERROR: Parent entity not found for page {entity.id}, parent_id={entity.parent_id}")
                     return
             else:
+                # ルートページの場合
                 safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
                 folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
-                new_folder_path = Path(folder_name)
-            
-            new_folder = self.media_service.uploads_dir / new_folder_path
-            
-            print(f"DEBUG: Cleaning up old folder for page {entity.id}")
-            print(f"DEBUG: Old folder name: {old_folder_name}")
-            print(f"DEBUG: New folder path: {new_folder_path}")
-            print(f"DEBUG: New folder full path: {new_folder}")
-            print(f"DEBUG: New folder exists: {new_folder.exists()}")
+                new_folder = self.media_service.uploads_dir / folder_name
             
             # 階層構造を考慮して古いフォルダパスを正確に計算
-            old_folder_path = None
+            old_folder = None
             if entity.parent_id:
                 parent_entity = self.repository.find_by_id(entity.parent_id)
                 if parent_entity:
-                    parent_folder_path = self.media_service.get_page_folder_path(parent_entity)
-                    old_folder_path = parent_folder_path / old_folder_name
-                    old_folder = self.media_service.uploads_dir / old_folder_path
-                    print(f"DEBUG: Calculated old folder path: {old_folder}")
+                    # _get_page_folder_absolute_pathを使う（get_page_folder_pathは使わない）
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    
+                    # 親フォルダが存在することを確認
+                    if not parent_folder.exists() or not parent_folder.is_dir():
+                        print(f"ERROR: Parent folder does not exist for old folder calculation")
+                        return
+                    
+                    old_folder = parent_folder / old_folder_name
                 else:
                     print(f"ERROR: Parent entity not found for page {entity.id}")
                     return
             else:
-                old_folder_path = Path(old_folder_name)
-                old_folder = self.media_service.uploads_dir / old_folder_path
+                old_folder = self.media_service.uploads_dir / old_folder_name
             
             # 古いフォルダが存在し、新しいフォルダと異なる場合
-            if old_folder_path and old_folder.exists() and old_folder.is_dir():
+            if old_folder and old_folder.exists() and old_folder.is_dir():
                 old_folder_resolved = old_folder.resolve()
                 new_folder_resolved = new_folder.resolve()
                 
                 if old_folder_resolved != new_folder_resolved:
-                    print(f"DEBUG: Processing old folder: {old_folder}")
-                    print(f"DEBUG: Old folder resolved: {old_folder_resolved}")
-                    print(f"DEBUG: New folder resolved: {new_folder_resolved}")
-                    
                     if not new_folder.exists():
-                        print(f"WARNING: New folder does not exist! Creating it now.")
-                        new_folder.mkdir(parents=True, exist_ok=True)
+                        # 親フォルダは既に存在することを確認済みなので、parents=Falseで子フォルダのみ作成
+                        new_folder.mkdir(parents=False, exist_ok=True)
                     
                     self._move_folder_contents(old_folder, new_folder, old_title)
                     self._remove_empty_folders(old_folder)
-                else:
-                    print(f"DEBUG: Old folder path matches new folder path, skipping")
-            else:
-                print(f"DEBUG: Old folder does not exist or is not a directory: {old_folder}")
             
             # 念のため、uploadsディレクトリ全体から誤って作成された可能性のある古いフォルダも検索
-            if old_folder_path and old_folder.exists():
+            if old_folder and old_folder.exists():
                 try:
                     self._cleanup_orphaned_old_folders(entity.id, old_folder_name, old_folder.resolve())
                 except Exception as e:
@@ -369,8 +377,6 @@ class PageCommandService:
                         if folder_resolved != exclude_folder:
                             # 正確なフォルダ名に一致する場合のみ処理
                             if dir_name == old_folder_name:
-                                print(f"DEBUG: Found orphaned old folder: {folder_path}")
-                                
                                 # フォルダが空かチェック
                                 try:
                                     items = list(folder_path.iterdir())
@@ -378,8 +384,6 @@ class PageCommandService:
                                         # 空のフォルダは削除
                                         folder_path.rmdir()
                                         print(f"✓ Removed orphaned empty folder: {folder_path}")
-                                    else:
-                                        print(f"DEBUG: Orphaned folder contains items: {[item.name for item in items]}")
                                 except Exception as e:
                                     print(f"Warning: Failed to check/remove orphaned folder {folder_path}: {e}")
         except Exception as e:
@@ -401,14 +405,13 @@ class PageCommandService:
             if not parent_entity:
                 return
             
-            parent_path = self.media_service.get_page_folder_path(parent_entity)
+            # _get_page_folder_absolute_pathを使う（get_page_folder_pathは使わない）
+            parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
             
             # 正しい新しいフォルダのパス
-            correct_new_folder_path = parent_path / new_folder_name
-            correct_new_folder_expected = self.media_service.uploads_dir / correct_new_folder_path
-            
-            print(f"DEBUG: Checking for misplaced new folder: {new_folder_name}")
-            print(f"DEBUG: Correct new folder should be at: {correct_new_folder_expected}")
+            safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
+            new_folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+            correct_new_folder_path = parent_folder / new_folder_name
             
             # uploadsディレクトリ全体から新しいフォルダ名を検索
             for root, dirs, files in os.walk(self.media_service.uploads_dir):
@@ -421,9 +424,7 @@ class PageCommandService:
                         folder_resolved = folder_path.resolve()
                         
                         # 正しい場所のフォルダ以外を処理（誤って作成されたフォルダ）
-                        if folder_resolved != correct_new_folder.resolve() and folder_resolved != correct_new_folder_expected.resolve():
-                            print(f"DEBUG: Found misplaced new folder: {folder_path}")
-                            
+                        if folder_resolved != correct_new_folder.resolve() and folder_resolved != correct_new_folder_path.resolve():
                             try:
                                 items = list(folder_path.iterdir())
                                 if not items:
@@ -431,7 +432,6 @@ class PageCommandService:
                                     folder_path.rmdir()
                                     print(f"✓ Removed misplaced empty folder: {folder_path}")
                                 else:
-                                    print(f"DEBUG: Misplaced folder contains items: {[item.name for item in items]}")
                                     # HTMLファイルのみの場合は削除を試みる
                                     html_files = [item for item in items if item.is_file() and item.suffix.lower() == '.html']
                                     other_items = [item for item in items if item not in html_files]
@@ -455,12 +455,10 @@ class PageCommandService:
         
         try:
             if not new_folder.exists():
-                print(f"DEBUG: New folder does not exist, creating: {new_folder}")
                 # 親フォルダは既に存在しているはずなので、parents=Falseで子フォルダのみ作成
                 new_folder.mkdir(parents=False, exist_ok=True)
             
             items_to_process = list(old_folder.iterdir())
-            print(f"DEBUG: Moving {len(items_to_process)} items from {old_folder} to {new_folder}")
             
             for item in items_to_process:
                 if item.is_file():
@@ -726,8 +724,9 @@ class PageCommandService:
             if entity.parent_id:
                 parent_entity = self.repository.find_by_id(entity.parent_id)
                 if parent_entity:
-                    parent_folder_path = self.media_service.get_page_folder_path(parent_entity)
-                    correct_new_folder_path = parent_folder_path / new_folder_name
+                    # _get_page_folder_absolute_pathを使う（get_page_folder_pathは使わない）
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    correct_new_folder_path = parent_folder / new_folder_name
                 else:
                     print(f"ERROR: Parent entity not found for page {entity.id}")
                     return
@@ -771,8 +770,8 @@ class PageCommandService:
             if entity.parent_id:
                 parent_entity = self.repository.find_by_id(entity.parent_id)
                 if parent_entity:
-                    parent_folder_path = self.media_service.get_page_folder_path(parent_entity)
-                    parent_folder = self.media_service.uploads_dir / parent_folder_path
+                    # _get_page_folder_absolute_pathを使う（get_page_folder_pathは使わない）
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
                     
                     if parent_folder.exists() and parent_folder.is_dir():
                         misplaced_in_parent = parent_folder / new_folder_name

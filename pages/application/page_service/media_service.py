@@ -24,6 +24,11 @@ class MediaService:
         self.uploads_dir = self.media_root / 'uploads'
         self.repository = repository
     
+    def get_page_folder_name(self, entity: PageEntity) -> str:
+        """ページのフォルダ名のみを取得する（親パスを含まない）"""
+        safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
+        return f'{entity.order}_page_{entity.id}_{safe_title}'
+    
     def get_page_folder_path(self, entity: PageEntity) -> Path:
         """ページのフォルダパスを階層構造で取得する"""
         safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
@@ -90,40 +95,56 @@ class MediaService:
         if entity is None and self.repository:
             entity = self.repository.find_by_id(page_id)
         
-        # ページフォルダパスを取得
+        # ページフォルダパスを取得（URL生成用）
         if entity:
             page_folder_relative = self.get_page_folder_path(entity)
         else:
             page_folder_relative = Path(f'page_{page_id}')
         
-        page_folder = self.uploads_dir / page_folder_relative
-        
-        # 親フォルダの存在を確認してからフォルダを作成
+        # 実際のフォルダパスを計算（ページ自身のフォルダのみを作成）
         if entity and entity.parent_id and self.repository:
             parent_entity = self.repository.find_by_id(entity.parent_id)
             if parent_entity:
-                parent_folder_relative = self.get_page_folder_path(parent_entity)
-                parent_folder = self.uploads_dir / parent_folder_relative
+                # 親フォルダのフルパスを再帰的に構築
+                parent_folder = self._get_page_folder_absolute_path(parent_entity)
                 
                 # 親フォルダが存在しない場合はエラー（親ページを先に保存する必要がある）
                 if not parent_folder.exists() or not parent_folder.is_dir():
-                    raise ValueError(f'親ページ（ID: {entity.parent_id}）のフォルダが存在しません。親ページを先に保存してください。')
+                    raise ValueError(f'親ページ（ID: {entity.parent_id}）のフォルダが存在しません。親ページを先に保存してください。パス: {parent_folder}')
                 
-                # 親フォルダが存在する場合のみ、子フォルダを作成（parents=Falseで親フォルダを作成しない）
-                page_folder.mkdir(parents=False, exist_ok=True)
+                # 子フォルダ名を直接計算
+                safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
+                folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+                
+                # 親フォルダの直下に子フォルダを作成（parents=Falseで親フォルダを作成しない）
+                page_folder = parent_folder / folder_name
+                if not page_folder.exists():
+                    try:
+                        page_folder.mkdir(parents=False, exist_ok=True)
+                    except FileNotFoundError as e:
+                        # 親フォルダが存在しない場合のエラー
+                        raise ValueError(f'親フォルダが存在しません: {parent_folder}. エラー: {e}')
             else:
-                # 親が見つからない場合でもフォルダは作成（フォールバック）
-                page_folder.mkdir(parents=True, exist_ok=True)
+                # 親が見つからない場合はエラーを発生させる
+                raise ValueError(f'親ページ（ID: {entity.parent_id}）が見つかりません。')
         else:
             # ルートページの場合はそのまま作成
-            page_folder.mkdir(parents=True, exist_ok=True)
+            # get_page_folder_pathを使わずに、子フォルダ名を直接計算
+            safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
+            folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+            page_folder = self.uploads_dir / folder_name
+            if not page_folder.exists():
+                try:
+                    page_folder.mkdir(parents=False, exist_ok=True)
+                except FileNotFoundError as e:
+                    raise ValueError(f'フォルダの作成に失敗しました: {page_folder}. エラー: {e}')
         
         # 親フォルダが作成された場合、親ページのHTMLファイルも作成する
         if entity and entity.parent_id and self.repository:
             parent_entity = self.repository.find_by_id(entity.parent_id)
             if parent_entity:
-                parent_folder_relative = self.get_page_folder_path(parent_entity)
-                parent_folder = self.uploads_dir / parent_folder_relative
+                # _get_page_folder_absolute_pathを使う（get_page_folder_pathは使わない）
+                parent_folder = self._get_page_folder_absolute_path(parent_entity)
                 # 親フォルダが存在し、HTMLファイルがない場合
                 if parent_folder.exists() and parent_folder.is_dir():
                     parent_safe_title = re.sub(r'[<>:"/\\|?*]', '_', parent_entity.title)
@@ -154,6 +175,10 @@ class MediaService:
             
             if old_path.exists():
                 try:
+                    # page_folderが存在することを確認（既に作成されているはず）
+                    if not page_folder.exists() or not page_folder.is_dir():
+                        raise ValueError(f'ページフォルダが存在しません: {page_folder}')
+                    
                     # ファイルを移動
                     shutil.move(str(old_path), str(new_path))
                     
@@ -161,7 +186,6 @@ class MediaService:
                     new_url = f'/media/uploads/{folder_path_str}/{filename}'
                     updated_content = updated_content.replace(old_url, new_url)
                     
-                    print(f"Moved image: {old_path} -> {new_path}")
                 except Exception as e:
                     print(f"Warning: Failed to move image {old_path}: {e}")
         
@@ -179,10 +203,7 @@ class MediaService:
         removed_media = old_media - new_media
         
         if not removed_media:
-            print(f"DEBUG: No removed media for page {page_id}")
             return
-        
-        print(f"DEBUG: Found {len(removed_media)} removed media URL(s) for page {page_id}")
         
         # ページのフォルダパスを取得（ログ用）
         page_folder_relative = self.get_page_folder_path_by_id(page_id)
@@ -195,12 +216,9 @@ class MediaService:
                 relative_path = relative_path.split('?')[0].split('#')[0]
                 file_path = self.media_root / relative_path
                 
-                print(f"DEBUG: Attempting to delete: {file_path} (from URL: {media_url})")
-                
                 if file_path.exists() and file_path.is_file():
                     try:
                         os.remove(file_path)
-                        print(f"✓ Deleted removed media: {file_path}")
                     except Exception as e:
                         print(f"✗ Warning: Failed to delete media {file_path}: {e}")
                 else:
@@ -213,32 +231,21 @@ class MediaService:
         page_folder_relative = self.get_page_folder_path_by_id(page_id)
         page_folder = self.uploads_dir / page_folder_relative
         
-        print(f"DEBUG: Checking orphaned media for page {page_id}")
-        print(f"DEBUG: Page folder relative path: {page_folder_relative}")
-        print(f"DEBUG: Page folder absolute path: {page_folder}")
-        
         # フォルダが存在しない場合は、コンテンツから実際のパスを推測
         if not page_folder.exists() or not page_folder.is_dir():
-            print(f"DEBUG: Page folder does not exist, trying to find from content")
             # コンテンツから実際に使用されているフォルダパスを取得
             content_media = self.extract_media_urls(content)
-            print(f"DEBUG: Extracted {len(content_media)} media URLs from content")
             
             actual_folders = set()
             
             for media_url in content_media:
-                print(f"DEBUG: Processing media URL: {media_url}")
                 if media_url.startswith('/media/uploads/'):
                     # /media/uploads/ 以降のパスを取得
                     path_part = media_url.replace('/media/uploads/', '').split('?')[0].split('#')[0]
-                    print(f"DEBUG: Path part: {path_part}")
                     # ファイル名を除いたフォルダパスを取得
                     if '/' in path_part:
                         folder_part = '/'.join(path_part.split('/')[:-1])
                         actual_folders.add(folder_part)
-                        print(f"DEBUG: Added folder: {folder_part}")
-            
-            print(f"DEBUG: Found folders from content: {actual_folders}")
             
             if actual_folders:
                 # 複数のフォルダがある場合は、ページIDを含むものを優先
@@ -247,35 +254,26 @@ class MediaService:
                     # ページIDを含むフォルダパスを探す（新しい形式と古い形式の両方に対応）
                     if f'_page_{page_id}_' in folder_path_str or f'page_{page_id}/' in folder_path_str or folder_path_str.endswith(f'_page_{page_id}'):
                         potential_folder = self.uploads_dir / folder_path_str
-                        print(f"DEBUG: Checking potential folder with page ID: {potential_folder}")
                         if potential_folder.exists() and potential_folder.is_dir():
                             page_folder = potential_folder
                             found_folder = folder_path_str
-                            print(f"DEBUG: Found folder with page ID: {page_folder}")
                             break
                 
                 if not found_folder:
                     # 見つからない場合は最初のフォルダを使用
                     folder_path_str = list(actual_folders)[0]
                     page_folder = self.uploads_dir / folder_path_str
-                    print(f"DEBUG: Using first found folder: {page_folder}")
-            else:
-                print(f"DEBUG: No folders found in content URLs")
             
             # それでも見つからない場合は処理を終了
             if not page_folder.exists() or not page_folder.is_dir():
-                print(f"DEBUG: Could not find page folder, skipping orphaned media check")
-                print(f"DEBUG: Searched path: {page_folder}")
                 return
         
         # コンテンツで参照されているファイルのファイル名集合を作成
         content_media = self.extract_media_urls(content)
-        print(f"DEBUG: Found {len(content_media)} media URL(s) in content")
         
         # 実際に存在するファイルパスの集合を作成
         referenced_file_paths = set()
         folder_path_str = str(page_folder.relative_to(self.uploads_dir)).replace('\\', '/')
-        print(f"DEBUG: Using folder path: {folder_path_str}")
         
         for media_url in content_media:
             # クエリパラメータやフラグメントを除去
@@ -297,15 +295,11 @@ class MediaService:
                         try:
                             resolved_file_path.relative_to(resolved_page_folder)
                             referenced_file_paths.add(file_path.name)
-                            print(f"DEBUG: Referenced file found: {file_path.name}")
                         except ValueError:
                             # ページフォルダ外のファイルは無視
-                            print(f"DEBUG: File is outside page folder: {file_path.name}")
                             pass
-                except Exception as e:
-                    print(f"DEBUG: Error checking file path {file_path}: {e}")
-        
-        print(f"DEBUG: Referenced file names: {referenced_file_paths}")
+                except Exception:
+                    pass
         
         # フォルダ内のすべてのファイル一覧を取得（.html は除外）
         folder_files = set()
@@ -313,14 +307,12 @@ class MediaService:
             for file_path in page_folder.iterdir():
                 if file_path.is_file() and file_path.suffix.lower() != '.html':
                     folder_files.add(file_path.name)
-            print(f"DEBUG: Files in folder: {folder_files}")
         except Exception as e:
-            print(f"✗ Warning: Failed to list files in {page_folder}: {e}")
+            print(f"Warning: Failed to list files in {page_folder}: {e}")
             return
         
         # 孤立（未参照）のファイルを特定
         orphaned_files = folder_files - referenced_file_paths
-        print(f"DEBUG: Orphaned files to delete: {orphaned_files}")
         
         # 孤立ファイルを削除
         deleted_count = 0
@@ -335,8 +327,6 @@ class MediaService:
         
         if deleted_count > 0:
             print(f"✓ Deleted {deleted_count} orphaned file(s) from {page_folder}")
-        else:
-            print(f"DEBUG: No orphaned files to delete")
     
     def delete_page_media_folders(self, page_ids: List[int]) -> None:
         """指定ページID群の画像フォルダを削除する"""
@@ -356,3 +346,21 @@ class MediaService:
                 temp_folder.rmdir()
         except Exception:
             pass  # 掃除時のエラーは無視
+
+    def _get_page_folder_absolute_path(self, entity: PageEntity) -> Path:
+        """ページのフォルダの絶対パスを取得する（親パスを含むフルパス）"""
+        # get_page_folder_pathを使わずに、再帰的に構築
+        safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
+        folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+        
+        if entity.parent_id and self.repository:
+            # 親ページのエンティティを取得
+            parent_entity = self.repository.find_by_id(entity.parent_id)
+            if parent_entity:
+                # 親のパスを再帰的に取得（絶対パス）
+                parent_folder = self._get_page_folder_absolute_path(parent_entity)
+                # 親フォルダの直下に子フォルダを結合
+                return parent_folder / folder_name
+        
+        # ルートページの場合
+        return self.uploads_dir / folder_name

@@ -47,23 +47,16 @@ class HtmlGenerator:
             from .media_service import MediaService
             media_service = MediaService(repository)
         
-        # デバッグ: entityの状態を確認
-        print(f"DEBUG: save_html_to_folder - page_id={entity.id}, parent_id={entity.parent_id}, title={entity.title}")
-        print(f"DEBUG: media_service.repository is None: {media_service.repository is None}")
-        
         # 親フォルダを先に明示的に作成してから、子フォルダを作成
         if entity.parent_id:
             if not media_service.repository:
-                print(f"ERROR: repository is None but entity has parent_id={entity.parent_id}")
-                # repositoryがない場合は、フォールバック処理
-                page_folder_relative = media_service.get_page_folder_path(entity)
-                page_folder = self.media_root / 'uploads' / page_folder_relative
-                page_folder.mkdir(parents=True, exist_ok=True)
+                # repositoryがない場合はエラーを発生させる
+                raise ValueError(f'repository is None but entity has parent_id={entity.parent_id}')
             else:
                 parent_entity = media_service.repository.find_by_id(entity.parent_id)
                 if parent_entity:
-                    parent_folder_path = media_service.get_page_folder_path(parent_entity)
-                    parent_folder = self.media_root / 'uploads' / parent_folder_path
+                    # _get_page_folder_absolute_pathを使う
+                    parent_folder = media_service._get_page_folder_absolute_path(parent_entity)
                     
                     # 親フォルダが存在しない場合はエラー（親ページを先に保存する必要がある）
                     if not parent_folder.exists() or not parent_folder.is_dir():
@@ -76,28 +69,23 @@ class HtmlGenerator:
                     # 正しい階層構造で子フォルダを作成（親フォルダの直下）
                     page_folder = parent_folder / folder_name
                     page_folder.mkdir(parents=False, exist_ok=True)
-                    
-                    print(f"DEBUG: Created folder at: {page_folder}")
                 else:
-                    print(f"ERROR: Parent entity not found for parent_id={entity.parent_id}")
-                    # 親が見つからない場合でも、階層パスを構築
-                    page_folder_relative = media_service.get_page_folder_path(entity)
-                    page_folder = self.media_root / 'uploads' / page_folder_relative
-                    page_folder.mkdir(parents=True, exist_ok=True)
-                    print(f"DEBUG: Parent not found, created folder at: {page_folder}")
+                    # 親が見つからない場合はエラーを発生させる
+                    raise ValueError(f'親ページ（ID: {entity.parent_id}）が見つかりません。')
         else:
             # ルートページの場合
-            page_folder_relative = media_service.get_page_folder_path(entity)
-            page_folder = self.media_root / 'uploads' / page_folder_relative
-            page_folder.mkdir(parents=True, exist_ok=True)
-            print(f"DEBUG: Root page, created folder at: {page_folder}")
+            # get_page_folder_pathを使わずに、子フォルダ名を直接計算
+            safe_title = re.sub(r'[<>:"/\\|?*]', '_', entity.title)
+            folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+            page_folder = self.media_root / 'uploads' / folder_name
+            page_folder.mkdir(parents=False, exist_ok=True)
         
         # 親フォルダが作成された場合、親ページのHTMLファイルも作成する
         if entity.parent_id and media_service.repository:
             parent_entity = media_service.repository.find_by_id(entity.parent_id)
             if parent_entity:
-                parent_folder_path = media_service.get_page_folder_path(parent_entity)
-                parent_folder = self.media_root / 'uploads' / parent_folder_path
+                # _get_page_folder_absolute_pathを使う
+                parent_folder = media_service._get_page_folder_absolute_path(parent_entity)
                 # 親フォルダが存在し、HTMLファイルがない場合
                 if parent_folder.exists() and parent_folder.is_dir():
                     parent_safe_title = re.sub(r'[<>:"/\\|?*]', '_', parent_entity.title)

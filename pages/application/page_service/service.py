@@ -23,8 +23,8 @@ class PageApplicationService:
         html_generator: Optional[HtmlGenerator] = None
     ):
         self.domain_service = domain_service or PageDomainService()
-        self.media_service = media_service or MediaService()
-        self.html_generator = html_generator or HtmlGenerator()
+        self.media_service = media_service or MediaService(repository)
+        self.html_generator = html_generator or HtmlGenerator(media_service=self.media_service)
         
         # 各サービスの初期化
         self.query_service = PageQueryService(repository, self.domain_service)
