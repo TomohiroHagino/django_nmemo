@@ -1,6 +1,5 @@
 """ページエクスポート操作"""
 
-import json
 from typing import Optional
 
 from ...domain.page_aggregate import PageAggregate, PageEntity
@@ -18,16 +17,6 @@ class PageExportService:
     ):
         self.repository = repository
         self.html_generator = html_generator or HtmlGenerator()
-    
-    def export_page(self, page_id: int) -> Optional[str]:
-        """ページとその子孫をJSONとしてエクスポートする"""
-        entity = self.repository.find_with_all_descendants(page_id)
-        if entity is None:
-            return None
-        
-        aggregate = PageAggregate.from_entity_tree(entity)
-        data = aggregate.to_dict()
-        return json.dumps(data, ensure_ascii=False, indent=2)
     
     def export_page_as_html(self, page_id: int) -> Optional[str]:
         """ページを画像埋め込み済み単一HTMLとしてエクスポートする"""

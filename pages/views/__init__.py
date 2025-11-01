@@ -7,7 +7,7 @@ from .page_views import index, page_create, page_update, page_delete
 from .page_operations import page_move, page_update_icon, page_reorder
 
 # エクスポート
-from .export_views import export_page, export_page_html
+from .export_views import export_page_html
 
 # API
 from .api_views import api_page_detail
@@ -33,7 +33,6 @@ __all__ = [
     'page_update_icon',
     'page_reorder',
     # エクスポート
-    'export_page',
     'export_page_html',
     # API
     'api_page_detail',

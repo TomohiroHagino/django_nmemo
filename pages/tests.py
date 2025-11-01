@@ -341,10 +341,3 @@ class PageExportTest(TestCase):
             title='エクスポートテストページ',
             content='<p>テストコンテンツ</p>'
         )
-    
-    def test_export_page_json(self):
-        """JSONエクスポートのテスト"""
-        response = self.client.get(reverse('pages:export_page', args=[self.page.id]))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/json; charset=utf-8')
-        self.assertIn('page_', response['Content-Disposition'])

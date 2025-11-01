@@ -23,7 +23,6 @@ export function renderContentArea(pageId, data, escapeHtml, formatDate) {
           <div class="edit-buttons">
               <button onclick="savePage()" class="btn btn--primary">💾 保存</button>
               <button onclick="cancelEdit()" class="btn" style="background: #6c757d; color: white;">キャンセル</button>
-              <a href="/page/${pageId}/export/" class="btn btn-success" title="JSONファイルとしてエクスポート">📥 JSON</a>
               <button onclick="deletePage(${pageId})" class="btn btn--danger">🗑️ 削除</button>
           </div>
       </div>

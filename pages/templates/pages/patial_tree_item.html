@@ -15,7 +15,6 @@
         </span>
         <div class="actions">
             <button class="btn" style="background: transparent; color: #37352f; font-size: 16px; padding: 4px 6px; border: none; cursor: pointer; font-weight: bold;" onclick="event.stopPropagation(); openCreateChildModal({{ page.id }}, '{{ page.title|escapejs }}');" title="子ページを追加">+</button>
-            <a href="{% url 'pages:export_page' page.id %}" class="btn" style="background: #28a745; color: white; text-decoration: none; font-size: 11px; padding: 4px 8px;" onclick="event.stopPropagation();" title="JSONエクスポート">📥</a>
         </div>
     </div>
     {% if page.children %}

@@ -77,11 +77,6 @@ class PageApplicationService:
         """ページの並び替え：ターゲットの前後に挿入"""
         return self.command_service.reorder_page(page_id, target_page_id, position)
     
-    # エクスポート操作の委譲
-    def export_page(self, page_id: int) -> Optional[str]:
-        """ページとその子孫をJSONとしてエクスポートする"""
-        return self.export_service.export_page(page_id)
-    
     def export_page_as_html(self, page_id: int) -> Optional[str]:
         """ページを画像埋め込み済み単一HTMLとしてエクスポートする"""
         return self.export_service.export_page_as_html(page_id)

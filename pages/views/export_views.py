@@ -6,23 +6,6 @@ from django.http import HttpResponse, Http404
 from .utils import _get_service
 
 
-def export_page(request, page_id):
-    """ページと子孫を JSON としてエクスポート"""
-    service = _get_service()
-    json_data = service.export_page(page_id)
-    
-    if json_data is None:
-        raise Http404('ページが見つかりません')
-    
-    response = HttpResponse(
-        json_data,
-        content_type='application/json; charset=utf-8'
-    )
-    response['Content-Disposition'] = f'attachment; filename=page_{page_id}.json'
-    
-    return response
-
-
 def export_page_html(request, page_id):
     """ページを埋め込み画像付きの単一 HTML としてエクスポート"""
     service = _get_service()
