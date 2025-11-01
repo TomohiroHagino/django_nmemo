@@ -780,6 +780,8 @@ class PageCommandService:
                 if old_order != saved_entity.order:
                     try:
                         self._rename_folder_on_order_change(saved_entity, old_order)
+                        # このページのコンテンツ内のURLを更新
+                        self._update_content_urls_for_page(saved_entity.id)
                     except Exception as e:
                         print(f"Warning: Failed to rename folder for page {saved_entity.id} during reorder: {e}")
                         import traceback
@@ -793,10 +795,28 @@ class PageCommandService:
                 if old_order != saved_entity.order:
                     try:
                         self._rename_folder_on_order_change(saved_entity, old_order)
+                        # このページのコンテンツ内のURLを更新
+                        self._update_content_urls_for_page(saved_entity.id)
                     except Exception as e:
                         print(f"Warning: Failed to rename folder for moved page {saved_entity.id}: {e}")
                         import traceback
                         traceback.print_exc()
+        
+        # orderが変更されたページを参照している他のページのコンテンツも更新
+        # （子ページが親ページのフォルダパスを含む場合に対応）
+        affected_page_ids = set()
+        for sibling in updated_siblings:
+            if sibling.id in old_orders and old_orders[sibling.id] != sibling.order:
+                affected_page_ids.add(sibling.id)
+        if page_id in old_orders:
+            old_order = old_orders[page_id]
+            saved_entity = self.repository.find_by_id(page_id)
+            if saved_entity and old_order != saved_entity.order:
+                affected_page_ids.add(page_id)
+        
+        # 影響を受けたページのIDを含むURLを持つすべてのページのコンテンツを更新
+        if affected_page_ids:
+            self._update_all_pages_content_urls(affected_page_ids)
         
         # すべての影響を受けたページのHTMLファイルを更新
         # updated_siblingsに含まれるすべてのページを処理
@@ -853,11 +873,16 @@ class PageCommandService:
             import os
             import shutil
             from pathlib import Path
+            from pages.models import Page
             
             # 古いフォルダ名と新しいフォルダ名を計算（タイトルは変更されていない）
             safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
             old_folder_name = f'{old_order}_page_{entity.id}_{safe_title}'
             new_folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+            
+            # 古いフォルダパスと新しいフォルダパスを計算（URL更新用）
+            old_folder_path = None
+            new_folder_path = None
             
             # 新しいフォルダパスを取得
             if entity.parent_id:
@@ -874,6 +899,11 @@ class PageCommandService:
                             print(f"ERROR: Parent folder does not exist for page {entity.id}")
                             return
                     
+                    # 階層パスを構築（URL用）
+                    parent_folder_path = self.media_service.get_page_folder_path(parent_entity)
+                    old_folder_path_str = str(parent_folder_path / old_folder_name).replace('\\', '/')
+                    new_folder_path_str = str(parent_folder_path / new_folder_name).replace('\\', '/')
+                    
                     old_folder = parent_folder / old_folder_name
                     new_folder = parent_folder / new_folder_name
                 else:
@@ -881,6 +911,9 @@ class PageCommandService:
                     return
             else:
                 # ルートページの場合
+                old_folder_path_str = old_folder_name
+                new_folder_path_str = new_folder_name
+                
                 old_folder = self.media_service.uploads_dir / old_folder_name
                 new_folder = self.media_service.uploads_dir / new_folder_name
             
@@ -901,18 +934,29 @@ class PageCommandService:
                             
                             self._move_folder_contents(old_folder, new_folder, entity.title)
                             self._remove_empty_folders(old_folder)
+                            
+                            # コンテンツ内のURLを更新
+                            self._update_content_urls_after_rename(entity.id, old_folder_path_str, new_folder_path_str)
                         elif existing_resolved != new_folder_resolved:
                             # 既存フォルダが別の場所にある場合、そこから新しい場所へ移動
                             if not new_folder.exists():
                                 new_folder.mkdir(parents=False, exist_ok=True)
                             self._move_folder_contents(existing_folder, new_folder, entity.title)
                             self._remove_empty_folders(existing_folder)
+                            
+                            # 既存フォルダのパスを計算してコンテンツ内のURLを更新
+                            existing_folder_relative = existing_folder.relative_to(self.media_service.uploads_dir)
+                            existing_folder_path_str = str(existing_folder_relative).replace('\\', '/')
+                            self._update_content_urls_after_rename(entity.id, existing_folder_path_str, new_folder_path_str)
                     else:
                         # 既存フォルダが見つからない場合、古いフォルダから新しいフォルダへ移動
                         if not new_folder.exists():
                             new_folder.mkdir(parents=False, exist_ok=True)
                         self._move_folder_contents(old_folder, new_folder, entity.title)
                         self._remove_empty_folders(old_folder)
+                        
+                        # コンテンツ内のURLを更新
+                        self._update_content_urls_after_rename(entity.id, old_folder_path_str, new_folder_path_str)
             else:
                 # 古いフォルダが見つからない場合、既存のフォルダを検索して新しい場所へ移動
                 existing_folder = self.media_service._find_existing_page_folder(entity)
@@ -925,9 +969,195 @@ class PageCommandService:
                             new_folder.mkdir(parents=False, exist_ok=True)
                         self._move_folder_contents(existing_folder, new_folder, entity.title)
                         self._remove_empty_folders(existing_folder)
+                        
+                        # 既存フォルダのパスを計算してコンテンツ内のURLを更新
+                        existing_folder_relative = existing_folder.relative_to(self.media_service.uploads_dir)
+                        existing_folder_path_str = str(existing_folder_relative).replace('\\', '/')
+                        self._update_content_urls_after_rename(entity.id, existing_folder_path_str, new_folder_path_str)
             
         except Exception as e:
             print(f"Warning: Failed to rename folder on order change: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _update_content_urls_after_rename(self, page_id: int, old_folder_path: str, new_folder_path: str) -> None:
+        """フォルダリネーム後にコンテンツ内のURLを更新"""
+        try:
+            import re
+            from pages.models import Page
+            
+            page = Page.objects.get(id=page_id)
+            if not page.content:
+                return
+            
+            # update_content_urls.pyの_update_urls_in_contentと同じロジックを使用
+            # ページIDベースでパターンマッチを行う（より確実）
+            # パターン1: /media/uploads/page_{id}/filename（古い形式）
+            pattern1 = re.compile(
+                rf'/media/uploads/page_{page_id}/([^"\'>\s]+)',
+                re.IGNORECASE
+            )
+            
+            # パターン2: /media/uploads/{任意のorder}_page_{id}_{タイトル}/filename（現在の形式）
+            # 階層構造にも対応するため、パス全体をマッチさせる
+            pattern2 = re.compile(
+                rf'/media/uploads/([^/]+/)*\d+_page_{page_id}_[^/]+/([^"\'>\s]+)',
+                re.IGNORECASE
+            )
+            
+            old_content = page.content
+            updated_content = old_content
+            
+            # パターン1を置換（古い形式）
+            def replace_url1(match):
+                filename = match.group(1)
+                return f'/media/uploads/{new_folder_path}/{filename}'
+            
+            updated_content = pattern1.sub(replace_url1, updated_content)
+            
+            # パターン2を置換（現在の形式）
+            def replace_url2(match):
+                filename = match.group(2)  # 最後のグループがファイル名
+                return f'/media/uploads/{new_folder_path}/{filename}'
+            
+            updated_content = pattern2.sub(replace_url2, updated_content)
+            
+            # 階層構造内のページの場合、親パスを含むパターンもチェック
+            # パターン3: /media/uploads/{親パス}/{任意のorder}_page_{id}_{タイトル}/filename
+            # これはパターン2で既にカバーされているが、念のため明示的に処理
+            
+            # 変更があった場合は保存
+            if old_content != updated_content:
+                page.content = updated_content
+                page.save(update_fields=['content'])
+                print(f"✓ Updated content URLs for page {page_id}: {old_folder_path} -> {new_folder_path}")
+            else:
+                # デバッグ用：変更がない場合でもログを出力
+                print(f"  No URL changes needed for page {page_id} (old: {old_folder_path}, new: {new_folder_path})")
+            
+        except Page.DoesNotExist:
+            print(f"Warning: Page {page_id} not found when updating content URLs")
+        except Exception as e:
+            print(f"Warning: Failed to update content URLs for page {page_id}: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _update_content_urls_for_page(self, page_id: int) -> None:
+        """指定されたページのコンテンツ内のURLを現在のフォルダパスに更新"""
+        try:
+            entity = self.repository.find_by_id(page_id)
+            if not entity:
+                return
+            
+            from pages.models import Page
+            page = Page.objects.get(id=page_id)
+            if not page.content:
+                return
+            
+            # 現在の正しいフォルダパスを取得
+            current_folder_path = self.media_service.get_page_folder_path(entity)
+            folder_path_str = str(current_folder_path).replace('\\', '/')
+            
+            # update_content_urls.pyの_update_urls_in_contentと同じロジック
+            import re
+            
+            # パターン1: /media/uploads/page_{id}/filename
+            pattern1 = re.compile(
+                rf'/media/uploads/page_{page_id}/([^"\'>\s]+)',
+                re.IGNORECASE
+            )
+            
+            # パターン2: /media/uploads/{任意のパス}/{任意のorder}_page_{id}_{タイトル}/filename
+            pattern2 = re.compile(
+                rf'/media/uploads/([^/]+/)*\d+_page_{page_id}_[^/]+/([^"\'>\s]+)',
+                re.IGNORECASE
+            )
+            
+            old_content = page.content
+            updated_content = old_content
+            
+            def replace_url1(match):
+                filename = match.group(1)
+                return f'/media/uploads/{folder_path_str}/{filename}'
+            
+            def replace_url2(match):
+                filename = match.group(2)
+                return f'/media/uploads/{folder_path_str}/{filename}'
+            
+            updated_content = pattern1.sub(replace_url1, updated_content)
+            updated_content = pattern2.sub(replace_url2, updated_content)
+            
+            if old_content != updated_content:
+                page.content = updated_content
+                page.save(update_fields=['content'])
+                print(f"✓ Updated content URLs for page {page_id} to current folder path: {folder_path_str}")
+            
+        except Exception as e:
+            print(f"Warning: Failed to update content URLs for page {page_id}: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _update_all_pages_content_urls(self, affected_page_ids: set) -> None:
+        """指定されたページIDを含むURLを持つすべてのページのコンテンツを更新"""
+        try:
+            from pages.models import Page
+            import re
+            
+            # すべてのページを取得
+            all_pages = Page.objects.all()
+            
+            for page in all_pages:
+                if not page.content:
+                    continue
+                
+                content_updated = False
+                updated_content = page.content
+                
+                # 影響を受けた各ページIDについて、そのページのURLを検索して更新
+                for affected_page_id in affected_page_ids:
+                    entity = self.repository.find_by_id(affected_page_id)
+                    if not entity:
+                        continue
+                    
+                    # 現在の正しいフォルダパスを取得
+                    current_folder_path = self.media_service.get_page_folder_path(entity)
+                    folder_path_str = str(current_folder_path).replace('\\', '/')
+                    
+                    # パターン1: /media/uploads/page_{id}/filename
+                    pattern1 = re.compile(
+                        rf'/media/uploads/page_{affected_page_id}/([^"\'>\s]+)',
+                        re.IGNORECASE
+                    )
+                    
+                    # パターン2: /media/uploads/{任意のパス}/{任意のorder}_page_{id}_{タイトル}/filename
+                    pattern2 = re.compile(
+                        rf'/media/uploads/([^/]+/)*\d+_page_{affected_page_id}_[^/]+/([^"\'>\s]+)',
+                        re.IGNORECASE
+                    )
+                    
+                    def replace_url1(match):
+                        filename = match.group(1)
+                        return f'/media/uploads/{folder_path_str}/{filename}'
+                    
+                    def replace_url2(match):
+                        filename = match.group(2)
+                        return f'/media/uploads/{folder_path_str}/{filename}'
+                    
+                    old_before = updated_content
+                    updated_content = pattern1.sub(replace_url1, updated_content)
+                    updated_content = pattern2.sub(replace_url2, updated_content)
+                    
+                    if old_before != updated_content:
+                        content_updated = True
+                
+                # 変更があった場合は保存
+                if content_updated:
+                    page.content = updated_content
+                    page.save(update_fields=['content'])
+                    print(f"✓ Updated content URLs in page {page.id} that reference affected pages")
+            
+        except Exception as e:
+            print(f"Warning: Failed to update all pages content URLs: {e}")
             import traceback
             traceback.print_exc()
 
