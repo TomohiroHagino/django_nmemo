@@ -84,6 +84,57 @@ class MediaService:
         
         return urls
     
+    def _find_existing_parent_folder(self, parent_entity: PageEntity) -> Optional[Path]:
+        """既存の親フォルダを検索する（orderが変更された場合に対応）"""
+        # 親ページのIDとタイトルで既存のフォルダを検索
+        safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', parent_entity.title)
+        
+        # uploadsフォルダ内で、該当するページIDとタイトルを含むフォルダを検索
+        if parent_entity.parent_id and self.repository:
+            # 親の親がいる場合は再帰的に検索
+            grandparent_entity = self.repository.find_by_id(parent_entity.parent_id)
+            if grandparent_entity:
+                grandparent_folder = self._find_existing_parent_folder(grandparent_entity)
+                if grandparent_folder and grandparent_folder.exists():
+                    # 孫フォルダ内を検索
+                    for item in grandparent_folder.iterdir():
+                        if item.is_dir() and f'_page_{parent_entity.id}_' in item.name and safe_title in item.name:
+                            return item
+        else:
+            # ルートレベルの場合、uploadsフォルダ内を直接検索
+            for item in self.uploads_dir.iterdir():
+                if item.is_dir() and f'_page_{parent_entity.id}_' in item.name and safe_title in item.name:
+                    return item
+        
+        return None
+
+    def _find_existing_page_folder(self, entity: PageEntity) -> Optional[Path]:
+        """既存のページフォルダを検索する（orderが変更された場合に対応）"""
+        # ページのIDとタイトルで既存のフォルダを検索
+        safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
+        
+        # 親フォルダを取得（存在する場合）
+        if entity.parent_id and self.repository:
+            parent_entity = self.repository.find_by_id(entity.parent_id)
+            if parent_entity:
+                # 親フォルダを検索（既存の親フォルダを使用）
+                parent_folder = self._get_page_folder_absolute_path(parent_entity)
+                if not parent_folder.exists() or not parent_folder.is_dir():
+                    parent_folder = self._find_existing_parent_folder(parent_entity)
+                
+                if parent_folder and parent_folder.exists() and parent_folder.is_dir():
+                    # 親フォルダ内を検索
+                    for item in parent_folder.iterdir():
+                        if item.is_dir() and f'_page_{entity.id}_' in item.name and safe_title in item.name:
+                            return item
+        else:
+            # ルートレベルの場合、uploadsフォルダ内を直接検索
+            for item in self.uploads_dir.iterdir():
+                if item.is_dir() and f'_page_{entity.id}_' in item.name and safe_title in item.name:
+                    return item
+        
+        return None
+
     def move_temp_images_to_page_folder(self, page_id: int, content: str, entity: Optional[PageEntity] = None) -> str:
         """一時フォルダの画像・動画をページ専用フォルダへ移動し、URL を更新する"""
         if not content:
@@ -108,22 +159,28 @@ class MediaService:
                 # 親フォルダのフルパスを再帰的に構築
                 parent_folder = self._get_page_folder_absolute_path(parent_entity)
                 
-                # 親フォルダが存在しない場合はエラー（親ページを先に保存する必要がある）
+                # 親フォルダが存在しない場合は、既存のフォルダを検索
                 if not parent_folder.exists() or not parent_folder.is_dir():
-                    raise ValueError(f'親ページ（ID: {entity.parent_id}）のフォルダが存在しません。親ページを先に保存してください。パス: {parent_folder}')
+                    existing_folder = self._find_existing_parent_folder(parent_entity)
+                    if existing_folder:
+                        parent_folder = existing_folder
+                    else:
+                        raise ValueError(f'親ページ（ID: {entity.parent_id}）のフォルダが存在しません。親ページを先に保存してください。パス: {parent_folder}')
                 
-                # 子フォルダ名を直接計算
-                safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
-                folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
-                
-                # 親フォルダの直下に子フォルダを作成（parents=Falseで親フォルダを作成しない）
-                page_folder = parent_folder / folder_name
-                if not page_folder.exists():
-                    try:
-                        page_folder.mkdir(parents=False, exist_ok=True)
-                    except FileNotFoundError as e:
-                        # 親フォルダが存在しない場合のエラー
-                        raise ValueError(f'親フォルダが存在しません: {parent_folder}. エラー: {e}')
+                # 親フォルダが存在し、HTMLファイルがない場合
+                if parent_folder.exists() and parent_folder.is_dir():
+                    parent_safe_title = re.sub(r'[<>:"/\\|?*]', '_', parent_entity.title)
+                    parent_html_file = parent_folder / f'{parent_safe_title}.html'
+                    if not parent_html_file.exists():
+                        # 親ページのHTMLファイルを作成
+                        try:
+                            from .html_generator import HtmlGenerator
+                            html_generator = HtmlGenerator()
+                            parent_html_content = html_generator.generate_html_content(parent_entity)
+                            with open(parent_html_file, 'w', encoding='utf-8') as f:
+                                f.write(parent_html_content)
+                        except Exception as e:
+                            print(f"Warning: Failed to save parent HTML to {parent_html_file}: {e}")
             else:
                 # 親が見つからない場合はエラーを発生させる
                 raise ValueError(f'親ページ（ID: {entity.parent_id}）が見つかりません。')

@@ -37,6 +37,8 @@ class HtmlGenerator:
     
     def save_html_to_folder(self, entity: PageEntity) -> None:
         """ページのHTML版を画像フォルダに保存する"""
+        print(f"[DEBUG] save_html_to_folder called for page_id={entity.id}, title='{entity.title}', parent_id={entity.parent_id}, order={entity.order}")
+        
         # media_serviceが渡されている場合はそれを使用、なければ新規作成
         if self.media_service:
             media_service = self.media_service
@@ -47,38 +49,86 @@ class HtmlGenerator:
             from .media_service import MediaService
             media_service = MediaService(repository)
         
+        page_folder = None  # 初期化を追加
+        
+        # まず、既存のフォルダを検索（orderが変更された場合に対応）
+        existing_page_folder = None
+        if media_service.repository:
+            existing_page_folder = media_service._find_existing_page_folder(entity)
+            if existing_page_folder:
+                print(f"[DEBUG] Found existing page folder: {existing_page_folder}")
+            else:
+                print(f"[DEBUG] No existing page folder found")
+        
         # 親フォルダを先に明示的に作成してから、子フォルダを作成
         if entity.parent_id:
+            print(f"[DEBUG] Page has parent_id={entity.parent_id}")
             if not media_service.repository:
                 # repositoryがない場合はエラーを発生させる
                 raise ValueError(f'repository is None but entity has parent_id={entity.parent_id}')
             else:
                 parent_entity = media_service.repository.find_by_id(entity.parent_id)
                 if parent_entity:
+                    print(f"[DEBUG] Parent entity found: id={parent_entity.id}, title='{parent_entity.title}'")
                     # _get_page_folder_absolute_pathを使う
                     parent_folder = media_service._get_page_folder_absolute_path(parent_entity)
+                    print(f"[DEBUG] Calculated parent folder path: {parent_folder}")
                     
-                    # 親フォルダが存在しない場合はエラー（親ページを先に保存する必要がある）
+                    # 親フォルダが存在しない場合は、既存のフォルダを検索
                     if not parent_folder.exists() or not parent_folder.is_dir():
-                        raise ValueError(f'親ページ（ID: {entity.parent_id}）のフォルダが存在しません。親ページを先に保存してください。')
+                        print(f"[DEBUG] Parent folder does not exist, searching for existing folder...")
+                        existing_parent_folder = media_service._find_existing_parent_folder(parent_entity)
+                        if existing_parent_folder:
+                            parent_folder = existing_parent_folder
+                            print(f"[DEBUG] Found existing parent folder: {parent_folder}")
+                        else:
+                            print(f"[DEBUG] ERROR: No existing parent folder found")
+                            raise ValueError(f'親ページ（ID: {entity.parent_id}）のフォルダが存在しません。親ページを先に保存してください。')
+                    else:
+                        print(f"[DEBUG] Parent folder exists: {parent_folder}")
                     
-                    # 親フォルダが存在する場合のみ、子フォルダを作成
-                    safe_title = re.sub(r'[<>:"/\\|?*]', '_', entity.title)
-                    folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
-                    
-                    # 正しい階層構造で子フォルダを作成（親フォルダの直下）
-                    page_folder = parent_folder / folder_name
-                    page_folder.mkdir(parents=False, exist_ok=True)
+                    # 既存のフォルダがある場合はそれを使用、なければ新しいフォルダを作成
+                    if existing_page_folder and existing_page_folder.exists():
+                        page_folder = existing_page_folder
+                        print(f"[DEBUG] Using existing page folder: {page_folder}")
+                    else:
+                        # 親フォルダが存在する場合のみ、子フォルダを作成
+                        safe_title = re.sub(r'[<>:"/\\|?*]', '_', entity.title)
+                        folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+                        
+                        # 正しい階層構造で子フォルダを作成（親フォルダの直下）
+                        page_folder = parent_folder / folder_name
+                        print(f"[DEBUG] Creating new page folder: {page_folder}")
+                        page_folder.mkdir(parents=False, exist_ok=True)
                 else:
                     # 親が見つからない場合はエラーを発生させる
+                    print(f"[DEBUG] ERROR: Parent entity not found for parent_id={entity.parent_id}")
                     raise ValueError(f'親ページ（ID: {entity.parent_id}）が見つかりません。')
         else:
+            print(f"[DEBUG] Page is root level (no parent)")
             # ルートページの場合
-            # get_page_folder_pathを使わずに、子フォルダ名を直接計算
-            safe_title = re.sub(r'[<>:"/\\|?*]', '_', entity.title)
-            folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
-            page_folder = self.media_root / 'uploads' / folder_name
-            page_folder.mkdir(parents=False, exist_ok=True)
+            if existing_page_folder and existing_page_folder.exists():
+                page_folder = existing_page_folder
+                print(f"[DEBUG] Using existing root page folder: {page_folder}")
+            else:
+                # get_page_folder_pathを使わずに、子フォルダ名を直接計算
+                safe_title = re.sub(r'[<>:"/\\|?*]', '_', entity.title)
+                folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+                page_folder = self.media_root / 'uploads' / folder_name
+                print(f"[DEBUG] Creating new root page folder: {page_folder}")
+                page_folder.mkdir(parents=False, exist_ok=True)
+        
+        # page_folderが設定されていることを確認
+        if page_folder is None:
+            print(f"[DEBUG] ERROR: page_folder is None")
+            raise ValueError(f'ページフォルダが設定できませんでした。entity.id={entity.id}, entity.parent_id={entity.parent_id}')
+        
+        # フォルダが存在することを確認
+        if not page_folder.exists() or not page_folder.is_dir():
+            print(f"[DEBUG] ERROR: page_folder does not exist: {page_folder}")
+            raise ValueError(f'ページフォルダが存在しません: {page_folder}')
+        
+        print(f"[DEBUG] Using page folder: {page_folder} (exists: {page_folder.exists()})")
         
         # 親フォルダが作成された場合、親ページのHTMLファイルも作成する
         if entity.parent_id and media_service.repository:
@@ -86,6 +136,13 @@ class HtmlGenerator:
             if parent_entity:
                 # _get_page_folder_absolute_pathを使う
                 parent_folder = media_service._get_page_folder_absolute_path(parent_entity)
+                
+                # 親フォルダが存在しない場合は、既存のフォルダを検索
+                if not parent_folder.exists() or not parent_folder.is_dir():
+                    existing_folder = media_service._find_existing_parent_folder(parent_entity)
+                    if existing_folder:
+                        parent_folder = existing_folder
+                
                 # 親フォルダが存在し、HTMLファイルがない場合
                 if parent_folder.exists() and parent_folder.is_dir():
                     parent_safe_title = re.sub(r'[<>:"/\\|?*]', '_', parent_entity.title)
@@ -96,10 +153,12 @@ class HtmlGenerator:
                         try:
                             with open(parent_html_file, 'w', encoding='utf-8') as f:
                                 f.write(parent_html_content)
+                            print(f"[DEBUG] Created parent HTML file: {parent_html_file}")
                         except Exception as e:
                             print(f"Warning: Failed to save parent HTML to {parent_html_file}: {e}")
         
         # HTML コンテンツを生成
+        print(f"[DEBUG] Generating HTML content...")
         html_content = self.generate_html_content(entity)
         
         # ファイル名をサニタイズ
@@ -107,11 +166,18 @@ class HtmlGenerator:
         html_filename = f'{safe_title}.html'
         html_path = page_folder / html_filename
         
+        print(f"[DEBUG] HTML file path: {html_path}")
+        
         try:
             with open(html_path, 'w', encoding='utf-8') as f:
                 f.write(html_content)
+            print(f"✓ HTML file saved to {html_path} (folder: {page_folder.name})")  # 成功ログを追加
         except Exception as e:
-            print(f"Warning: Failed to save HTML to {html_path}: {e}")
+            error_msg = f"Warning: Failed to save HTML to {html_path}: {e}"
+            print(error_msg)
+            import traceback
+            traceback.print_exc()  # スタックトレースを出力
+            raise  # 例外を再発生させて、呼び出し元で処理できるようにする
     
     def _replace_image_with_base64(self, match: re.Match) -> str:
         """画像タグをbase64埋め込み形式に変換する"""

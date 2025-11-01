@@ -39,16 +39,16 @@ class PageRepository(PageRepositoryInterface):
             page.title = entity.title
             page.content = entity.content
             page.icon = entity.icon
-            page.order = entity.order  # 追加
-            if entity.parent_id:
-                page.parent_id = entity.parent_id
+            page.order = entity.order
+            # parent_idがNoneでも更新する
+            page.parent_id = entity.parent_id
         else:
             page = Page(
                 title=entity.title,
                 content=entity.content,
                 icon=entity.icon,
                 parent_id=entity.parent_id,
-                order=entity.order  # 追加
+                order=entity.order
             )
         
         return page

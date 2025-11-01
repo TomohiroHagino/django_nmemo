@@ -209,12 +209,16 @@ class PageCommandService:
                     traceback.print_exc()
             
             # HTMLファイルを保存（例外が発生しても続行）
+            print(f"[DEBUG] About to save HTML for page_id={saved_entity.id}, title='{saved_entity.title}'")
             try:
                 self.html_generator.save_html_to_folder(saved_entity)
+                print(f"[DEBUG] HTML save completed successfully for page_id={saved_entity.id}")
             except Exception as e:
-                print(f"Warning: Failed to save HTML file for page {saved_entity.id}: {e}")
+                error_msg = f"Warning: Failed to save HTML file for page {saved_entity.id}: {e}"
+                print(error_msg)
                 import traceback
-                traceback.print_exc()
+                traceback.print_exc()  # スタックトレースを出力
+                # エラーを記録するが、処理は続行（データベースの保存は成功しているため）
             
             # タイトルが変更された場合、親階層に誤って作成されたフォルダを削除（例外が発生しても続行）
             if old_title != saved_entity.title:
@@ -457,16 +461,22 @@ class PageCommandService:
                 new_folder.mkdir(parents=False, exist_ok=True)
             
             items_to_process = list(old_folder.iterdir())
+            print(f"[DEBUG] Moving {len(items_to_process)} items from {old_folder} to {new_folder}")
             
             for item in items_to_process:
                 if item.is_file():
                     if item.suffix.lower() == '.html':
-                        # HTMLファイルは削除（新しいフォルダに既に作成されているため）
+                        # HTMLファイルも移動する（後でsave_html_to_folderが呼ばれて更新されるが、
+                        # 移動時にファイルが存在しないと不整合が生じる可能性があるため）
                         try:
-                            os.remove(item)
-                            print(f"✓ Deleted old HTML file: {item.name}")
+                            new_path = new_folder / item.name
+                            # 移動先に既に同じ名前のHTMLファイルがある場合は上書き
+                            if new_path.exists():
+                                os.remove(new_path)
+                            shutil.move(str(item), str(new_path))
+                            print(f"✓ Moved HTML file: {item.name}")
                         except Exception as e:
-                            print(f"✗ Warning: Failed to delete HTML file {item.name}: {e}")
+                            print(f"✗ Warning: Failed to move HTML file {item.name}: {e}")
                     else:
                         # メディアファイルを新しいフォルダに移動
                         try:
@@ -502,6 +512,8 @@ class PageCommandService:
                         print(f"✗ Warning: Failed to move subdirectory {item.name}: {e}")
         except Exception as e:
             print(f"✗ Warning: Failed to move folder contents: {e}")
+            import traceback
+            traceback.print_exc()
     
     def _merge_directories(self, src_dir: Path, dst_dir: Path) -> None:
         """ソースディレクトリの内容を宛先ディレクトリにマージ"""
@@ -589,10 +601,14 @@ class PageCommandService:
                 raise ValueError('新しい親ページが見つかりません')
         
         # 循環参照をチェック
-        from ...domain.page_aggregate import PageDomainService
-        all_pages = self.repository.find_all_pages()  # find_all() → find_all_pages() に修正
-        if not PageDomainService.validate_hierarchy(new_parent_id, page_id, all_pages):
-            raise ValueError('循環参照を防ぐため、この操作は許可されません')
+        old_parent_id = entity.parent_id  # 古い親IDを保存
+        parent_changed = entity.parent_id != new_parent_id
+        
+        if parent_changed:
+            from ...domain.page_aggregate import PageDomainService
+            all_pages = self.repository.find_all_pages()
+            if not PageDomainService.validate_hierarchy(new_parent_id, page_id, all_pages):
+                raise ValueError('循環参照を防ぐため、この操作は許可されません')
         
         # PageAggregateに変換して移動
         aggregate = PageAggregate.from_entity_tree(entity)
@@ -607,6 +623,15 @@ class PageCommandService:
         # エンティティに変換して保存
         entity = DtoConverter.aggregate_to_entity(aggregate)
         saved_entity = self.repository.save(entity)
+        
+        # 親が変わった場合、フォルダを古い親から新しい親に移動
+        if parent_changed:
+            try:
+                self._move_folder_to_new_parent(saved_entity, old_parent_id)
+            except Exception as e:
+                print(f"Warning: Failed to move folder to new parent for page {saved_entity.id}: {e}")
+                import traceback
+                traceback.print_exc()
         
         # HTMLファイルを更新
         self.html_generator.save_html_to_folder(saved_entity)
@@ -647,7 +672,10 @@ class PageCommandService:
         
         # 循環参照をチェック（親が変わる場合）
         new_parent_id = target_entity.parent_id
-        if entity.parent_id != new_parent_id:
+        old_parent_id = entity.parent_id  # 古い親IDを保存
+        parent_changed = entity.parent_id != new_parent_id
+        
+        if parent_changed:
             from ...domain.page_aggregate import PageDomainService
             all_pages = self.repository.find_all_pages()
             if not PageDomainService.validate_hierarchy(new_parent_id, page_id, all_pages):
@@ -665,6 +693,21 @@ class PageCommandService:
         # 移動対象のページを除外（まだ移動前なので、元の親の下にある）
         siblings_entities = [s for s in siblings_entities if s.id != page_id]
         
+        # ターゲットページをsiblings_entitiesに確実に含める
+        # （ターゲットページが既に移動先の親の下にある場合）
+        target_in_siblings = any(s.id == target_page_id for s in siblings_entities)
+        if not target_in_siblings:
+            # ターゲットページがsiblingsに含まれていない場合は追加
+            siblings_entities.append(target_entity)
+        
+        # 古いorder値を保存（フォルダリネーム用）
+        # 移動先の親の兄弟ページと移動対象のページのorderを保存
+        # これらは順序変更で影響を受ける可能性があるすべてのページ
+        old_orders = {}
+        all_pages_to_check = [entity] + siblings_entities
+        for page_entity in all_pages_to_check:
+            old_orders[page_entity.id] = page_entity.order
+        
         # PageAggregateに変換
         aggregate = PageAggregate.from_entity_tree(entity)
         siblings = [PageAggregate.from_entity_tree(s) for s in siblings_entities]
@@ -674,19 +717,126 @@ class PageCommandService:
         aggregate.updated_at = datetime.now()
         
         # 並び順を変更（ターゲットページの前後に挿入）
-        # まず、移動対象のページもsiblingsに追加する必要がある
         # aggregate.reorderは自分自身をsiblingsから除外するので、ここではsiblingsに自分自身は含めない
         updated_siblings = aggregate.reorder(target_page_id, position, siblings)
         
+        # 移動対象のページのparent_idを確実に更新（aggregate.reorder()の後で再設定）
+        # updated_siblingsに含まれる移動対象のページのparent_idを更新
+        for sibling in updated_siblings:
+            if sibling.id == page_id:
+                sibling.parent_id = target_parent_id
+                print(f"[DEBUG] Updated sibling.parent_id to {target_parent_id} for page {sibling.id}")
+        
+        # aggregateのparent_idも確実に更新（updated_siblingsに含まれていない場合に備えて）
+        aggregate.parent_id = target_parent_id
+        print(f"[DEBUG] Updated aggregate.parent_id to {target_parent_id} for page {aggregate.id}")
+        
+        # updated_siblingsに含まれるすべてのページの古いorderを確実に保存
+        # aggregate.reorderによって順序が変更される可能性があるすべてのページのorderを保存する
+        for sibling in updated_siblings:
+            if sibling.id not in old_orders:
+                # データベースから現在のorderを取得（保存前の状態）
+                current_entity = self.repository.find_by_id(sibling.id)
+                if current_entity:
+                    old_orders[sibling.id] = current_entity.order
+                else:
+                    # siblings_entitiesから探す（まだ保存されていない状態のエンティティ）
+                    for s in siblings_entities:
+                        if s.id == sibling.id:
+                            old_orders[sibling.id] = s.order
+                            break
+        
+        # 移動対象のページも確実にold_ordersに含める
+        if page_id not in old_orders:
+            old_orders[page_id] = entity.order
+        
         # すべての兄弟ページを保存（順序が更新されたものすべて）
         for sibling in updated_siblings:
+            # 移動対象のページの場合、parent_idを確実に更新（念のため再度確認）
+            if sibling.id == page_id:
+                sibling.parent_id = target_parent_id
+                print(f"[DEBUG] Before save: sibling.id={sibling.id}, sibling.parent_id={sibling.parent_id}, target_parent_id={target_parent_id}")
+            
             sibling_entity = DtoConverter.aggregate_to_entity(sibling)
+            print(f"[DEBUG] Converted entity: id={sibling_entity.id}, parent_id={sibling_entity.parent_id}")
             self.repository.save(sibling_entity)
         
-        # HTMLファイルを更新
-        saved_entity = self.repository.find_by_id(page_id)
-        if saved_entity:
-            self.html_generator.save_html_to_folder(saved_entity)
+        # 移動したページも追加（updated_siblingsに含まれていない場合）
+        if not any(s.id == page_id for s in updated_siblings):
+            updated_siblings.append(aggregate)
+            saved_entity = DtoConverter.aggregate_to_entity(aggregate)
+            self.repository.save(saved_entity)
+        
+        # 親が変わった場合、移動対象のページのフォルダを古い親から新しい親に移動
+        if parent_changed:
+            saved_entity = self.repository.find_by_id(page_id)
+            if saved_entity:
+                try:
+                    self._move_folder_to_new_parent(saved_entity, old_parent_id)
+                except Exception as e:
+                    print(f"Warning: Failed to move folder to new parent for page {saved_entity.id}: {e}")
+                    import traceback
+                    traceback.print_exc()
+        
+        # すべての影響を受けたページのフォルダをリネーム（orderが変更された場合）
+        # updated_siblingsに含まれるすべてのページについて、orderが変更されていればフォルダをリネーム
+        for sibling in updated_siblings:
+            # データベースから最新の状態を取得
+            saved_entity = self.repository.find_by_id(sibling.id)
+            if saved_entity and saved_entity.id in old_orders:
+                old_order = old_orders[saved_entity.id]
+                # orderが変更された場合、フォルダをリネーム
+                if old_order != saved_entity.order:
+                    try:
+                        self._rename_folder_on_order_change(saved_entity, old_order)
+                    except Exception as e:
+                        print(f"Warning: Failed to rename folder for page {saved_entity.id} during reorder: {e}")
+                        import traceback
+                        traceback.print_exc()
+        
+        # 移動したページがupdated_siblingsに含まれていない場合も処理
+        if not any(s.id == page_id for s in updated_siblings):
+            saved_entity = self.repository.find_by_id(page_id)
+            if saved_entity and saved_entity.id in old_orders:
+                old_order = old_orders[saved_entity.id]
+                if old_order != saved_entity.order:
+                    try:
+                        self._rename_folder_on_order_change(saved_entity, old_order)
+                    except Exception as e:
+                        print(f"Warning: Failed to rename folder for moved page {saved_entity.id}: {e}")
+                        import traceback
+                        traceback.print_exc()
+        
+        # すべての影響を受けたページのHTMLファイルを更新
+        # updated_siblingsに含まれるすべてのページを処理
+        for sibling in updated_siblings:
+            saved_entity = self.repository.find_by_id(sibling.id)
+            if saved_entity:
+                try:
+                    self.html_generator.save_html_to_folder(saved_entity)
+                except Exception as e:
+                    print(f"Warning: Failed to save HTML for page {saved_entity.id} during reorder: {e}")
+                    import traceback
+                    traceback.print_exc()
+        
+        # 移動したページがupdated_siblingsに含まれていない場合もHTMLファイルを更新
+        if not any(s.id == page_id for s in updated_siblings):
+            saved_entity = self.repository.find_by_id(page_id)
+            if saved_entity:
+                try:
+                    self.html_generator.save_html_to_folder(saved_entity)
+                except Exception as e:
+                    print(f"Warning: Failed to save HTML for moved page {saved_entity.id}: {e}")
+                    import traceback
+                    traceback.print_exc()
+        
+        # DBに存在しない孤立フォルダをクリーンアップ（影響を受けた親フォルダ内）
+        try:
+            self._cleanup_orphaned_folders_in_parent(target_parent_id)
+        except Exception as e:
+            print(f"Warning: Failed to cleanup orphaned folders: {e}")
+            import traceback
+            traceback.print_exc()
         
         return DtoConverter.entity_to_dto(aggregate) if aggregate.id else None
 
@@ -704,6 +854,91 @@ class PageCommandService:
                 return max((child.order for child in filtered_siblings), default=0)
             return max((child.order for child in siblings), default=0)
         return 0
+
+    def _rename_folder_on_order_change(self, entity: 'PageEntity', old_order: int) -> None:
+        """order変更時にフォルダをリネームする"""
+        try:
+            import re
+            import os
+            import shutil
+            from pathlib import Path
+            
+            # 古いフォルダ名と新しいフォルダ名を計算（タイトルは変更されていない）
+            safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
+            old_folder_name = f'{old_order}_page_{entity.id}_{safe_title}'
+            new_folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+            
+            # 新しいフォルダパスを取得
+            if entity.parent_id:
+                parent_entity = self.repository.find_by_id(entity.parent_id)
+                if parent_entity:
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    
+                    # 親フォルダが存在しない場合は、既存のフォルダを検索
+                    if not parent_folder.exists() or not parent_folder.is_dir():
+                        existing_parent_folder = self.media_service._find_existing_parent_folder(parent_entity)
+                        if existing_parent_folder:
+                            parent_folder = existing_parent_folder
+                        else:
+                            print(f"ERROR: Parent folder does not exist for page {entity.id}")
+                            return
+                    
+                    old_folder = parent_folder / old_folder_name
+                    new_folder = parent_folder / new_folder_name
+                else:
+                    print(f"ERROR: Parent entity not found for page {entity.id}")
+                    return
+            else:
+                # ルートページの場合
+                old_folder = self.media_service.uploads_dir / old_folder_name
+                new_folder = self.media_service.uploads_dir / new_folder_name
+            
+            # 古いフォルダが存在し、新しいフォルダと異なる場合
+            if old_folder.exists() and old_folder.is_dir():
+                old_folder_resolved = old_folder.resolve()
+                new_folder_resolved = new_folder.resolve()
+                
+                if old_folder_resolved != new_folder_resolved:
+                    # 既存のフォルダを検索して、実際の場所を確認
+                    existing_folder = self.media_service._find_existing_page_folder(entity)
+                    if existing_folder:
+                        existing_resolved = existing_folder.resolve()
+                        # 既存フォルダが古いフォルダと同じ場合のみリネーム
+                        if existing_resolved == old_folder_resolved:
+                            if not new_folder.exists():
+                                new_folder.mkdir(parents=False, exist_ok=True)
+                            
+                            self._move_folder_contents(old_folder, new_folder, entity.title)
+                            self._remove_empty_folders(old_folder)
+                        elif existing_resolved != new_folder_resolved:
+                            # 既存フォルダが別の場所にある場合、そこから新しい場所へ移動
+                            if not new_folder.exists():
+                                new_folder.mkdir(parents=False, exist_ok=True)
+                            self._move_folder_contents(existing_folder, new_folder, entity.title)
+                            self._remove_empty_folders(existing_folder)
+                    else:
+                        # 既存フォルダが見つからない場合、古いフォルダから新しいフォルダへ移動
+                        if not new_folder.exists():
+                            new_folder.mkdir(parents=False, exist_ok=True)
+                        self._move_folder_contents(old_folder, new_folder, entity.title)
+                        self._remove_empty_folders(old_folder)
+            else:
+                # 古いフォルダが見つからない場合、既存のフォルダを検索して新しい場所へ移動
+                existing_folder = self.media_service._find_existing_page_folder(entity)
+                if existing_folder:
+                    existing_resolved = existing_folder.resolve()
+                    new_folder_resolved = new_folder.resolve()
+                    
+                    if existing_resolved != new_folder_resolved:
+                        if not new_folder.exists():
+                            new_folder.mkdir(parents=False, exist_ok=True)
+                        self._move_folder_contents(existing_folder, new_folder, entity.title)
+                        self._remove_empty_folders(existing_folder)
+            
+        except Exception as e:
+            print(f"Warning: Failed to rename folder on order change: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _cleanup_misplaced_folders_after_save(self, entity: 'PageEntity') -> None:
         """保存後に親階層に誤って作成されたフォルダを削除"""
@@ -836,5 +1071,157 @@ class PageCommandService:
                     
         except Exception as e:
             print(f"Warning: Failed to cleanup misplaced folders after save: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _move_folder_to_new_parent(self, entity: 'PageEntity', old_parent_id: Optional[int]) -> None:
+        """親が変わった場合にフォルダを古い親から新しい親に移動する"""
+        try:
+            import re
+            import os
+            import shutil
+            from pathlib import Path
+            
+            safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
+            folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+            
+            # 古い親フォルダを取得
+            old_parent_folder = None
+            old_folder = None
+            if old_parent_id:
+                old_parent_entity = self.repository.find_by_id(old_parent_id)
+                if old_parent_entity:
+                    old_parent_folder = self.media_service._get_page_folder_absolute_path(old_parent_entity)
+                    if not old_parent_folder.exists() or not old_parent_folder.is_dir():
+                        old_parent_folder = self.media_service._find_existing_parent_folder(old_parent_entity)
+                
+                if old_parent_folder and old_parent_folder.exists() and old_parent_folder.is_dir():
+                    # 古い親フォルダ内でこのページのフォルダを検索（IDとタイトルで検索）
+                    for item in old_parent_folder.iterdir():
+                        if item.is_dir() and f'_page_{entity.id}_' in item.name and safe_title in item.name:
+                            old_folder = item
+                            break
+                    
+                    # 見つからない場合は、フォルダ名から推測
+                    if not old_folder:
+                        # 古いorderが分からないため、既存のフォルダを検索する必要がある
+                        # しかし、orderが変更されている可能性があるため、IDとタイトルで検索した結果を使用
+                        pass
+                else:
+                    print(f"Warning: Old parent folder not found for page {entity.id}")
+            else:
+                # ルートから移動する場合、uploadsフォルダ内を検索
+                for item in self.media_service.uploads_dir.iterdir():
+                    if item.is_dir() and f'_page_{entity.id}_' in item.name and safe_title in item.name:
+                        old_folder = item
+                        break
+            
+            # 新しい親フォルダを取得
+            new_parent_folder = None
+            if entity.parent_id:
+                new_parent_entity = self.repository.find_by_id(entity.parent_id)
+                if new_parent_entity:
+                    new_parent_folder = self.media_service._get_page_folder_absolute_path(new_parent_entity)
+                    if not new_parent_folder.exists() or not new_parent_folder.is_dir():
+                        new_parent_folder = self.media_service._find_existing_parent_folder(new_parent_entity)
+                    if not new_parent_folder or not new_parent_folder.exists():
+                        print(f"Warning: New parent folder not found for page {entity.id}, parent_id={entity.parent_id}")
+                        return
+                else:
+                    print(f"ERROR: New parent entity not found for page {entity.id}")
+                    return
+                new_folder = new_parent_folder / folder_name
+            else:
+                # ルートに移動する場合
+                new_folder = self.media_service.uploads_dir / folder_name
+            
+            # 古いフォルダが見つかった場合、新しいフォルダに移動
+            if old_folder and old_folder.exists() and old_folder.is_dir():
+                old_folder_resolved = old_folder.resolve()
+                new_folder_resolved = new_folder.resolve()
+                
+                if old_folder_resolved != new_folder_resolved:
+                    # 新しいフォルダが存在しない場合は作成
+                    if not new_folder.exists():
+                        new_folder.mkdir(parents=False, exist_ok=True)
+                    
+                    # フォルダ全体を移動（メディアファイル、サブディレクトリ、HTMLファイルすべて）
+                    print(f"[DEBUG] Moving folder from {old_folder} to {new_folder}")
+                    self._move_folder_contents(old_folder, new_folder, entity.title)
+                    
+                    # 移動後に古いフォルダを削除
+                    self._remove_empty_folders(old_folder)
+            else:
+                print(f"Warning: Old folder not found for page {entity.id} (old_parent_id={old_parent_id})")
+                # 既存のフォルダを検索して新しい場所へ移動（フォールバック）
+                existing_folder = self.media_service._find_existing_page_folder(entity)
+                if existing_folder:
+                    existing_resolved = existing_folder.resolve()
+                    new_folder_resolved = new_folder.resolve()
+                    
+                    if existing_resolved != new_folder_resolved:
+                        if not new_folder.exists():
+                            new_folder.mkdir(parents=False, exist_ok=True)
+                        print(f"[DEBUG] Moving existing folder from {existing_folder} to {new_folder}")
+                        self._move_folder_contents(existing_folder, new_folder, entity.title)
+                        self._remove_empty_folders(existing_folder)
+            
+        except Exception as e:
+            print(f"Warning: Failed to move folder to new parent: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _cleanup_orphaned_folders_in_parent(self, parent_id: Optional[int]) -> None:
+        """親フォルダ内のDBに存在しない孤立フォルダを削除する"""
+        try:
+            import re
+            import os
+            import shutil
+            from pathlib import Path
+            
+            # すべてのページIDを取得
+            all_pages = self.repository.find_all_pages()
+            existing_page_ids = {page.id for page in all_pages}
+            
+            # 親フォルダを取得
+            parent_folder = None
+            if parent_id:
+                parent_entity = self.repository.find_by_id(parent_id)
+                if parent_entity:
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    if not parent_folder.exists() or not parent_folder.is_dir():
+                        parent_folder = self.media_service._find_existing_parent_folder(parent_entity)
+            else:
+                # ルートレベルの場合
+                parent_folder = self.media_service.uploads_dir
+            
+            if not parent_folder or not parent_folder.exists() or not parent_folder.is_dir():
+                return
+            
+            # 親フォルダ内のすべてのフォルダをチェック
+            folders_to_check = list(parent_folder.iterdir())
+            
+            for folder_path in folders_to_check:
+                if not folder_path.is_dir():
+                    continue
+                
+                # フォルダ名からページIDを抽出
+                # パターン: {order}_page_{id}_{title}
+                match = re.match(r'\d+_page_(\d+)_', folder_path.name)
+                
+                if match:
+                    page_id = int(match.group(1))
+                    
+                    # DBに存在しない場合は孤立フォルダとして削除
+                    if page_id not in existing_page_ids:
+                        try:
+                            # フォルダとその中身を削除
+                            shutil.rmtree(folder_path)
+                            print(f"✓ Cleaned up orphaned folder: {folder_path.name} (page_id={page_id} does not exist in DB)")
+                        except Exception as e:
+                            print(f"Warning: Failed to remove orphaned folder {folder_path.name}: {e}")
+            
+        except Exception as e:
+            print(f"Warning: Failed to cleanup orphaned folders: {e}")
             import traceback
             traceback.print_exc()
