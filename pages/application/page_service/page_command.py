@@ -208,11 +208,8 @@ class PageCommandService:
                     import traceback
                     traceback.print_exc()
             
-            # HTMLファイルを保存（例外が発生しても続行）
-            print(f"[DEBUG] About to save HTML for page_id={saved_entity.id}, title='{saved_entity.title}'")
             try:
                 self.html_generator.save_html_to_folder(saved_entity)
-                print(f"[DEBUG] HTML save completed successfully for page_id={saved_entity.id}")
             except Exception as e:
                 error_msg = f"Warning: Failed to save HTML file for page {saved_entity.id}: {e}"
                 print(error_msg)
@@ -461,7 +458,6 @@ class PageCommandService:
                 new_folder.mkdir(parents=False, exist_ok=True)
             
             items_to_process = list(old_folder.iterdir())
-            print(f"[DEBUG] Moving {len(items_to_process)} items from {old_folder} to {new_folder}")
             
             for item in items_to_process:
                 if item.is_file():
@@ -499,7 +495,6 @@ class PageCommandService:
                             print(f"✓ Moved subdirectory: {item.name}")
                         else:
                             # 既に存在する場合は、中身をマージ
-                            print(f"DEBUG: Merging subdirectory: {item.name}")
                             self._merge_directories(item, new_subfolder)
                             # 空になったら削除
                             try:
@@ -725,11 +720,9 @@ class PageCommandService:
         for sibling in updated_siblings:
             if sibling.id == page_id:
                 sibling.parent_id = target_parent_id
-                print(f"[DEBUG] Updated sibling.parent_id to {target_parent_id} for page {sibling.id}")
         
         # aggregateのparent_idも確実に更新（updated_siblingsに含まれていない場合に備えて）
         aggregate.parent_id = target_parent_id
-        print(f"[DEBUG] Updated aggregate.parent_id to {target_parent_id} for page {aggregate.id}")
         
         # updated_siblingsに含まれるすべてのページの古いorderを確実に保存
         # aggregate.reorderによって順序が変更される可能性があるすべてのページのorderを保存する
@@ -755,10 +748,8 @@ class PageCommandService:
             # 移動対象のページの場合、parent_idを確実に更新（念のため再度確認）
             if sibling.id == page_id:
                 sibling.parent_id = target_parent_id
-                print(f"[DEBUG] Before save: sibling.id={sibling.id}, sibling.parent_id={sibling.parent_id}, target_parent_id={target_parent_id}")
             
             sibling_entity = DtoConverter.aggregate_to_entity(sibling)
-            print(f"[DEBUG] Converted entity: id={sibling_entity.id}, parent_id={sibling_entity.parent_id}")
             self.repository.save(sibling_entity)
         
         # 移動したページも追加（updated_siblingsに含まれていない場合）
@@ -1022,7 +1013,7 @@ class PageCommandService:
                                 except Exception as e:
                                     print(f"Warning: Failed to remove misplaced folder: {e}")
                             else:
-                                print(f"DEBUG: Folder in parent is correct location, not removing")
+                                print(f"Folder in parent is correct location, not removing")
             
             # 再帰的に検索（念のため）- ただし正しいフォルダは削除しない
             misplaced_folders = []
@@ -1039,7 +1030,6 @@ class PageCommandService:
                                 item_resolved = item.resolve()
                                 if item_resolved != correct_new_folder_resolved:
                                     misplaced_folders.append(item)
-                                    print(f"DEBUG: Found misplaced folder: {item} (should be at {correct_new_folder_resolved})")
                             
                             if item.resolve() != correct_new_folder_resolved:
                                 find_misplaced_folders(item, depth + 1)
@@ -1065,7 +1055,7 @@ class PageCommandService:
                             folder.rmdir()
                             print(f"✓ Removed misplaced folder with only HTML: {folder}")
                         else:
-                            print(f"DEBUG: Misplaced folder contains non-HTML files, skipping: {folder}")
+                            print(f"Misplaced folder contains non-HTML files, skipping: {folder}")
                 except Exception as e:
                     print(f"Warning: Failed to remove misplaced folder {folder}: {e}")
                     
@@ -1146,7 +1136,6 @@ class PageCommandService:
                         new_folder.mkdir(parents=False, exist_ok=True)
                     
                     # フォルダ全体を移動（メディアファイル、サブディレクトリ、HTMLファイルすべて）
-                    print(f"[DEBUG] Moving folder from {old_folder} to {new_folder}")
                     self._move_folder_contents(old_folder, new_folder, entity.title)
                     
                     # 移動後に古いフォルダを削除
@@ -1162,7 +1151,6 @@ class PageCommandService:
                     if existing_resolved != new_folder_resolved:
                         if not new_folder.exists():
                             new_folder.mkdir(parents=False, exist_ok=True)
-                        print(f"[DEBUG] Moving existing folder from {existing_folder} to {new_folder}")
                         self._move_folder_contents(existing_folder, new_folder, entity.title)
                         self._remove_empty_folders(existing_folder)
             

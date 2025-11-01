@@ -281,7 +281,7 @@ class MediaService:
                 else:
                     print(f"✗ Warning: Media file not found: {file_path}")
             else:
-                print(f"DEBUG: Skipping non-media URL: {media_url}")
+                print(f"Skipping non-media URL: {media_url}")
     
     def delete_orphaned_media(self, page_id: int, content: str) -> None:
         """ページフォルダ内のうちコンテンツで参照されない画像・動画を削除する"""
