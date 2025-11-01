@@ -50,17 +50,17 @@ function computePositionByPointer(e, el) {
     return { position: 'after', rect };
 }
 function clearDropClasses(el) {
-    el.classList.remove('drop-target', 'drop-target-child', 'drop-target-before', 'drop-target-after');
+    el.classList.remove('page-item__header--drop-target', 'page-item__header--drop-target-child', 'page-item__header--drop-target-before', 'page-item__header--drop-target-after');
     el.removeAttribute('data-drop-position');
 }
 function applyDropClass(el, position) {
-    el.classList.remove('drop-target');
+    el.classList.remove('page-item__header--drop-target');
     if (position === 'child') {
-        el.classList.add('drop-target', 'drop-target-child');
+        el.classList.add('page-item__header--drop-target', 'page-item__header--drop-target-child');
     } else if (position === 'before') {
-        el.classList.add('drop-target-before');
+        el.classList.add('page-item__header--drop-target-before');
     } else {
-        el.classList.add('drop-target-after');
+        el.classList.add('page-item__header--drop-target-after');
     }
     el.setAttribute('data-drop-position', position);
 }

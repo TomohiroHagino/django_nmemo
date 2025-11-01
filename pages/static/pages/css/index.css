@@ -228,29 +228,24 @@ body {
     align-items: center;
     padding: 4px 6px;
     border-radius: 4px;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease;
 }
 
-.page-item__header:hover {
-    background: #e9e9e7;
+/* 通常のホバー時は背景色なし、または非常に薄い色 */
+.page-item__header:hover:not(.page-item__header--drop-target):not(.page-item__header--drop-target-before):not(.page-item__header--drop-target-after) {
+    background: transparent; /* または #f7f6f3 など非常に薄い色 */
 }
 
 .page-item__header--active {
     background: #e3e2e0;
 }
 
-.page-item__header--drop-target {
-    background: #e3f2fd !important;
+.page-item__header--drop-target,
+.page-item__header--drop-target-before,
+.page-item__header--drop-target-after {
+    background: #e5f1f9 !important;
     outline-offset: -2px;
     border-radius: 4px;
-}
-
-.page-item__header--drop-target-before {
-    background: #e3f2fd !important;
-}
-
-.page-item__header--drop-target-after {
-    background: #e3f2fd !important;
 }
 
 .page-item__header:hover .page-item__actions {
