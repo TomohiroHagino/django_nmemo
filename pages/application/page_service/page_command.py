@@ -179,7 +179,6 @@ class PageCommandService:
                                     old_resolved = old_folder_in_parent.resolve()
                                     new_resolved = new_folder.resolve()
                                     if old_resolved != new_resolved:
-                                        print(f"DEBUG: Removing old folder from parent: {old_folder_in_parent}")
                                         try:
                                             self._move_folder_contents(old_folder_in_parent, new_folder, old_title)
                                             self._remove_empty_folders(old_folder_in_parent)
@@ -191,7 +190,6 @@ class PageCommandService:
                                     folder_resolved = new_folder_in_parent.resolve()
                                     correct_resolved = new_folder.resolve()
                                     if folder_resolved != correct_resolved:
-                                        print(f"DEBUG: Removing misplaced new folder from parent: {new_folder_in_parent}")
                                         try:
                                             items = list(new_folder_in_parent.iterdir())
                                             if not items or all(f.is_file() and f.suffix.lower() == '.html' for f in items):
@@ -548,11 +546,9 @@ class PageCommandService:
                 if not remaining_items:
                     folder.rmdir()
                     print(f"✓ Removed empty folder: {folder}")
-                else:
-                    print(f"DEBUG: Folder still contains items: {folder} - {[item.name for item in remaining_items]}")
             except Exception as e:
                 # 削除できない場合は無視（まだファイルがある可能性）
-                print(f"DEBUG: Could not remove folder {folder}: {e}")
+                pass
         except Exception as e:
             print(f"Warning: Failed to remove empty folders: {e}")
 
@@ -736,17 +732,11 @@ class PageCommandService:
             correct_new_folder = self.media_service.uploads_dir / correct_new_folder_path
             correct_new_folder_resolved = correct_new_folder.resolve()
             
-            print(f"DEBUG: Checking for misplaced folders after save")
-            print(f"DEBUG: New folder name: {new_folder_name}")
-            print(f"DEBUG: Correct new folder path: {correct_new_folder_path}")
-            print(f"DEBUG: Correct new folder resolved: {correct_new_folder_resolved}")
-            
             # uploads直下に誤って作成されたフォルダをチェック（最重要）
             wrong_folder_in_uploads = self.media_service.uploads_dir / new_folder_name
             if wrong_folder_in_uploads.exists() and wrong_folder_in_uploads.is_dir():
                 wrong_resolved = wrong_folder_in_uploads.resolve()
                 if wrong_resolved != correct_new_folder_resolved:
-                    print(f"DEBUG: Found misplaced folder in uploads root: {wrong_folder_in_uploads}")
                     try:
                         items = list(wrong_folder_in_uploads.iterdir())
                         if not items:
@@ -778,9 +768,6 @@ class PageCommandService:
                         if misplaced_in_parent.exists() and misplaced_in_parent.is_dir():
                             folder_resolved = misplaced_in_parent.resolve()
                             if folder_resolved != correct_new_folder_resolved:
-                                print(f"DEBUG: Found misplaced folder in parent directory: {misplaced_in_parent}")
-                                print(f"DEBUG: Misplaced resolved: {folder_resolved}")
-                                print(f"DEBUG: Correct resolved: {correct_new_folder_resolved}")
                                 try:
                                     items = list(misplaced_in_parent.iterdir())
                                     if not items:
