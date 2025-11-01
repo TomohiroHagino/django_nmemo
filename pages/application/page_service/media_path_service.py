@@ -3,9 +3,7 @@
 import re
 from pathlib import Path
 from typing import Optional
-
 from django.conf import settings
-
 from ...domain.page_aggregate import PageEntity
 from ...domain.repositories import PageRepositoryInterface
 

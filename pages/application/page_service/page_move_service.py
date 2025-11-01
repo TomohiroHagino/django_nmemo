@@ -1,9 +1,10 @@
 """ページ移動サービス"""
 
+import traceback
 from typing import Optional
 from datetime import datetime
 
-from ...domain.page_aggregate import PageAggregate
+from ...domain.page_aggregate import PageAggregate, PageDomainService
 from ...domain.repositories import PageRepositoryInterface
 from ..dto import PageDTO
 from .dto_converter import DtoConverter
@@ -43,7 +44,6 @@ class PageMoveService:
         parent_changed = entity.parent_id != new_parent_id
         
         if parent_changed:
-            from ...domain.page_aggregate import PageDomainService
             all_pages = self.repository.find_all_pages()
             if not PageDomainService.validate_hierarchy(new_parent_id, page_id, all_pages):
                 raise ValueError('循環参照を防ぐため、この操作は許可されません')
@@ -63,7 +63,6 @@ class PageMoveService:
                 self.folder_service.move_folder_to_new_parent(saved_entity, old_parent_id)
             except Exception as e:
                 print(f"Warning: Failed to move folder to new parent for page {saved_entity.id}: {e}")
-                import traceback
                 traceback.print_exc()
         
         self.html_generator.save_html_to_folder(saved_entity)

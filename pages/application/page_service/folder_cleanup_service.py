@@ -3,9 +3,9 @@
 import os
 import re
 import shutil
+import traceback
 from pathlib import Path
 from typing import Optional
-
 from ...domain.repositories import PageRepositoryInterface
 from .media_service import MediaService
 from .folder_move_service import FolderMoveService
@@ -91,7 +91,6 @@ class FolderCleanupService:
                     
         except Exception as e:
             print(f"Warning: Failed to cleanup old folder: {e}")
-            import traceback
             traceback.print_exc()
     
     def cleanup_orphaned_old_folders(self, page_id: int, old_folder_name: str, exclude_folder: Path) -> None:
@@ -240,7 +239,6 @@ class FolderCleanupService:
                     
         except Exception as e:
             print(f"Warning: Failed to cleanup misplaced folders after save: {e}")
-            import traceback
             traceback.print_exc()
     
     def cleanup_orphaned_folders_in_parent(self, parent_id: Optional[int]) -> None:
@@ -282,5 +280,4 @@ class FolderCleanupService:
             
         except Exception as e:
             print(f"Warning: Failed to cleanup orphaned folders: {e}")
-            import traceback
             traceback.print_exc()

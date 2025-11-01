@@ -3,9 +3,9 @@
 import os
 import re
 import shutil
+import traceback
 from pathlib import Path
 from typing import Optional
-
 from ...domain.repositories import PageRepositoryInterface
 from .media_service import MediaService
 
@@ -65,7 +65,6 @@ class FolderMoveService:
                         print(f"✗ Warning: Failed to move subdirectory {item.name}: {e}")
         except Exception as e:
             print(f"✗ Warning: Failed to move folder contents: {e}")
-            import traceback
             traceback.print_exc()
     
     def merge_directories(self, src_dir: Path, dst_dir: Path) -> None:
@@ -200,7 +199,6 @@ class FolderMoveService:
             
         except Exception as e:
             print(f"Warning: Failed to rename folder on order change: {e}")
-            import traceback
             traceback.print_exc()
             return None, None
     
@@ -274,5 +272,4 @@ class FolderMoveService:
             
         except Exception as e:
             print(f"Warning: Failed to move folder to new parent: {e}")
-            import traceback
             traceback.print_exc()

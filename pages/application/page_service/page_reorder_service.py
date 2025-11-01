@@ -1,5 +1,6 @@
 """ページ並び替えサービス"""
 
+import traceback
 from typing import Optional, Set
 from datetime import datetime
 from django.db import transaction
@@ -58,7 +59,6 @@ class PageReorderService:
                     self.folder_service.move_folder_to_new_parent(saved_entity, old_parent_id)
                 except Exception as e:
                     print(f"Warning: Failed to move folder to new parent for page {saved_entity.id}: {e}")
-                    import traceback
                     traceback.print_exc()
         
         affected_page_ids = self._handle_order_changes(updated_siblings, old_orders, page_id)
@@ -72,7 +72,6 @@ class PageReorderService:
             self.folder_service.cleanup_orphaned_folders_in_parent(target_entity.parent_id)
         except Exception as e:
             print(f"Warning: Failed to cleanup orphaned folders: {e}")
-            import traceback
             traceback.print_exc()
         
         aggregate = PageAggregate.from_entity_tree(entity)
@@ -141,7 +140,6 @@ class PageReorderService:
                             self.url_service.update_content_urls_for_page(saved_entity.id)
                     except Exception as e:
                         print(f"Warning: Failed to rename folder for page {saved_entity.id}: {e}")
-                        import traceback
                         traceback.print_exc()
         
         if not any(s.id == page_id for s in updated_siblings):
@@ -158,7 +156,6 @@ class PageReorderService:
                             self.url_service.update_content_urls_for_page(saved_entity.id)
                     except Exception as e:
                         print(f"Warning: Failed to rename folder for page {saved_entity.id}: {e}")
-                        import traceback
                         traceback.print_exc()
         
         return affected_page_ids
@@ -172,7 +169,6 @@ class PageReorderService:
                     self.html_generator.save_html_to_folder(saved_entity)
                 except Exception as e:
                     print(f"Warning: Failed to save HTML for page {saved_entity.id}: {e}")
-                    import traceback
                     traceback.print_exc()
         
         if not any(s.id == page_id for s in updated_siblings):
@@ -182,5 +178,4 @@ class PageReorderService:
                     self.html_generator.save_html_to_folder(saved_entity)
                 except Exception as e:
                     print(f"Warning: Failed to save HTML for moved page {saved_entity.id}: {e}")
-                    import traceback
                     traceback.print_exc()

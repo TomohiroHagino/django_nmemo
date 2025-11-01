@@ -6,9 +6,8 @@ import shutil
 import urllib.parse
 from pathlib import Path
 from typing import List, Optional
-
 from django.conf import settings
-
+from .html_generator import HtmlGenerator
 from ...domain.page_aggregate import PageEntity
 from ...domain.repositories import PageRepositoryInterface
 from .media_path_service import MediaPathService
@@ -68,7 +67,6 @@ class MediaFileService:
                     parent_html_file = parent_folder / f'{parent_safe_title}.html'
                     if not parent_html_file.exists():
                         try:
-                            from .html_generator import HtmlGenerator
                             html_generator = HtmlGenerator()
                             parent_html_content = html_generator.generate_html_content(parent_entity)
                             with open(parent_html_file, 'w', encoding='utf-8') as f:
@@ -97,7 +95,6 @@ class MediaFileService:
                     parent_html_file = parent_folder / f'{parent_safe_title}.html'
                     if not parent_html_file.exists():
                         try:
-                            from .html_generator import HtmlGenerator
                             html_generator = HtmlGenerator()
                             parent_html_content = html_generator.generate_html_content(parent_entity)
                             with open(parent_html_file, 'w', encoding='utf-8') as f:
