@@ -12,7 +12,7 @@ export function moveDomAsChild(draggedId, parentId) {
 
     let children = document.getElementById('children-' + parentId);
     if (!children) {
-        const toggleBtn = parentHeader.querySelector('.toggle-btn');
+        const toggleBtn = parentHeader.querySelector('.page-item__toggle');
         if (toggleBtn) {
             toggleBtn.id = 'toggle-' + parentId;
             toggleBtn.classList.remove('empty');
@@ -67,10 +67,10 @@ export function toggleChildren(pageId) {
 export function addPageToTree(pageId, title, parentId, escapeHtml) {
     const pageItemHtml = `
         <div class="page-item">
-            <div class="page-item-header" id="header-${pageId}">
-                <button class="toggle-btn empty">▼</button>
-                <span class="page-icon" onclick="event.stopPropagation(); openIconModal(${pageId}, '📄')" title="アイコンを変更">📄</span>
-                <span class="page-item-title" onclick="loadPage(${pageId})" style="flex: 1;">
+            <div class="page-item__header" id="header-${pageId}">
+                <button class="page-item__toggle empty">▼</button>
+                <span class="page-item__icon" onclick="event.stopPropagation(); openIconModal(${pageId}, '📄')" title="アイコンを変更">📄</span>
+                <span class="page-item__title" onclick="loadPage(${pageId})" style="flex: 1;">
                     ${escapeHtml(title)}
                 </span>
                 <div class="actions">
@@ -87,7 +87,7 @@ export function addPageToTree(pageId, title, parentId, escapeHtml) {
             const parentHeader = document.getElementById('header-' + parentId);
             const parentItem = parentHeader && parentHeader.parentElement;
 
-            const toggleBtn = parentHeader && parentHeader.querySelector('.toggle-btn');
+            const toggleBtn = parentHeader && parentHeader.querySelector('.page-item__toggle');
             if (toggleBtn) {
                 toggleBtn.id = 'toggle-' + parentId;
                 toggleBtn.classList.remove('empty');
@@ -114,7 +114,7 @@ export function addPageToTree(pageId, title, parentId, escapeHtml) {
             const newHeader = document.getElementById('header-' + pageId);
             attachDragDropToPageItem(newHeader);
         } else {
-            const sc = document.querySelector('.sidebar-content');
+            const sc = document.querySelector('.sidebar__content');
             const emptyState = sc && sc.querySelector('.empty-state');
             if (emptyState) emptyState.remove();
 

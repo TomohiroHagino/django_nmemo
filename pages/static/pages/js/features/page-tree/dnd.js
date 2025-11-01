@@ -7,7 +7,7 @@ let dropIndicator = null;
 
 function pageTree() { return document.getElementById('pageTree'); }
 function sidebar() { return document.querySelector('.sidebar'); }
-function sidebarContent() { return document.querySelector('.sidebar-content'); }
+function sidebarContent() { return document.querySelector('.sidebar__content'); }
 
 function ensureDropIndicator() {
     if (!dropIndicator) {
@@ -100,7 +100,7 @@ export function initPageTreeDragDrop() {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
 
-        if (draggedPageId && (e.target === sc || e.target.classList.contains('sidebar-content') || e.target.id === 'pageTree' || e.target.classList.contains('page-list'))) {
+        if (draggedPageId && (e.target === sc || e.target.classList.contains('sidebar__content') || e.target.id === 'pageTree' || e.target.classList.contains('page-list'))) {
             const tree = pageTree();
             if (tree) {
                 const indicator = ensureDropIndicator();
@@ -114,8 +114,8 @@ export function initPageTreeDragDrop() {
     });
 
     sc.addEventListener('dragleave', (e) => {
-        if (!sc.contains(e.relatedTarget) || (e.relatedTarget && e.relatedTarget.classList.contains('page-item-header'))) {
-            if (dropIndicator && dropIndicator.parentNode && (e.relatedTarget && e.relatedTarget.classList.contains('page-item-header'))) {
+        if (!sc.contains(e.relatedTarget) || (e.relatedTarget && e.relatedTarget.classList.contains('page-item__header'))) {
+            if (dropIndicator && dropIndicator.parentNode && (e.relatedTarget && e.relatedTarget.classList.contains('page-item__header'))) {
                 dropIndicator.style.display = 'none';
             }
         }
@@ -124,7 +124,7 @@ export function initPageTreeDragDrop() {
     sc.addEventListener('drop', (e) => {
         if (dropIndicator) dropIndicator.style.display = 'none';
 
-        if (e.target === sc || e.target.classList.contains('sidebar-content') || e.target.id === 'pageTree' || e.target.classList.contains('page-list')) {
+        if (e.target === sc || e.target.classList.contains('sidebar__content') || e.target.id === 'pageTree' || e.target.classList.contains('page-list')) {
             e.preventDefault();
             e.stopPropagation();
 
@@ -145,7 +145,7 @@ export function initPageTreeDragDrop() {
 
 // 公開: 既存ヘッダにD&D付与
 export function attachDragDropToPageItems() {
-    document.querySelectorAll('.page-item-header').forEach((header) => {
+    document.querySelectorAll('.page-item__header').forEach((header) => {
         attachDragDropToPageItem(header);
     });
 }
@@ -168,7 +168,7 @@ export function attachDragDropToPageItem(header) {
 
     header.addEventListener('dragend', (e) => {
         e.currentTarget.style.opacity = '1';
-        document.querySelectorAll('.page-item-header').forEach((h) => clearDropClasses(h));
+        document.querySelectorAll('.page-item__header').forEach((h) => clearDropClasses(h));
         hideIndicator();
         if (dropIndicator && dropIndicator.parentNode) {
             dropIndicator.parentNode.removeChild(dropIndicator);

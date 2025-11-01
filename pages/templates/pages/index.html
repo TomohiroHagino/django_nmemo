@@ -18,16 +18,16 @@
     <div class="container">
         <!-- Left Sidebar -->
         <div class="sidebar">
-            <div class="sidebar-header">
+            <div class="sidebar__header">
                 <h1>📝 Nmemo</h1>
                 <div style="display: flex; gap: 10px;">
                     <button onclick="window.location.reload()" class="btn btn-secondary" style="background: #6c757d; border: none; padding: 8px 12px; cursor: pointer; border-radius: 4px; font-size: 18px; display: flex; align-items: center; justify-content: center; min-width: 40px;" title="リロード">
                         🔄
                     </button>
-                    <button onclick="openCreateModal()" class="btn btn-primary" style="flex: 1;">+ 新しいページ</button>
+                    <button onclick="openCreateModal()" class="btn btn--primary" style="flex: 1;">+ 新しいページ</button>
                 </div>
             </div>
-            <div class="sidebar-content">
+            <div class="sidebar__content">
                 {% if pages %}
                     <div class="page-list" id="pageTree">
                         {% for page in pages %}
@@ -43,7 +43,7 @@
         </div>
         
         <!-- Vertical Resizer -->
-        <div class="sidebar-resizer" id="sidebarResizer" title="ドラッグして幅を変更"></div>
+        <div class="sidebar__resizer" id="sidebarResizer" title="ドラッグして幅を変更"></div>
 
         <!-- Right Content Area -->
         <div class="main-content">
@@ -60,7 +60,7 @@
     
     <!-- 新規ページ作成モーダル -->
     <div id="createModal" class="modal">
-        <div class="modal-content" id="modalContent">
+        <div class="modal__content" id="modalContent">
             <!-- リサイズハンドル -->
             <div class="resize-handle resize-handle-tl"></div>
             <div class="resize-handle resize-handle-t"></div>
@@ -72,7 +72,7 @@
             <div class="resize-handle resize-handle-l"></div>
             <div class="resize-indicator"></div>
             
-            <div class="modal-header">
+            <div class="modal__header">
                 <h2>新しいページを作成</h2>
             </div>
             <form id="createForm" method="POST" action="{% url 'pages:page_create' %}" onsubmit="return handleCreatePage(event)">
@@ -89,7 +89,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn close-btn" onclick="closeCreateModal()">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">作成</button>
+                    <button type="submit" class="btn btn--primary">作成</button>
                 </div>
             </form>
         </div>
@@ -97,8 +97,8 @@
     
     <!-- アイコン選択モーダル -->
     <div id="iconModal" class="modal">
-        <div class="modal-content" id="iconModalContent" style="width: 500px; min-width: 400px;">
-            <div class="modal-header">
+        <div class="modal__content" id="iconModalContent" style="width: 500px; min-width: 400px;">
+            <div class="modal__header">
                 <h2>アイコンを選択</h2>
             </div>
             <div id="iconGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 10px; padding: 20px; max-height: 400px; overflow-y: auto;">
@@ -106,7 +106,7 @@
             </div>
             <div class="form-actions">
                 <button type="button" class="btn close-btn" onclick="closeIconModal()">キャンセル</button>
-                <button type="button" class="btn btn-primary" onclick="confirmIconChange()">決定</button>
+                <button type="button" class="btn btn--primary" onclick="confirmIconChange()">決定</button>
             </div>
         </div>
     </div>

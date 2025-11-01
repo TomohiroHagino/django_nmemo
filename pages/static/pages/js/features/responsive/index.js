@@ -36,7 +36,7 @@ export function initResponsive() {
 
   if (!sidebar.dataset.responsiveInsideClick) {
       sidebar.addEventListener('click', (e) => {
-          if (e.target.classList.contains('page-item-title')) {
+          if (e.target.classList.contains('page-item__title')) {
               closeSidebar();
           }
       });

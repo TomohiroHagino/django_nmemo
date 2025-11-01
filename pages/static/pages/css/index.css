@@ -10,7 +10,7 @@ body {
     color: #333;
 }
 
-/* Scrollbar styling */
+/* スクロールバーのスタイル */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -29,6 +29,9 @@ body {
     background: #b3b3b3;
 }
 
+/* ========================================
+   コンテナブロック
+   ======================================== */
 .container {
     display: flex;
     height: 100vh;
@@ -36,29 +39,9 @@ body {
     position: relative;
 }
 
-/* Vertical resizer between sidebar and main content */
-.sidebar-resizer {
-    width: 3px;
-    cursor: col-resize;
-    background: transparent;
-    position: relative;
-}
-
-.sidebar-resizer::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 2px;
-    width: 2px;
-    background: #e5e5e5;
-}
-
-.sidebar-resizer:hover::after,
-.sidebar-resizer.dragging::after {
-    background: #c7c7c7;
-}
-
+/* ========================================
+   サイドバーブロック
+   ======================================== */
 .sidebar {
     width: 300px;
     min-width: 220px;
@@ -71,12 +54,41 @@ body {
     z-index: 1;
 }
 
-.sidebar-header {
+.sidebar h1 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #37352f;
+    margin-bottom: 10px;
+}
+
+.sidebar__resizer {
+    width: 3px;
+    cursor: col-resize;
+    background: transparent;
+    position: relative;
+}
+
+.sidebar__resizer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 2px;
+    width: 2px;
+    background: #e5e5e5;
+}
+
+.sidebar__resizer:hover::after,
+.sidebar__resizer.dragging::after {
+    background: #c7c7c7;
+}
+
+.sidebar__header {
     padding: 20px;
     border-bottom: 1px solid #e5e5e5;
 }
 
-.sidebar-content {
+.sidebar__content {
     flex: 1;
     overflow-y: auto;
     padding: 10px;
@@ -84,6 +96,31 @@ body {
     transition: background 0.2s, outline 0.2s;
 }
 
+.sidebar__content--drop-root-target {
+    background: rgba(35, 131, 226, 0.05);
+    outline: 2px dashed #2196F3;
+    outline-offset: -10px;
+}
+
+.sidebar__content--drop-root-target::after {
+    content: 'ルートに移動';
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 16px;
+    background: #2196F3;
+    color: white;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+/* ========================================
+   メインコンテンツブロック
+   ======================================== */
 .main-content {
     flex: 1;
     display: flex;
@@ -118,14 +155,10 @@ body {
     font-size: 18px;
 }
 
-.sidebar h1 {
-    font-size: 14px;
-    font-weight: 600;
-    color: #37352f;
-    margin-bottom: 10px;
-}
-
-.page-title-main {
+/* ========================================
+   ページコンテンツブロック
+   ======================================== */
+.page-content__title {
     font-size: 40px;
     font-weight: 700;
     color: #37352f;
@@ -138,81 +171,18 @@ body {
     outline: none;
 }
 
-.page-title-main:hover {
+.page-content__title:hover {
     background: #f7f6f3;
 }
 
-.page-title-main:focus {
+.page-content__title:focus {
     background: #fff;
     box-shadow: 0 0 0 2px #2383e2;
 }
 
-.page-title-main[contenteditable="true"]:empty:before {
+.page-content__title[contenteditable="true"]:empty:before {
     content: "無題";
     color: #ccc;
-}
-
-.page-content-display {
-    font-size: 16px;
-    line-height: 1.6;
-    color: #37352f;
-    padding: 8px;
-    border-radius: 4px;
-    min-height: 200px;
-}
-
-.page-content-display img {
-    max-width: 100%;
-    height: auto;
-}
-
-/* Image resize styles */
-.ql-editor img {
-    cursor: pointer;
-    max-width: 100%;
-    height: auto;
-}
-
-.ql-editor img.selected {
-    outline: 2px solid #2383e2;
-    box-shadow: 0 0 0 1px white, 0 0 0 3px #2383e2;
-}
-
-.ql-editor img.resizing {
-    opacity: 0.7;
-}
-
-.image-resize-overlay {
-    position: absolute;
-    border: 2px dashed #2383e2;
-    background: rgba(35, 131, 226, 0.1);
-    pointer-events: none;
-    z-index: 100;
-}
-
-.resize-handle {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background: #2383e2;
-    border: 2px solid white;
-    /* box-shadow: 0 0 3px rgba(0,0,0,0.3); */
-    z-index: 101;
-}
-
-.resize-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
-.resize-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
-.resize-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
-.resize-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
-.resize-handle.n { top: -5px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
-.resize-handle.s { bottom: -5px; left: 50%; transform: translateY(-50%); cursor: s-resize; }
-.resize-handle.w { top: 50%; left: -5px; transform: translateY(-50%); cursor: w-resize; }
-.resize-handle.e { top: 50%; right: -5px; transform: translateY(-50%); cursor: e-resize; }
-
-#contentEditor {
-    border: 1px solid #e5e5e5;
-    border-radius: 4px;
-    background: #fff;
 }
 
 .page-meta {
@@ -223,17 +193,37 @@ body {
     margin-bottom: 30px;
 }
 
+.ppage-content {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #37352f;
+    padding: 8px;
+    border-radius: 4px;
+    min-height: 200px;
+}
+
+.ppage-content img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ========================================
+   ページリストブロック
+   ======================================== */
 .page-list {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
+/* ========================================
+   ページアイテムブロック
+   ======================================== */
 .page-item {
     position: relative;
 }
 
-.page-item-header {
+.page-item__header {
     display: flex;
     align-items: center;
     padding: 4px 6px;
@@ -241,79 +231,37 @@ body {
     transition: all 0.2s;
 }
 
-.page-item-header:hover {
+.page-item__header:hover {
     background: #e9e9e7;
 }
 
-.page-item-header.active {
+.page-item__header--active {
     background: #e3e2e0;
 }
 
-/* Drag and drop styles for page tree */
-.page-item-header.drop-target {
+.page-item__header--drop-target {
     background: #e3f2fd !important;
     outline-offset: -2px;
     border-radius: 4px;
 }
 
-.page-item-header.drop-target-before {
+.page-item__header--drop-target-before {
     background: #e3f2fd !important;
 }
 
-.page-item-header.drop-target-after {
+.page-item__header--drop-target-after {
     background: #e3f2fd !important;
 }
 
-
-/* Drop indicator (created dynamically by JavaScript) */
-.drop-indicator {
-    position: absolute;
-    height: 4px !important;
-    background: #2196F3 !important;
-    pointer-events: none !important;
-    z-index: 1000 !important;
-    box-shadow: 0 0 6px rgba(33, 150, 243, 0.9) !important;
-    border-radius: 2px !important;
-    transition: top 0.05s ease, left 0.05s ease !important;
+.page-item__header:hover .page-item__actions {
+    opacity: 1;
 }
 
-.drop-indicator::before {
-    content: '';
-    position: absolute;
-    left: -4px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 8px;
-    height: 8px;
-    background: #2196F3;
-    border-radius: 50%;
-    box-shadow: 0 0 4px rgba(33, 150, 243, 0.9);
+.page-item__header:hover .actions {
+    opacity: 1;
 }
 
-/* Drag to root indicator */
-.sidebar-content.drop-root-target {
-    background: rgba(35, 131, 226, 0.05);
-    outline: 2px dashed #2196F3;
-    outline-offset: -10px;
-}
-
-.sidebar-content.drop-root-target::after {
-    content: 'ルートに移動';
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 8px 16px;
-    background: #2196F3;
-    color: white;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: bold;
-    pointer-events: none;
-    z-index: 1000;
-}
-
-.toggle-btn {
+.page-item__toggle {
     width: 20px;
     height: 20px;
     display: inline-flex;
@@ -329,26 +277,27 @@ body {
     flex-shrink: 0;
 }
 
-.toggle-btn.collapsed {
+.page-item__toggle.collapsed {
     transform: rotate(-90deg);
 }
 
-.toggle-btn.empty {
+.page-item__toggle.empty {
     visibility: hidden;
 }
 
-.page-icon {
+.page-item__icon {
     margin-right: 6px;
     font-size: 16px;
     cursor: pointer;
     transition: transform 0.2s;
+    flex-shrink: 0;
 }
 
-.page-icon:hover {
+.page-item__icon:hover {
     transform: scale(1.2);
 }
 
-.page-item-title {
+.page-item__title {
     flex: 1;
     font-weight: 400;
     color: #37352f;
@@ -357,107 +306,29 @@ body {
     cursor: pointer;
 }
 
-.page-item-title:hover {
+.page-item__title:hover {
     text-decoration: none;
 }
 
-.actions {
+.page-item__actions {
     display: flex;
     gap: 4px;
     opacity: 0;
     transition: opacity 0.2s;
 }
 
-.page-item-header:hover .actions {
-    opacity: 1;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.save-indicator {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 10px 20px;
-    background: #28a745;
-    color: white;
-    border-radius: 4px;
-    opacity: 0;
-    transition: opacity 0.3s;
-    z-index: 9999;
-    pointer-events: none;
-}
-
-.save-indicator.show {
-    opacity: 1;
-}
-
-/* Drag and drop styles */
-.ql-editor.drag-over {
-    background-color: #e3f2fd !important;
-    border: 2px dashed #2196F3 !important;
-    opacity: 0.8;
-}
-
-.edit-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    padding: 10px 0;
-    border-top: 1px solid #e5e5e5;
-}
-
-.children {
+.page-item__children {
     margin-left: 24px;
     display: none;
 }
 
-.children.expanded {
+.page-item__children--expanded {
     display: block;
 }
 
-.btn {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background: #2383e2;
-    color: #fff;
-}
-
-.btn-primary:hover {
-    background: #0f6eb7;
-}
-
-.btn-danger {
-    background: #dc3545;
-    color: #fff;
-}
-
-.btn-danger:hover {
-    background: #c82333;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: #999;
-}
-
-.empty-state h2 {
-    font-size: 20px;
-    margin-bottom: 10px;
-}
-
+/* ========================================
+   モーダルブロック
+   ======================================== */
 .modal {
     display: none;
     position: fixed;
@@ -469,7 +340,7 @@ body {
     z-index: 1000;
 }
 
-.modal-content {
+.modal__content {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -489,17 +360,494 @@ body {
     flex-direction: column;
 }
 
-.modal-content form {
+.modal__content form {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
 }
 
-.modal-content.resizing {
+.modal__content.resizing {
     user-select: none;
 }
 
+.modal__content form .form-group {
+    flex-shrink: 0;
+    margin-bottom: 20px;
+}
+
+.modal__content form .form-group:has(.editor-container) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.modal__content .form-group .editor-container {
+    min-height: 0;
+}
+
+.modal__content .editor-container .ql-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.modal__content .editor-container .ql-editor {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 100px !important;
+}
+
+.modal__content .form-group .editor-container .ql-container .ql-editor {
+    min-height: 0 !important;
+}
+
+.modal__content form .form-actions {
+    flex-shrink: 0;
+    margin-top: 20px;
+}
+
+.modal__header {
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+
+.modal__header h2 {
+    font-size: 24px;
+}
+
+.modal__resize-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    cursor: nwse-resize;
+}
+
+.modal__resize-handle-br {
+    bottom: 0;
+    right: 0;
+    cursor: nwse-resize;
+}
+
+.modal__resize-handle-bl {
+    bottom: 0;
+    left: 0;
+    cursor: nesw-resize;
+}
+
+.modal__resize-handle-tr {
+    top: 0;
+    right: 0;
+    cursor: nesw-resize;
+}
+
+.modal__resize-handle-tl {
+    top: 0;
+    left: 0;
+    cursor: nwse-resize;
+}
+
+.modal__resize-handle-t {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 10px;
+    cursor: ns-resize;
+}
+
+.modal__resize-handle-b {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    cursor: ns-resize;
+}
+
+.modal__resize-handle-l {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+.modal__resize-handle-r {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+/* ========================================
+   ボタンブロック
+   ======================================== */
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn--primary {
+    background: #2383e2;
+    color: #fff;
+}
+
+.btn--primary:hover {
+    background: #0f6eb7;
+}
+
+.btn--danger {
+    background: #dc3545;
+    color: #fff;
+}
+
+.btn--danger:hover {
+    background: #c82333;
+}
+
+.close-btn {
+    background: #6c757d;
+    color: #fff;
+}
+
+.close-btn:hover {
+    background: #5a6268;
+}
+
+/* ========================================
+   フォームブロック
+   ======================================== */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.form-group textarea {
+    min-height: 200px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.form-group .editor-container {
+    flex: 1;
+    min-height: 200px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* ========================================
+   Quillエディターブロック
+   ======================================== */
+#contentEditor {
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.editor-container {
+    position: relative !important;
+}
+
+.ql-container {
+    position: relative !important;
+    transform: translateZ(0);
+}
+
+.ql-editor {
+    min-height: 500px;
+    font-size: 16px;
+}
+
+.ql-editor p,
+.ql-editor span,
+.ql-editor div,
+.ql-editor *:not([style*="font-size"]) {
+    font-size: 16px;
+}
+
+.ql-editor img {
+    cursor: pointer;
+    max-width: 100%;
+    height: auto;
+}
+
+.ql-editor img.selected {
+    outline: 2px solid #2383e2;
+    box-shadow: 0 0 0 1px white, 0 0 0 3px #2383e2;
+}
+
+.ql-editor img.resizing {
+    opacity: 0.7;
+}
+
+.ql-editor img,
+.ql-editor video,
+.ql-editor .ql-video-local,
+.ql-editor iframe {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.ql-editor video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.ql-editor .ql-video-local {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.ql-editor .video-wrapper {
+    margin: 10px 0;
+}
+
+.ql-editor .iframe-container {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    margin: 10px 0;
+}
+
+.ql-editor .iframe-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 1;
+    transition: background 0.2s;
+}
+
+.ql-editor .iframe-overlay:hover {
+    background: rgba(0, 102, 204, 0.05);
+}
+
+.ql-editor iframe {
+    max-width: 100%;
+    display: block !important;
+    min-height: 315px;
+    transition: box-shadow 0.2s;
+    border: none;
+}
+
+.ql-editor .iframe-container:hover iframe {
+    box-shadow: 0 0 0 2px #0066cc;
+}
+
+.ql-editor iframe.selected {
+    box-shadow: 0 0 0 3px #0066cc;
+}
+
+.ql-editor iframe.resizing {
+    opacity: 0.7;
+}
+
+.ql-editor .ql-video {
+    display: block !important;
+}
+
+.ql-editor.drag-over {
+    background-color: #e3f2fd !important;
+    border: 2px dashed #2196F3 !important;
+    opacity: 0.8;
+}
+
+.ql-toolbar {
+    background: #f7f6f3;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.ql-tooltip {
+    position: absolute !important;
+    z-index: 1100 !important;
+}
+
+.ql-tooltip.ql-editing {
+    position: absolute !important;
+    z-index: 1100 !important;
+}
+
+.ql-tooltip.ql-editing *,
+.ql-tooltip * {
+    position: relative;
+    z-index: inherit !important;
+}
+
+.ql-tooltip input[type="text"] {
+    position: relative;
+    z-index: 1100 !important;
+}
+
+.ql-picker-options {
+    position: absolute !important;
+    z-index: 1050 !important;
+}
+
+.ql-code-block-no-highlight {
+    width: 28px;
+}
+
+.ql-code-block-no-highlight:before {
+    content: '</>';
+    font-size: 18px;
+}
+
+.ql-code-block-no-highlight svg,
+.ql-code-block-no-highlight svg line,
+.ql-code-block-no-highlight svg path {
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+.ql-snow .ql-editor code,
+.ql-snow .ql-editor pre.ql-code-block {
+    background: transparent !important;
+}
+
+.ql-snow .ql-editor pre.ql-code-block {
+    background: transparent !important;
+    padding: 1em;
+}
+
+.ql-snow .ql-editor pre.ql-code-block code {
+    background: transparent !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="10px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="10px"]::before {
+    content: '10px';
+    font-size: 10px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
+    content: '12px';
+    font-size: 12px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before {
+    content: '14px';
+    font-size: 14px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before {
+    content: '16px';
+    font-size: 16px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before {
+    content: '18px';
+    font-size: 18px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="20px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="20px"]::before {
+    content: '20px';
+    font-size: 20px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
+    content: '24px';
+    font-size: 24px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before {
+    content: '32px';
+    font-size: 32px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="48px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="48px"]::before {
+    content: '48px';
+    font-size: 48px !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label::before {
+    content: '標準';
+}
+
+/* ========================================
+   画像リサイズブロック
+   ======================================== */
+.image-resize-overlay {
+    position: absolute;
+    border: 2px dashed #2383e2;
+    background: rgba(35, 131, 226, 0.1);
+    pointer-events: none;
+    z-index: 100;
+}
+
+.image-resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #2383e2;
+    border: 2px solid white;
+    z-index: 101;
+}
+
+.image-resize-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
+.image-resize-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
+.image-resize-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+.image-resize-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+.image-resize-handle.n { top: -5px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+.image-resize-handle.s { bottom: -5px; left: 50%; transform: translateY(-50%); cursor: s-resize; }
+.image-resize-handle.w { top: 50%; left: -5px; transform: translateY(-50%); cursor: w-resize; }
+.image-resize-handle.e { top: 50%; right: -5px; transform: translateY(-50%); cursor: e-resize; }
+
+/* ========================================
+   リサイズハンドルブロック（非BEM）
+   ======================================== */
 .resize-handle {
     position: absolute;
     width: 20px;
@@ -597,335 +945,139 @@ body {
     bottom: 0;
 }
 
-.modal-header {
-    margin-bottom: 20px;
+/* ========================================
+   ドロップインジケーターブロック
+   ======================================== */
+.drop-indicator {
+    position: absolute;
+    height: 4px !important;
+    background: #2196F3 !important;
+    pointer-events: none !important;
+    z-index: 1000 !important;
+    box-shadow: 0 0 6px rgba(33, 150, 243, 0.9) !important;
+    border-radius: 2px !important;
+    transition: top 0.05s ease, left 0.05s ease !important;
 }
 
-.modal-header h2 {
-    font-size: 24px;
+.drop-indicator::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background: #2196F3;
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(33, 150, 243, 0.9);
 }
 
-.form-group {
-    margin-bottom: 20px;
-}
-
-.modal-content .form-group:has(.editor-container) {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-}
-
-.form-group input,
-.form-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #e5e5e5;
+/* ========================================
+   保存インジケーターブロック
+   ======================================== */
+.save-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background: #28a745;
+    color: white;
     border-radius: 4px;
-    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 9999;
+    pointer-events: none;
 }
 
-.form-group textarea {
-    min-height: 200px;
-    resize: vertical;
-    font-family: inherit;
+.save-indicator.show {
+    opacity: 1;
 }
 
-.form-group .editor-container {
-    flex: 1;
-    min-height: 200px;
-    background: #fff;
+/* ========================================
+   空の状態ブロック
+   ======================================== */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.empty-state h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+/* ========================================
+   アクションブロック（非BEM）
+   ======================================== */
+.actions {
     display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
 }
 
-.modal-content .editor-container .ql-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.modal-content .editor-container .ql-editor {
-    flex: 1;
-    overflow-y: auto;
-}
-
-.ql-editor {
-    min-height: 500px;
-    font-size: 16px;
-}
-
-/* Quillエディタ内のすべての要素にデフォルトフォントサイズを適用 */
-.ql-editor p,
-.ql-editor span,
-.ql-editor div {
-    font-size: 16px;
-}
-
-/* サイズが明示的に設定されていない要素にデフォルトを適用 */
-.ql-editor *:not([style*="font-size"]) {
-    font-size: 16px !important;
-}
-
-.ql-toolbar {
-    background: #f7f6f3;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-.form-actions {
+.action-buttons {
     display: flex;
     gap: 10px;
-    justify-content: flex-end;
+    margin-top: 20px;
 }
 
-.close-btn {
-    background: #6c757d;
-    color: #fff;
+.edit-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 10px 0;
+    border-top: 1px solid #e5e5e5;
 }
 
-.close-btn:hover {
-    background: #5a6268;
+/* ========================================
+   子要素ブロック（非BEM）
+   ======================================== */
+.children {
+    margin-left: 24px;
+    display: none;
 }
 
-/* Quillエディタ内の動画スタイル */
-.ql-editor video {
-    max-width: 100%;
-    height: auto;
+.children.expanded {
     display: block;
 }
 
-/* ローカル動画用のスタイル */
-.ql-editor .ql-video-local {
-    max-width: 100%;
-    height: auto;
-    display: block;
-}
-
-/* 動画ラッパー */
-.ql-editor .video-wrapper {
-    margin: 10px 0;
-}
-
-/* iframe用のコンテナ */
-.ql-editor .iframe-container {
-    position: relative;
-    display: inline-block;
-    max-width: 100%;
-    margin: 10px 0;
-}
-
-/* iframe用のオーバーレイ */
-.ql-editor .iframe-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-    z-index: 1;
-    transition: background 0.2s;
-}
-
-.ql-editor .iframe-overlay:hover {
-    background: rgba(0, 102, 204, 0.05);
-}
-
-/* Quillエディタ内のiframe（YouTube等）スタイル */
-.ql-editor iframe {
-    max-width: 100%;
-    display: block !important;
-    min-height: 315px;
-    transition: box-shadow 0.2s;
-    border: none;
-}
-
-.ql-editor .iframe-container:hover iframe {
-    box-shadow: 0 0 0 2px #0066cc;
-}
-
-.ql-editor iframe.selected {
-    box-shadow: 0 0 0 3px #0066cc;
-}
-
-.ql-editor iframe.resizing {
-    opacity: 0.7;
-}
-
-/* YouTubeの16:9アスペクト比を維持 */
-.ql-editor .ql-video {
-    display: block !important;
-}
-
-/* カスタムツールバーボタン: ハイライトしないコードブロック */
-.ql-code-block-no-highlight {
-    width: 28px;
-}
-
-.ql-code-block-no-highlight:before {
-    content: '</>';
-    font-size: 18px;
-}
-
-/* ボタンのSVGアイコン（シンプルなコードブロックアイコン） */
-.ql-code-block-no-highlight svg,
-.ql-code-block-no-highlight svg line,
-.ql-code-block-no-highlight svg path {
-    fill: currentColor;
-    stroke: currentColor;
-}
-
-/* Quillエディタのフォントサイズドロップダウンのスタイル */
-.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="10px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="10px"]::before {
-    content: '10px';
-    font-size: 10px !important;
-}
-
-.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
-    content: '12px';
-    font-size: 12px !important;
-}
-
-.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before {
-    content: '14px';
-    font-size: 14px !important;
-}
-
-.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before {
-    content: '16px';
-    font-size: 16px !important;
-}
-
-.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before {
-    content: '18px';
-    font-size: 18px !important;
-}
-
-.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="20px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="20px"]::before {
-    content: '20px';
-    font-size: 20px !important;
-}
-
-.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
-    content: '24px';
-    font-size: 24px !important;
-}
-
-.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before {
-    content: '32px';
-    font-size: 32px !important;
-}
-
-.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="48px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="48px"]::before {
-    content: '48px';
-    font-size: 48px !important;
-}
-
-/* デフォルト（サイズ未設定）の表示 */
-.ql-snow .ql-picker.ql-size .ql-picker-label::before {
-    content: '標準';
-}
-
-/* Quill tooltip/link modal z-index fix */
-/* CRITICAL: Quill tooltips must be above sidebar */
-
-/* The container that holds the tooltip */
-.ql-container,
-#contentEditor,
-#createEditor,
-.editor-container {
-    position: relative !important;
-    /* Don't set z-index on container */
-}
-
-/* Force Quill tooltips to appear above everything */
-.ql-tooltip {
-    position: absolute !important;
-    z-index: 1100 !important;
-}
-
-/* Quill tooltip when in editing mode (link input form) */
-.ql-tooltip.ql-editing {
-    position: absolute !important;
-    z-index: 1100 !important;
-}
-
-/* All children of editing tooltip */
-.ql-tooltip.ql-editing *,
-.ql-tooltip * {
-    position: relative;
-    z-index: inherit !important;
-}
-
-/* Quill tooltip input field */
-.ql-tooltip input[type="text"] {
-    position: relative;
-    z-index: 1100 !important;
-}
-
-/* Quill toolbar dropdown menus */
-.ql-picker-options {
-    position: absolute !important;
-    z-index: 1050 !important;
-}
-
-/* Create proper stacking contexts */
-/* Force sidebar and all its children to stay at lower z-index */
-.sidebar,
-.sidebar-header,
-.sidebar-content,
-.page-list,
-.page-item,
-.page-item-header,
-.page-item-title,
-.actions {
-    /* Ensure no child creates a new stacking context */
-    transform: none !important;
-    will-change: auto !important;
-}
-
-/* Ensure Quill containers create proper stacking context */
-.ql-container {
-    transform: translateZ(0);
-}
-
-/* Quillのデフォルトのコードブロック背景色をオーバーライド */
-.ql-snow .ql-editor code,
-.ql-snow .ql-editor pre.ql-code-block {
-    background: transparent !important;
-}
-
-.ql-snow .ql-editor pre.ql-code-block {
-    background: transparent !important;
-    padding: 1em;
-}
-
-.ql-snow .ql-editor pre.ql-code-block code {
-    background: transparent !important;
-}
-
+/* ========================================
+   モバイルメニューブロック
+   ======================================== */
 .mobile-menu-btn {
     display: none;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1900;
+}
+
+.sidebar-overlay.active {
+    display: block !important;
+}
+
+/* ========================================
+   Z-index管理
+   ======================================== */
+.sidebar,
+.sidebar__header,
+.sidebar__content,
+.page-list,
+.page-item,
+.page-item__header,
+.page-item__title,
+.page-item__actions {
+    transform: none !important;
+    will-change: auto !important;
 }
 
 /* ========================================
@@ -952,22 +1104,21 @@ body {
         padding: 20px;
     }
     
-    .page-title-main {
+    .page-content__title {
         font-size: 32px;
     }
     
-    .modal-content {
+    .modal__content {
         width: 90vw;
         padding: 20px;
         min-width: 300px;
     }
     
-    /* サイドバーリサイザーを太くしてタッチしやすく */
-    .sidebar-resizer {
+    .sidebar__resizer {
         width: 8px;
     }
     
-    .sidebar-resizer::after {
+    .sidebar__resizer::after {
         left: 3px;
         width: 2px;
     }
@@ -979,7 +1130,6 @@ body {
         flex-direction: column;
     }
     
-    /* サイドバーをトグル式に */
     .sidebar {
         position: fixed !important;
         top: 0 !important;
@@ -997,28 +1147,24 @@ body {
         transform: translateX(0) !important;
     }
     
-    /* サイドバーリサイザーを非表示 */
-    .sidebar-resizer {
+    .sidebar__resizer {
         display: none;
     }
     
-    /* メインコンテンツを全幅に */
     .main-content {
         width: 100%;
         margin-left: 0;
     }
     
-    /* ハンバーガーメニューとタイトルが被らないように上部にパディング追加 */
     .content-body {
         padding: 70px 15px 15px 15px;
     }
     
-    .page-title-main {
+    .page-content__title {
         font-size: 24px;
     }
     
-    /* モーダルを全画面に近く */
-    .modal-content {
+    .modal__content {
         width: 95vw;
         max-width: 95vw;
         max-height: 90vh;
@@ -1026,7 +1172,6 @@ body {
         min-width: auto;
     }
     
-    /* フォームアクションボタンを縦並びに */
     .form-actions {
         flex-direction: column;
     }
@@ -1035,25 +1180,22 @@ body {
         width: 100%;
     }
     
-    /* ページツリーのアイテムを大きく */
-    .page-item-header {
+    .page-item__header {
         padding: 8px 10px;
     }
     
-    .page-icon {
+    .page-item__title {
         font-size: 18px;
     }
     
-    .page-item-title {
+    .page-item__title {
         font-size: 15px;
     }
     
-    /* アクションボタンを常に表示 */
-    .actions {
+    .page-item__actions {
         opacity: 1;
     }
     
-    /* エディターのツールバーを縮小 */
     .ql-toolbar {
         padding: 4px;
     }
@@ -1086,21 +1228,6 @@ body {
     .mobile-menu-btn:active {
         transform: scale(0.95);
         background: #1976d2;
-    }
-    
-    .sidebar-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1900;
-    }
-    
-    .sidebar-overlay.active {
-        display: block !important;
     }
 }
 

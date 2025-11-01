@@ -5,10 +5,22 @@ export { setCreateQuill }; // 公開
 
 export function openCreateModal() {
     const modal = document.getElementById('createModal');
-    const modalTitle = modal.querySelector('.modal-header h2');
+    if (!modal) {
+        console.error('createModal not found');
+        return;
+    }
+    
+    const modalTitle = modal.querySelector('.modal__header h2');
+    if (!modalTitle) {
+        console.error('modal__header h2 not found in createModal');
+        return;
+    }
+    
     const parentIdInput = document.querySelector('[name="parent_id"]');
     modalTitle.textContent = '新しいページを作成';
-    parentIdInput.value = '';
+    if (parentIdInput) {
+        parentIdInput.value = '';
+    }
     modal.style.display = 'block';
 
     setTimeout(() => {
@@ -31,10 +43,22 @@ export function openCreateModal() {
 
 export function openCreateChildModal(parentId, parentTitle) {
     const modal = document.getElementById('createModal');
-    const modalTitle = modal.querySelector('.modal-header h2');
+    if (!modal) {
+        console.error('createModal not found');
+        return;
+    }
+    
+    const modalTitle = modal.querySelector('.modal__header h2');
+    if (!modalTitle) {
+        console.error('modal__header h2 not found in createModal');
+        return;
+    }
+    
     const parentIdInput = document.querySelector('[name="parent_id"]');
     modalTitle.textContent = `「${parentTitle}」の子ページを作成`;
-    parentIdInput.value = parentId;
+    if (parentIdInput) {
+        parentIdInput.value = parentId;
+    }
     modal.style.display = 'block';
 
     setTimeout(() => {
@@ -57,15 +81,25 @@ export function openCreateChildModal(parentId, parentTitle) {
 
 export function closeCreateModal() {
     const modal = document.getElementById('createModal');
+    if (!modal) return;
+    
     const modalContent = document.getElementById('modalContent');
     modal.style.display = 'none';
-    document.getElementById('newPageTitle').value = '';
+    
+    const titleInput = document.getElementById('newPageTitle');
+    if (titleInput) {
+        titleInput.value = '';
+    }
+    
     resetState();
     const q = getCreateQuill();
     if (q) { q.setContents([]); }
-    modalContent.style.width = '600px';
-    modalContent.style.height = '';
-    modalContent.style.left = '50%';
-    modalContent.style.top = '50%';
-    modalContent.style.transform = 'translate(-50%, -50%)';
+    
+    if (modalContent) {
+        modalContent.style.width = '600px';
+        modalContent.style.height = '';
+        modalContent.style.left = '50%';
+        modalContent.style.top = '50%';
+        modalContent.style.transform = 'translate(-50%, -50%)';
+    }
 }

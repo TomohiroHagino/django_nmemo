@@ -1,16 +1,16 @@
 <div class="page-item">
-    <div class="page-item-header" id="header-{{ page.id }}">
+    <div class="page-item__header" id="header-{{ page.id }}">
         {% if page.children %}
-            <button id="toggle-{{ page.id }}" class="toggle-btn collapsed" onclick="event.stopPropagation(); toggleChildren({{ page.id }})">
+            <button id="toggle-{{ page.id }}" class="page-item__toggle collapsed" onclick="event.stopPropagation(); toggleChildren({{ page.id }})">
                 ▼
             </button>
         {% else %}
-            <button class="toggle-btn empty">
+            <button class="page-item__toggle empty">
                 ▼
             </button>
         {% endif %}
-        <span class="page-icon" onclick="event.stopPropagation(); openIconModal({{ page.id }}, '{{ page.icon|escapejs }}')" title="アイコンを変更">{{ page.icon|default:"📄" }}</span>
-        <span class="page-item-title" onclick="loadPage({{ page.id }})" style="flex: 1;">
+        <span class="page-item__icon" onclick="event.stopPropagation(); openIconModal({{ page.id }}, '{{ page.icon|escapejs }}')" title="アイコンを変更">{{ page.icon|default:"📄" }}</span>
+        <span class="page-item__title" onclick="loadPage({{ page.id }})">
             {{ page.title }}
         </span>
         <div class="actions">
