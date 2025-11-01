@@ -477,11 +477,13 @@ class PageCommandService:
                         # メディアファイルを新しいフォルダに移動
                         try:
                             new_path = new_folder / item.name
+                            print(f"DEBUG _move_folder_contents: file={item.name}, new_path={new_path}, new_path.exists()={new_path.exists()}")
                             if not new_path.exists():
                                 shutil.move(str(item), str(new_path))
                                 print(f"✓ Moved file: {item.name}")
                             else:
                                 # 既に存在する場合は古いファイルを削除
+                                print(f"⚠️ DELETE DUPLICATE IN _move_folder_contents: About to delete duplicate file {item.name} at {item}")
                                 os.remove(item)
                                 print(f"✓ Removed duplicate file: {item.name}")
                         except Exception as e:

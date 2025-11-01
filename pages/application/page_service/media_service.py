@@ -63,24 +63,58 @@ class MediaService:
         
         # img の src 属性を抽出
         img_pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
-        urls.update(re.findall(img_pattern, content))
+        for url in re.findall(img_pattern, content):
+            # フルURLの場合は相対URLに変換
+            if '/media/' in url:
+                if url.startswith('http://') or url.startswith('https://'):
+                    # フルURLから /media/ 以降の部分を抽出
+                    media_index = url.find('/media/')
+                    if media_index != -1:
+                        urls.add(url[media_index:])
+                else:
+                    urls.add(url)
         
         # video の src 属性を抽出
         video_pattern = r'<video[^>]+src=["\']([^"\']+)["\']'
-        urls.update(re.findall(video_pattern, content))
+        for url in re.findall(video_pattern, content):
+            # フルURLの場合は相対URLに変換
+            if '/media/' in url:
+                if url.startswith('http://') or url.startswith('https://'):
+                    media_index = url.find('/media/')
+                    if media_index != -1:
+                        urls.add(url[media_index:])
+                else:
+                    urls.add(url)
         
         # source タグの src 属性を抽出（video 内の source タグ対応）
         source_pattern = r'<source[^>]+src=["\']([^"\']+)["\']'
-        urls.update(re.findall(source_pattern, content))
+        for url in re.findall(source_pattern, content):
+            # フルURLの場合は相対URLに変換
+            if '/media/' in url:
+                if url.startswith('http://') or url.startswith('https://'):
+                    media_index = url.find('/media/')
+                    if media_index != -1:
+                        urls.add(url[media_index:])
+                else:
+                    urls.add(url)
         
         # a タグの href 属性から /media/uploads/ で始まるファイルURLを抽出
         # （画像・動画以外のファイル（.xlsx, .zip など）も含む）
         a_pattern = r'<a[^>]+href=["\']([^"\']+)["\']'
         for match in re.finditer(a_pattern, content):
             href = match.group(1)
-            # /media/uploads/ で始まるURLはすべて抽出（ファイルへのリンクと判断）
-            if href.startswith('/media/uploads/'):
-                urls.add(href)
+            # /media/uploads/ を含むURLを抽出（フルURLまたは相対URL）
+            if '/media/uploads/' in href:
+                # フルURL（http://localhost:8000/media/uploads/...）の場合
+                if href.startswith('http://') or href.startswith('https://'):
+                    # /media/uploads/ 以降の部分を抽出
+                    media_index = href.find('/media/uploads/')
+                    if media_index != -1:
+                        relative_path = href[media_index:]  # /media/uploads/... の部分を取得
+                        urls.add(relative_path)
+                # 相対パス（/media/uploads/...）の場合
+                elif href.startswith('/media/uploads/'):
+                    urls.add(href)
         
         return urls
     
@@ -253,13 +287,22 @@ class MediaService:
     
     def delete_removed_media(self, page_id: int, old_content: str, new_content: str) -> None:
         """コンテンツから削除された画像・動画を物理削除する"""
+        print(f"DEBUG delete_removed_media: page_id={page_id}")
         old_media = self.extract_media_urls(old_content)
         new_media = self.extract_media_urls(new_content)
+        
+        print(f"DEBUG delete_removed_media: old_media URLs count={len(old_media)}")
+        print(f"DEBUG delete_removed_media: new_media URLs count={len(new_media)}")
         
         # 削除対象のURL集合を算出
         removed_media = old_media - new_media
         
+        print(f"DEBUG delete_removed_media: removed_media URLs count={len(removed_media)}")
+        if removed_media:
+            print(f"DEBUG delete_removed_media: removed_media URLs={list(removed_media)}")
+        
         if not removed_media:
+            print("DEBUG delete_removed_media: No removed media, returning")
             return
         
         # ページのフォルダパスを取得（ログ用）
@@ -267,15 +310,45 @@ class MediaService:
         
         # 削除対象のメディアファイルを削除
         for media_url in removed_media:
+            print(f"DEBUG delete_removed_media: Processing removed URL={media_url}")
             if media_url.startswith('/media/'):
                 relative_path = media_url.replace('/media/', '')
                 # クエリパラメータを除去
                 relative_path = relative_path.split('?')[0].split('#')[0]
                 file_path = self.media_root / relative_path
                 
+                print(f"DEBUG delete_removed_media: file_path={file_path}, exists={file_path.exists()}, is_file={file_path.is_file() if file_path.exists() else 'N/A'}")
+                
                 if file_path.exists() and file_path.is_file():
+                    # コンテンツ内で他の場所で参照されている可能性をチェック
+                    # ファイル名を取得して、新コンテンツ内に同じファイル名への参照があるか確認
+                    filename = file_path.name
+                    print(f"DEBUG delete_removed_media: filename={filename}")
+                    
+                    # 新コンテンツ内のすべてのメディアURLからファイル名を抽出してチェック
+                    referenced_filenames = set()
+                    for url in new_media:
+                        if url.startswith('/media/'):
+                            url_path = url.replace('/media/', '').split('?')[0].split('#')[0]
+                            # パスからファイル名を抽出
+                            if '/' in url_path:
+                                ref_filename = url_path.split('/')[-1]
+                            else:
+                                ref_filename = url_path
+                            referenced_filenames.add(ref_filename)
+                    
+                    print(f"DEBUG delete_removed_media: referenced_filenames in new_content={sorted(referenced_filenames)}")
+                    print(f"DEBUG delete_removed_media: filename in referenced_filenames={filename in referenced_filenames}")
+                    
+                    # 同じファイル名が新コンテンツで参照されている場合は削除しない
+                    if filename in referenced_filenames:
+                        print(f"✓ File referenced in content (not deleted): {file_path}")
+                        continue
+                    
+                    print(f"⚠️ DELETE REMOVED MEDIA: About to delete {file_path}")
                     try:
                         os.remove(file_path)
+                        print(f"✗ DELETED: {file_path}")
                     except Exception as e:
                         print(f"✗ Warning: Failed to delete media {file_path}: {e}")
                 else:
@@ -328,35 +401,46 @@ class MediaService:
         # コンテンツで参照されているファイルのファイル名集合を作成
         content_media = self.extract_media_urls(content)
         
-        # 実際に存在するファイルパスの集合を作成
-        referenced_file_paths = set()
-        folder_path_str = str(page_folder.relative_to(self.uploads_dir)).replace('\\', '/')
+        # コンテンツ内で参照されているすべてのファイル名を抽出（拡張子を問わず）
+        referenced_file_names = set()
+        
+        import urllib.parse
         
         for media_url in content_media:
             # クエリパラメータやフラグメントを除去
             clean_url = media_url.split('?')[0].split('#')[0]
             
+            # フルURLの場合は相対URLに変換
+            if clean_url.startswith('http://') or clean_url.startswith('https://'):
+                # /media/ 以降の部分を抽出
+                media_index = clean_url.find('/media/')
+                if media_index != -1:
+                    clean_url = clean_url[media_index:]
+            
             if clean_url.startswith('/media/'):
                 # 相対パスを取得
                 relative_path = clean_url.replace('/media/', '')
-                file_path = self.media_root / relative_path
-                
-                # このファイルがページフォルダ内にあるかチェック
+                # URLデコード（%20などをスペースに変換）
                 try:
-                    # 正規化されたパスを比較
-                    if file_path.exists() and file_path.is_file():
-                        resolved_file_path = file_path.resolve()
-                        resolved_page_folder = page_folder.resolve()
-                        
-                        # ページフォルダ内のファイルかチェック
-                        try:
-                            resolved_file_path.relative_to(resolved_page_folder)
-                            referenced_file_paths.add(file_path.name)
-                        except ValueError:
-                            # ページフォルダ外のファイルは無視
-                            pass
+                    decoded_path = urllib.parse.unquote(relative_path)
                 except Exception:
-                    pass
+                    decoded_path = relative_path
+                
+                # パスからファイル名を抽出（デコード後のパスから）
+                if '/' in decoded_path:
+                    filename = decoded_path.split('/')[-1]
+                else:
+                    filename = decoded_path
+                
+                # ファイル名が有効な場合（空でない）
+                if filename:
+                    # デコードされたファイル名を追加
+                    referenced_file_names.add(filename)
+                    # 元のエンコードされたファイル名も追加（念のため）
+                    if '/' in relative_path:
+                        encoded_filename = relative_path.split('/')[-1]
+                        if encoded_filename != filename:
+                            referenced_file_names.add(encoded_filename)
         
         # フォルダ内のすべてのファイル一覧を取得（.html は除外）
         folder_files = set()
@@ -369,21 +453,60 @@ class MediaService:
             return
         
         # 孤立（未参照）のファイルを特定
-        orphaned_files = folder_files - referenced_file_paths
+        # コンテンツ内で参照されているファイル名と一致するものは削除しない
+        # 大文字小文字を無視した比較も行う
+        orphaned_files = set()
+        for filename in folder_files:
+            
+            # 完全一致チェック
+            if filename in referenced_file_names:
+                print(f"DEBUG delete_orphaned_media: {filename} found in referenced_file_names (EXACT MATCH - NOT DELETING)")
+                continue
+            
+            # 大文字小文字を無視したチェック
+            filename_lower = filename.lower()
+            is_referenced = False
+            for ref_name in referenced_file_names:
+                if ref_name.lower() == filename_lower:
+                    is_referenced = True
+                    print(f"DEBUG delete_orphaned_media: {filename} matches {ref_name} (CASE INSENSITIVE - NOT DELETING)")
+                    break
+            
+            # URLエンコードされた形式との比較も試す
+            if not is_referenced:
+                try:
+                    import urllib.parse
+                    encoded_folder_filename = urllib.parse.quote(filename, safe='')
+                    if encoded_folder_filename in referenced_file_names:
+                        is_referenced = True
+                        print(f"DEBUG delete_orphaned_media: {filename} matches encoded {encoded_folder_filename} (ENCODED MATCH - NOT DELETING)")
+                except Exception as e:
+                    print(f"DEBUG delete_orphaned_media: Error checking encoded filename for {filename}: {e}")
+            
+            if not is_referenced:
+                print(f"⚠️ ORPHANED FILE DETECTED: {filename} will be deleted")
+                orphaned_files.add(filename)
+            else:
+                print(f"DEBUG delete_orphaned_media: {filename} is referenced (NOT DELETING)")
+        
+        print(f"DEBUG delete_orphaned_media: orphaned_files={sorted(orphaned_files)}")
         
         # 孤立ファイルを削除
         deleted_count = 0
         for filename in orphaned_files:
             file_path = page_folder / filename
             try:
+                print(f"⚠️ DELETE ORPHANED MEDIA: About to delete {file_path}")
                 os.remove(file_path)
-                print(f"✓ Deleted orphaned media: {file_path}")
+                print(f"✗ DELETED: {file_path}")
                 deleted_count += 1
             except Exception as e:
                 print(f"✗ Warning: Failed to delete orphaned file {file_path}: {e}")
         
         if deleted_count > 0:
             print(f"✓ Deleted {deleted_count} orphaned file(s) from {page_folder}")
+        else:
+            print(f"✓ No orphaned files to delete in {page_folder}")
     
     def delete_page_media_folders(self, page_ids: List[int]) -> None:
         """指定ページID群の画像フォルダを削除する"""
