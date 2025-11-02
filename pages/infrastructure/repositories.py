@@ -3,6 +3,7 @@
 from typing import Optional, List
 from datetime import datetime
 from django.db import transaction
+from django.utils import timezone
 
 from ..models import Page
 from ..domain.page_aggregate import PageEntity
@@ -117,3 +118,43 @@ class PageRepository(PageRepositoryInterface):
             return self._to_entity(page, load_children=True)
         except Page.DoesNotExist:
             return None
+    
+    def bulk_update(self, entities: List[PageEntity]) -> List[PageEntity]:
+        """複数のページエンティティを一括更新する"""
+        if not entities:
+            return []
+        
+        # バリデーション
+        for entity in entities:
+            entity.validate()
+        
+        # IDで既存のPageオブジェクトを一括取得
+        entity_ids = [e.id for e in entities if e.id]
+        if not entity_ids:
+            return []
+        
+        existing_pages = {page.id: page for page in Page.objects.filter(id__in=entity_ids)}
+        
+        # 現在時刻を取得（全エンティティで統一、タイムゾーン対応）
+        now = timezone.now()
+        
+        # Djangoモデルに変換
+        pages_to_update = []
+        for entity in entities:
+            if entity.id and entity.id in existing_pages:
+                page = self._to_model(entity, existing_pages[entity.id])
+                # bulk_updateではauto_nowが効かないため、手動でupdated_atを設定
+                page.updated_at = now
+                pages_to_update.append(page)
+        
+        # 一括更新（order, parent_id, updated_at, title, content, iconを更新）
+        Page.objects.bulk_update(
+            pages_to_update,
+            ['order', 'parent_id', 'updated_at', 'title', 'content', 'icon'],
+            batch_size=100
+        )
+        
+        # 更新したpages_to_updateオブジェクトを直接エンティティに変換して返す
+        # 再度SELECTクエリを実行しない
+        pages_dict = {page.id: page for page in pages_to_update}
+        return [self._to_entity(pages_dict[e.id]) for e in entities if e.id and e.id in pages_dict]

@@ -86,7 +86,7 @@ export function confirmIconChange() {
 
     setPageIcon(currentIconPageId, selectedIcon)
         .then(() => {
-            const iconEls = document.querySelectorAll(`.page-item__header[id="header-${currentIconPageId}"] .page-item__title`);
+            const iconEls = document.querySelectorAll(`.page-item__header[id="header-${currentIconPageId}"] .page-item__icon`);
             iconEls.forEach(el => { el.textContent = selectedIcon; });
             closeIconModal();
         })

@@ -290,11 +290,16 @@ class PageHierarchyTest(TestCase):
         response = self.client.post(
             reverse('pages:page_move', args=[self.child2.id]),
             {
-                'new_parent_id': self.root2.id
+                'new_parent_id': str(self.root2.id)  # 明示的に文字列に変換
             }
         )
         
-        self.assertEqual(response.status_code, 200)
+        # エラーの詳細を確認するため
+        if response.status_code != 200:
+            error_data = response.json()
+            error_msg = f"Expected status 200, got {response.status_code}. Error: {error_data}"
+            self.assertEqual(response.status_code, 200, error_msg)
+        
         self.assertTrue(response.json()['success'])
         
         self.child2.refresh_from_db()

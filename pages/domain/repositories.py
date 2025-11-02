@@ -42,3 +42,8 @@ class PageRepositoryInterface(ABC):
     def find_with_all_descendants(self, page_id: int) -> Optional[PageEntity]:
         """子孫をすべて読み込んだ状態でページを取得する"""
         pass
+    
+    @abstractmethod
+    def bulk_update(self, entities: List[PageEntity]) -> List[PageEntity]:
+        """複数のページエンティティを一括更新する"""
+        pass

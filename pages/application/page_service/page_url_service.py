@@ -2,6 +2,10 @@
 
 import re
 from pages.models import Page
+from typing import Optional, List, Set, Dict
+from datetime import datetime
+from django.db import transaction
+from django.utils import timezone
 
 from ...domain.repositories import PageRepositoryInterface
 from .media_service import MediaService
@@ -18,11 +22,18 @@ class PageUrlService:
         self.repository = repository
         self.media_service = media_service
     
-    def update_content_urls_after_rename(self, page_id: int, old_folder_path: str, new_folder_path: str) -> None:
+    def update_content_urls_after_rename(self, page_id: int, old_folder_path: str, new_folder_path: str, entity: Optional['PageEntity'] = None) -> None:
         """フォルダリネーム後にコンテンツ内のURLを更新"""
         try:
-            page = Page.objects.get(id=page_id)
-            if not page.content:
+            # エンティティが渡されていればそれを使用、なければ取得
+            if entity is None:
+                entity = self.repository.find_by_id(page_id)
+                if not entity:
+                    return
+            
+            # entityからcontentを取得
+            current_content = entity.content
+            if not current_content:
                 return
             
             # パターン1: /media/uploads/page_{id}/filename（古い形式）
@@ -37,8 +48,7 @@ class PageUrlService:
                 re.IGNORECASE
             )
             
-            old_content = page.content
-            updated_content = old_content
+            updated_content = current_content
             
             # パターン1を置換（古い形式）
             def replace_url1(match):
@@ -54,30 +64,30 @@ class PageUrlService:
             
             updated_content = pattern2.sub(replace_url2, updated_content)
             
-            # 変更があった場合は保存
-            if old_content != updated_content:
-                page.content = updated_content
-                page.save(update_fields=['content'])
+            # 変更があった場合のみUPDATE（SELECTなし）
+            if current_content != updated_content:
+                Page.objects.filter(id=page_id).update(content=updated_content)
                 print(f"✓ Updated content URLs for page {page_id}: {old_folder_path} -> {new_folder_path}")
             else:
                 print(f"  No URL changes needed for page {page_id} (old: {old_folder_path}, new: {new_folder_path})")
             
-        except Page.DoesNotExist:
-            print(f"Warning: Page {page_id} not found when updating content URLs")
         except Exception as e:
             print(f"Warning: Failed to update content URLs for page {page_id}: {e}")
             import traceback
             traceback.print_exc()
     
-    def update_content_urls_for_page(self, page_id: int) -> None:
+    def update_content_urls_for_page(self, page_id: int, entity: Optional['PageEntity'] = None) -> None:
         """指定されたページのコンテンツ内のURLを現在のフォルダパスに更新"""
         try:
-            entity = self.repository.find_by_id(page_id)
-            if not entity:
-                return
+            # エンティティが渡されていればそれを使用、なければ取得
+            if entity is None:
+                entity = self.repository.find_by_id(page_id)
+                if not entity:
+                    return
             
-            page = Page.objects.get(id=page_id)
-            if not page.content:
+            # entityからcontentを取得
+            current_content = entity.content
+            if not current_content:
                 return
             
             # 現在の正しいフォルダパスを取得
@@ -96,8 +106,7 @@ class PageUrlService:
                 re.IGNORECASE
             )
             
-            old_content = page.content
-            updated_content = old_content
+            updated_content = current_content
             
             def replace_url1(match):
                 filename = match.group(1)
@@ -110,9 +119,9 @@ class PageUrlService:
             updated_content = pattern1.sub(replace_url1, updated_content)
             updated_content = pattern2.sub(replace_url2, updated_content)
             
-            if old_content != updated_content:
-                page.content = updated_content
-                page.save(update_fields=['content'])
+            # 変更があった場合のみUPDATE（SELECTなし）
+            if current_content != updated_content:
+                Page.objects.filter(id=page_id).update(content=updated_content)
                 print(f"✓ Updated content URLs for page {page_id} to current folder path: {folder_path_str}")
             
         except Exception as e:
@@ -123,6 +132,21 @@ class PageUrlService:
     def update_all_pages_content_urls(self, affected_page_ids: set) -> None:
         """指定されたページIDを含むURLを持つすべてのページのコンテンツを更新"""
         try:
+            # 影響を受けたページのエンティティとフォルダパスを事前に取得してキャッシュ
+            # これにより、全ページ × 影響を受けたページ数回のfind_by_id呼び出しを
+            # 影響を受けたページ数回だけに削減
+            affected_pages_cache = {}
+            for affected_page_id in affected_page_ids:
+                entity = self.repository.find_by_id(affected_page_id)
+                if entity:
+                    current_folder_path = self.media_service.get_page_folder_path(entity)
+                    folder_path_str = str(current_folder_path).replace('\\', '/')
+                    affected_pages_cache[affected_page_id] = folder_path_str
+            
+            # キャッシュが空の場合は何もしない
+            if not affected_pages_cache:
+                return
+            
             all_pages = Page.objects.all()
             
             for page in all_pages:
@@ -132,16 +156,8 @@ class PageUrlService:
                 content_updated = False
                 updated_content = page.content
                 
-                # 影響を受けた各ページIDについて、そのページのURLを検索して更新
-                for affected_page_id in affected_page_ids:
-                    entity = self.repository.find_by_id(affected_page_id)
-                    if not entity:
-                        continue
-                    
-                    # 現在の正しいフォルダパスを取得
-                    current_folder_path = self.media_service.get_page_folder_path(entity)
-                    folder_path_str = str(current_folder_path).replace('\\', '/')
-                    
+                # キャッシュされたフォルダパスを使用（find_by_idを呼ばない）
+                for affected_page_id, folder_path_str in affected_pages_cache.items():
                     # パターン1: /media/uploads/page_{id}/filename
                     pattern1 = re.compile(
                         rf'/media/uploads/page_{affected_page_id}/([^"\'>\s]+)',

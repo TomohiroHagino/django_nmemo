@@ -64,7 +64,14 @@ class PageMoveService:
                 print(f"Warning: Failed to move folder to new parent for page {saved_entity.id}: {e}")
                 traceback.print_exc()
         
-        self.html_generator.save_html_to_folder(saved_entity)
+        # 親フォルダが存在しない場合はエラーを発生させずに警告のみ
+        try:
+            self.html_generator.save_html_to_folder(saved_entity)
+        except ValueError as e:
+            if 'フォルダが存在しません' in str(e):
+                print(f"Warning: {e}")
+            else:
+                raise
         
         return DtoConverter.entity_to_dto(saved_entity)
     
