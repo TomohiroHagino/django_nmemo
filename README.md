@@ -84,7 +84,7 @@ pip3 install django python-dotenv
 BOX_PATH="/Users/yourname/Library/CloudStorage/Box-Box/your-folder"
 ```
 
-指定しない場合、デフォルトでローカルの `~/cloud_storage/box` に保存されます。
+指定しない場合、デフォルトでローカルの `local_storage` ディレクトリ（プロジェクトルート直下）に保存されます。
 
 3. データベースのマイグレーション:
 ```bash
@@ -118,7 +118,7 @@ http://127.0.0.1:8000/admin/
 ## プロジェクト構造（DDD アーキテクチャ）
 
 ```
-django_nmemo_data/
+django_nmemo_lite/              # プロジェクトルート
 ├── nmemo/                      # プロジェクト設定
 │   ├── settings.py
 │   ├── urls.py
@@ -137,13 +137,26 @@ django_nmemo_data/
 │   ├── application/            # Application Layer（アプリケーション層）
 │   │   ├── dto.py              # Data Transfer Objects
 │   │   └── page_service/       # ページアプリケーションサービスパッケージ
-│   │       ├── service.py      # PageApplicationService（メイン）
-│   │       ├── page_query.py   # クエリ操作
-│   │       ├── page_command.py # コマンド操作（作成・更新・削除）
-│   │       ├── page_export.py  # エクスポート操作
-│   │       ├── media_service.py        # メディアファイル操作
-│   │       ├── html_generator.py       # HTML生成
-│   │       └── dto_converter.py        # DTO/Entity変換
+│   │       ├── service.py      # メイン・各サービスのオーケストレーション
+│   │       ├── page_query.py   # ページ取得・ツリー構築
+│   │       ├── page_command.py # コマンドファサード（作成/更新/削除/移動/並び替え/アイコン）
+│   │       ├── page_create_service.py      # ページ作成
+│   │       ├── page_update_service.py      # ページ更新・フォルダ管理
+│   │       ├── page_delete_service.py      # ページ削除・関連ファイル削除
+│   │       ├── page_move_service.py        # ページ移動・階層変更
+│   │       ├── page_reorder_service.py     # ページ並び替え・order更新
+│   │       ├── page_icon_service.py        # アイコン更新
+│   │       ├── page_export.py              # HTMLエクスポート
+│   │       ├── page_folder_service.py      # フォルダ管理ファサード
+│   │       ├── folder_move_service.py      # フォルダ移動・リネーム
+│   │       ├── folder_cleanup_service.py   # 孤立フォルダ削除・クリーンアップ
+│   │       ├── page_url_service.py         # コンテンツ内URL更新
+│   │       ├── media_service.py            # メディア操作ファサード（移動/削除/URL抽出）
+│   │       ├── media_file_service.py       # メディアファイル移動・削除
+│   │       ├── media_path_service.py       # メディアパス管理・フォルダ名生成
+│   │       ├── media_url_extractor.py      # HTML内メディアURL抽出
+│   │       ├── html_generator.py           # HTML生成・Base64埋め込み
+│   │       └── dto_converter.py            # DTO/Entity/Aggregate変換
 │   ├── infrastructure/         # Infrastructure Layer（インフラ層）
 │   │   └── repositories.py     # Repository実装（Django ORM）
 │   ├── views/                  # Presentation Layer（プレゼンテーション層）
