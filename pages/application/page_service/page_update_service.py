@@ -3,10 +3,10 @@
 import os
 import re
 import traceback
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pathlib import Path
 
-from ...domain.page_aggregate import PageAggregate
+from ...domain.page_aggregate import PageAggregate, PageEntity
 from ...domain.repositories import PageRepositoryInterface
 from ..dto import UpdatePageDTO, PageDTO
 from .dto_converter import DtoConverter
@@ -44,21 +44,39 @@ class PageUpdateService:
         
         created_folders = []
         
+        # entity_cacheを作成
+        entity_cache: Dict[int, PageEntity] = {}
+        entity_cache[entity.id] = entity
+        
+        # 親エンティティを事前に取得してキャッシュに追加
+        if entity.parent_id:
+            parent_entity = self.repository.find_by_id(entity.parent_id)
+            if parent_entity:
+                entity_cache[entity.parent_id] = parent_entity
+        
         try:
             updated_entity = DtoConverter.aggregate_to_entity(aggregate)
+            entity_cache[updated_entity.id] = updated_entity
             
             updated_content = self.media_service.move_temp_images_to_page_folder(
                 dto.page_id,
                 dto.content,
-                entity=updated_entity
+                entity=updated_entity,
+                entity_cache=entity_cache
             )
             aggregate.update_content(updated_content)
             
             if updated_entity:
                 if updated_entity.parent_id:
-                    parent_entity = self.repository.find_by_id(updated_entity.parent_id)
+                    # キャッシュから親エンティティを取得
+                    parent_entity = entity_cache.get(updated_entity.parent_id)
+                    if not parent_entity and self.repository:
+                        parent_entity = self.repository.find_by_id(updated_entity.parent_id)
+                        if parent_entity:
+                            entity_cache[updated_entity.parent_id] = parent_entity
+                    
                     if parent_entity:
-                        parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                        parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                         safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', updated_entity.title)
                         folder_name = f'{updated_entity.order}_page_{updated_entity.id}_{safe_title}'
                         page_folder = parent_folder / folder_name
@@ -75,6 +93,7 @@ class PageUpdateService:
             
             entity = DtoConverter.aggregate_to_entity(aggregate)
             saved_entity = self.repository.save(entity)
+            entity_cache[saved_entity.id] = saved_entity
             
             # 画像削除処理
             self.media_service.delete_removed_media(dto.page_id, old_content, updated_content)
@@ -82,10 +101,10 @@ class PageUpdateService:
             
             # タイトルが変更された場合の処理
             if old_title != saved_entity.title:
-                self._handle_title_change(saved_entity, old_title, created_folders)
+                self._handle_title_change(saved_entity, old_title, created_folders, entity_cache)
             
             try:
-                self.html_generator.save_html_to_folder(saved_entity)
+                self.html_generator.save_html_to_folder(saved_entity, entity_cache)
             except Exception as e:
                 error_msg = f"Warning: Failed to save HTML file for page {saved_entity.id}: {e}"
                 print(error_msg)
@@ -93,7 +112,7 @@ class PageUpdateService:
             
             if old_title != saved_entity.title:
                 try:
-                    self.folder_service.cleanup_misplaced_folders_after_save(saved_entity)
+                    self.folder_service.cleanup_misplaced_folders_after_save(saved_entity, entity_cache)
                 except Exception as e:
                     print(f"Warning: Failed to cleanup misplaced folders for page {saved_entity.id}: {e}")
                     traceback.print_exc()
@@ -108,13 +127,19 @@ class PageUpdateService:
             self._rollback_on_error(created_folders)
             raise
     
-    def _handle_title_change(self, saved_entity, old_title: str, created_folders: List[Path]) -> None:
+    def _handle_title_change(self, saved_entity: PageEntity, old_title: str, created_folders: List[Path], entity_cache: Dict[int, PageEntity]) -> None:
         """タイトル変更時の処理"""
         try:
             if saved_entity.parent_id:
-                parent_entity = self.repository.find_by_id(saved_entity.parent_id)
+                # キャッシュから親エンティティを取得
+                parent_entity = entity_cache.get(saved_entity.parent_id)
+                if not parent_entity and self.repository:
+                    parent_entity = self.repository.find_by_id(saved_entity.parent_id)
+                    if parent_entity:
+                        entity_cache[saved_entity.parent_id] = parent_entity
+                
                 if parent_entity:
-                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                     
                     if not parent_folder.exists() or not parent_folder.is_dir():
                         raise ValueError(f'親ページ（ID: {saved_entity.parent_id}）のフォルダが存在しません。親ページを先に保存してください。')
@@ -138,9 +163,15 @@ class PageUpdateService:
             
             # 親フォルダの直下に誤作成フォルダを削除
             if saved_entity.parent_id:
-                parent_entity = self.repository.find_by_id(saved_entity.parent_id)
+                # キャッシュから親エンティティを取得（既に取得済み）
+                parent_entity = entity_cache.get(saved_entity.parent_id)
+                if not parent_entity and self.repository:
+                    parent_entity = self.repository.find_by_id(saved_entity.parent_id)
+                    if parent_entity:
+                        entity_cache[saved_entity.parent_id] = parent_entity
+                
                 if parent_entity:
-                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                     
                     if parent_folder.exists() and parent_folder.is_dir():
                         old_safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', old_title)
@@ -177,7 +208,7 @@ class PageUpdateService:
                                     print(f"Warning: Failed to remove misplaced folder: {e}")
             
             # 古いフォルダから新しいフォルダへ移動
-            self.folder_service.cleanup_old_folder(old_title, saved_entity)
+            self.folder_service.cleanup_old_folder(old_title, saved_entity, entity_cache)
         except Exception as e:
             print(f"Warning: Failed to handle folder rename for page {saved_entity.id}: {e}")
             traceback.print_exc()

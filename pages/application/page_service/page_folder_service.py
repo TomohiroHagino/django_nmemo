@@ -25,9 +25,9 @@ class PageFolderService:
         )
     
     # クリーンアップメソッドの委譲
-    def cleanup_old_folder(self, old_title: str, entity: 'PageEntity') -> None:
+    def cleanup_old_folder(self, old_title: str, entity: 'PageEntity', entity_cache: Optional[Dict[int, 'PageEntity']] = None) -> None:
         """タイトル変更時に古いフォルダをクリーンアップ"""
-        return self.cleanup_service.cleanup_old_folder(old_title, entity)
+        return self.cleanup_service.cleanup_old_folder(old_title, entity, entity_cache)
     
     def cleanup_orphaned_old_folders(
         self, page_id: int, old_folder_name: str, exclude_folder: 'Path'
@@ -37,9 +37,9 @@ class PageFolderService:
             page_id, old_folder_name, exclude_folder
         )
     
-    def cleanup_misplaced_folders_after_save(self, entity: 'PageEntity') -> None:
+    def cleanup_misplaced_folders_after_save(self, entity: 'PageEntity', entity_cache: Optional[Dict[int, 'PageEntity']] = None) -> None:
         """保存後に親階層に誤って作成されたフォルダを削除"""
-        return self.cleanup_service.cleanup_misplaced_folders_after_save(entity)
+        return self.cleanup_service.cleanup_misplaced_folders_after_save(entity, entity_cache)
     
     def cleanup_orphaned_folders_in_parent(self, parent_id: Optional[int], entity_cache: Optional[Dict[int, PageEntity]] = None) -> None:
         """親フォルダ内のDBに存在しない孤立フォルダを削除する"""

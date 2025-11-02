@@ -24,7 +24,7 @@ class FolderCleanupService:
         self.media_service = media_service
         self.move_service = move_service  # FolderMoveServiceを使用
     
-    def cleanup_old_folder(self, old_title: str, entity: 'PageEntity') -> None:
+    def cleanup_old_folder(self, old_title: str, entity: 'PageEntity', entity_cache: Optional[Dict[int, 'PageEntity']] = None) -> None:
         """タイトル変更時に古いフォルダをクリーンアップ"""
         try:
             # 古いフォルダ名を計算
@@ -33,9 +33,18 @@ class FolderCleanupService:
             
             # 新しいフォルダパスを取得
             if entity.parent_id:
-                parent_entity = self.repository.find_by_id(entity.parent_id)
+                # キャッシュから親エンティティを取得、なければDBから取得
+                parent_entity = None
+                if entity_cache:
+                    parent_entity = entity_cache.get(entity.parent_id)
+                
+                if parent_entity is None:
+                    parent_entity = self.repository.find_by_id(entity.parent_id)
+                    if parent_entity and entity_cache is not None:
+                        entity_cache[entity.parent_id] = parent_entity
+                
                 if parent_entity:
-                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                     
                     if not parent_folder.exists() or not parent_folder.is_dir():
                         print(f"ERROR: Parent folder does not exist for page {entity.id}")
@@ -55,9 +64,18 @@ class FolderCleanupService:
             # 古いフォルダパスを計算
             old_folder = None
             if entity.parent_id:
-                parent_entity = self.repository.find_by_id(entity.parent_id)
+                # キャッシュから親エンティティを取得（既に取得済みの可能性がある）
+                parent_entity = None
+                if entity_cache:
+                    parent_entity = entity_cache.get(entity.parent_id)
+                
+                if parent_entity is None:
+                    parent_entity = self.repository.find_by_id(entity.parent_id)
+                    if parent_entity and entity_cache is not None:
+                        entity_cache[entity.parent_id] = parent_entity
+                
                 if parent_entity:
-                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                     
                     if not parent_folder.exists() or not parent_folder.is_dir():
                         print(f"ERROR: Parent folder does not exist for old folder calculation")
@@ -116,7 +134,7 @@ class FolderCleanupService:
         except Exception as e:
             print(f"Warning: Failed to cleanup orphaned old folders: {e}")
     
-    def cleanup_misplaced_folders_after_save(self, entity: 'PageEntity') -> None:
+    def cleanup_misplaced_folders_after_save(self, entity: 'PageEntity', entity_cache: Optional[Dict[int, 'PageEntity']] = None) -> None:
         """保存後に親階層に誤って作成されたフォルダを削除"""
         try:
             new_safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
@@ -124,9 +142,18 @@ class FolderCleanupService:
             
             # 正しい新しいフォルダのパスを取得
             if entity.parent_id:
-                parent_entity = self.repository.find_by_id(entity.parent_id)
+                # キャッシュから親エンティティを取得、なければDBから取得
+                parent_entity = None
+                if entity_cache:
+                    parent_entity = entity_cache.get(entity.parent_id)
+                
+                if parent_entity is None:
+                    parent_entity = self.repository.find_by_id(entity.parent_id)
+                    if parent_entity and entity_cache is not None:
+                        entity_cache[entity.parent_id] = parent_entity
+                
                 if parent_entity:
-                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                     correct_new_folder_path = parent_folder / new_folder_name
                 else:
                     print(f"ERROR: Parent entity not found for page {entity.id}")
@@ -163,9 +190,18 @@ class FolderCleanupService:
             
             # 親フォルダの直下を明示的にチェック
             if entity.parent_id:
-                parent_entity = self.repository.find_by_id(entity.parent_id)
+                # キャッシュから親エンティティを取得（既に取得済みの可能性がある）
+                parent_entity = None
+                if entity_cache:
+                    parent_entity = entity_cache.get(entity.parent_id)
+                
+                if parent_entity is None:
+                    parent_entity = self.repository.find_by_id(entity.parent_id)
+                    if parent_entity and entity_cache is not None:
+                        entity_cache[entity.parent_id] = parent_entity
+                
                 if parent_entity:
-                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                     
                     if parent_folder.exists() and parent_folder.is_dir():
                         misplaced_in_parent = parent_folder / new_folder_name

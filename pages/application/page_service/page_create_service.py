@@ -1,6 +1,7 @@
 """ページ作成サービス"""
 
-from ...domain.page_aggregate import PageAggregate
+from typing import Optional, Dict
+from ...domain.page_aggregate import PageAggregate, PageEntity
 from ...domain.repositories import PageRepositoryInterface
 from ..dto import CreatePageDTO, PageDTO
 from .dto_converter import DtoConverter
@@ -35,15 +36,26 @@ class PageCreateService:
         entity = DtoConverter.aggregate_to_entity(aggregate)
         saved_entity = self.repository.save(entity)
         
+        # entity_cacheを作成して親エンティティをキャッシュ
+        entity_cache: Dict[int, PageEntity] = {}
+        entity_cache[saved_entity.id] = saved_entity
+        
+        if saved_entity.parent_id:
+            parent_entity = self.repository.find_by_id(saved_entity.parent_id)
+            if parent_entity:
+                entity_cache[saved_entity.parent_id] = parent_entity
+        
         saved_entity.content = self.media_service.move_temp_images_to_page_folder(
             saved_entity.id,
             saved_entity.content,
-            entity=saved_entity
+            entity=saved_entity,
+            entity_cache=entity_cache
         )
         if saved_entity.content != dto.content:
             saved_entity = self.repository.save(saved_entity)
+            entity_cache[saved_entity.id] = saved_entity
         
-        self.html_generator.save_html_to_folder(saved_entity)
+        self.html_generator.save_html_to_folder(saved_entity, entity_cache)
         
         return DtoConverter.entity_to_dto(saved_entity)
     

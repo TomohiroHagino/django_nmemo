@@ -5,7 +5,7 @@ import re
 import shutil
 import urllib.parse
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 from django.conf import settings
 from ...domain.page_aggregate import PageEntity
 from ...domain.repositories import PageRepositoryInterface
@@ -32,7 +32,8 @@ class MediaFileService:
         self,
         page_id: int,
         content: str,
-        entity: Optional[PageEntity] = None
+        entity: Optional[PageEntity] = None,
+        entity_cache: Optional[Dict[int, PageEntity]] = None
     ) -> str:
         """一時フォルダの画像・動画をページ専用フォルダへ移動し、URL を更新する"""
         if not content:
@@ -42,25 +43,36 @@ class MediaFileService:
         
         if entity is None and self.repository:
             entity = self.repository.find_by_id(page_id)
+            if entity and entity_cache is not None:
+                entity_cache[page_id] = entity
         
         if entity:
-            page_folder_relative = self.path_service.get_page_folder_path(entity)
+            page_folder_relative = self.path_service.get_page_folder_path(entity, entity_cache)
         else:
             page_folder_relative = Path(f'page_{page_id}')
         
-        # 実際のフォルダパスを計算
+        # 親エンティティを取得（キャッシュから取得、なければDBから取得）
+        parent_entity = None
         if entity and entity.parent_id and self.repository:
-            parent_entity = self.repository.find_by_id(entity.parent_id)
+            if entity_cache:
+                parent_entity = entity_cache.get(entity.parent_id)
+            
+            if parent_entity is None:
+                parent_entity = self.repository.find_by_id(entity.parent_id)
+                if parent_entity and entity_cache is not None:
+                    entity_cache[entity.parent_id] = parent_entity
+            
             if parent_entity:
-                parent_folder = self.path_service.get_page_folder_absolute_path(parent_entity)
+                parent_folder = self.path_service.get_page_folder_absolute_path(parent_entity, entity_cache)
                 
                 if not parent_folder.exists() or not parent_folder.is_dir():
-                    existing_folder = self.path_service.find_existing_parent_folder(parent_entity)
+                    existing_folder = self.path_service.find_existing_parent_folder(parent_entity, entity_cache)
                     if existing_folder:
                         parent_folder = existing_folder
                     else:
                         raise ValueError(f'親ページ（ID: {entity.parent_id}）のフォルダが存在しません。親ページを先に保存してください。パス: {parent_folder}')
                 
+                # 親フォルダが存在する場合、親ページのHTMLファイルも作成する
                 if parent_folder.exists() and parent_folder.is_dir():
                     parent_safe_title = re.sub(r'[<>:"/\\|?*]', '_', parent_entity.title)
                     parent_html_file = parent_folder / f'{parent_safe_title}.html'
@@ -77,33 +89,16 @@ class MediaFileService:
             else:
                 raise ValueError(f'親ページ（ID: {entity.parent_id}）が見つかりません。')
         else:
-            safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
-            folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
-            page_folder = self.uploads_dir / folder_name
-            if not page_folder.exists():
-                try:
-                    page_folder.mkdir(parents=False, exist_ok=True)
-                except FileNotFoundError as e:
-                    raise ValueError(f'フォルダの作成に失敗しました: {page_folder}. エラー: {e}')
-        
-        # 親ページのHTMLファイルも作成する
-        if entity and entity.parent_id and self.repository:
-            parent_entity = self.repository.find_by_id(entity.parent_id)
-            if parent_entity:
-                parent_folder = self.path_service.get_page_folder_absolute_path(parent_entity)
-                if parent_folder.exists() and parent_folder.is_dir():
-                    parent_safe_title = re.sub(r'[<>:"/\\|?*]', '_', parent_entity.title)
-                    parent_html_file = parent_folder / f'{parent_safe_title}.html'
-                    if not parent_html_file.exists():
-                        try:
-                            # 循環インポートを避けるため、関数内でインポート
-                            from .html_generator import HtmlGenerator
-                            html_generator = HtmlGenerator()
-                            parent_html_content = html_generator.generate_html_content(parent_entity)
-                            with open(parent_html_file, 'w', encoding='utf-8') as f:
-                                f.write(parent_html_content)
-                        except Exception as e:
-                            print(f"Warning: Failed to save parent HTML to {parent_html_file}: {e}")
+            # ルートページの場合
+            if entity:
+                safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
+                folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
+                page_folder = self.uploads_dir / folder_name
+                if not page_folder.exists():
+                    try:
+                        page_folder.mkdir(parents=False, exist_ok=True)
+                    except FileNotFoundError as e:
+                        raise ValueError(f'フォルダの作成に失敗しました: {page_folder}. エラー: {e}')
         
         # content 内の page_temp を参照する画像・動画URLを抽出
         pattern = r'(/media/uploads/page_temp/[^"\'>\s]+)'
@@ -114,7 +109,7 @@ class MediaFileService:
         
         # page_folderの絶対パスを取得
         if entity:
-            page_folder = self.path_service.get_page_folder_absolute_path(entity)
+            page_folder = self.path_service.get_page_folder_absolute_path(entity, entity_cache)
         else:
             page_folder = self.uploads_dir / page_folder_relative
         

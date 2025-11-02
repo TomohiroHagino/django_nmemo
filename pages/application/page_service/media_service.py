@@ -45,8 +45,8 @@ class MediaService:
         return self.url_extractor.extract_media_urls(content)
     
     # ファイル操作メソッドの委譲
-    def move_temp_images_to_page_folder(self, page_id: int, content: str, entity=None):
-        return self.file_service.move_temp_images_to_page_folder(page_id, content, entity)
+    def move_temp_images_to_page_folder(self, page_id: int, content: str, entity=None, entity_cache: Optional[Dict[int, PageEntity]] = None):
+        return self.file_service.move_temp_images_to_page_folder(page_id, content, entity, entity_cache)
     
     def delete_removed_media(self, page_id: int, old_content: str, new_content: str):
         return self.file_service.delete_removed_media(page_id, old_content, new_content)
