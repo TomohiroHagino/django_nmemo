@@ -21,27 +21,45 @@ class MediaPathService:
         safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
         return f'{entity.order}_page_{entity.id}_{safe_title}'
     
-    def get_page_folder_path(self, entity: PageEntity) -> Path:
+    def get_page_folder_path(self, entity: PageEntity, entity_cache: Optional[Dict[int, PageEntity]] = None) -> Path:
         """ページのフォルダパスを階層構造で取得する（相対パス）"""
         safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
         folder_name = f'{entity.order}_page_{entity.id}_{safe_title}'
         
         if entity.parent_id and self.repository:
-            parent_entity = self.repository.find_by_id(entity.parent_id)
+            # キャッシュから親エンティティを取得、なければDBから取得
+            parent_entity = None
+            if entity_cache:
+                parent_entity = entity_cache.get(entity.parent_id)
+            
+            if parent_entity is None:
+                parent_entity = self.repository.find_by_id(entity.parent_id)
+                if parent_entity and entity_cache is not None:
+                    entity_cache[entity.parent_id] = parent_entity
+            
             if parent_entity:
-                parent_path = self.get_page_folder_path(parent_entity)
+                parent_path = self.get_page_folder_path(parent_entity, entity_cache)
                 return parent_path / folder_name
         
         return Path(folder_name)
     
-    def get_page_folder_path_by_id(self, page_id: int) -> Path:
+    def get_page_folder_path_by_id(self, page_id: int, entity_cache: Optional[Dict[int, PageEntity]] = None) -> Path:
         """ページIDからフォルダパスを取得する"""
         if not self.repository:
             return Path(f'page_{page_id}')
         
-        entity = self.repository.find_by_id(page_id)
+        # キャッシュから取得、なければDBから取得
+        entity = None
+        if entity_cache:
+            entity = entity_cache.get(page_id)
+        
+        if entity is None:
+            entity = self.repository.find_by_id(page_id)
+            if entity and entity_cache is not None:
+                entity_cache[page_id] = entity
+        
         if entity:
-            return self.get_page_folder_path(entity)
+            return self.get_page_folder_path(entity, entity_cache)
         
         return Path(f'page_{page_id}')
     
@@ -57,14 +75,20 @@ class MediaPathService:
                 parent_entity = entity_cache.get(entity.parent_id)
             
             if parent_entity is None:
-                print(f"Warning: Parent {entity.parent_id} not in cache in get_page_folder_absolute_path, fetching from DB")
+                print(f"Warning: Parent {entity.parent_id} not in cache in get_page_folder_absolute_path (entity={entity.id}), fetching from DB")
                 parent_entity = self.repository.find_by_id(entity.parent_id)
                 if parent_entity and entity_cache is not None:
                     entity_cache[entity.parent_id] = parent_entity
+            else:
+                print(f"Debug: Parent {entity.parent_id} found in cache in get_page_folder_absolute_path (entity={entity.id})")
             
             if parent_entity:
                 parent_folder = self.get_page_folder_absolute_path(parent_entity, entity_cache)
                 return parent_folder / folder_name
+        else:
+            # ルートページの場合（デバッグログを追加）
+            if entity.id:
+                print(f"Debug: Entity {entity.id} is a root page in get_page_folder_absolute_path")
         
         return self.uploads_dir / folder_name
     

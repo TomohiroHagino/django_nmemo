@@ -249,15 +249,8 @@ class FolderCleanupService:
                 # 親の子ページだけを取得
                 child_pages = self.repository.find_children(parent_id)
                 existing_page_ids = {page.id for page in child_pages}
-                # 親自身も含める
-                if entity_cache and parent_id in entity_cache:
-                    existing_page_ids.add(parent_id)
-                elif parent_id:
-                    parent_entity = self.repository.find_by_id(parent_id)
-                    if parent_entity:
-                        existing_page_ids.add(parent_id)
-                        if entity_cache is not None:
-                            entity_cache[parent_id] = parent_entity
+                # 親自身も含める（親エンティティの実体は不要なので、IDだけ追加）
+                existing_page_ids.add(parent_id)
             else:
                 # ルートページをentity_cacheから取得、なければ取得
                 if entity_cache:
@@ -276,9 +269,12 @@ class FolderCleanupService:
                     parent_entity = entity_cache.get(parent_id)
                 
                 if parent_entity is None:
+                    print(f"Warning: Parent {parent_id} not in cache in cleanup_orphaned_folders_in_parent, fetching from DB")
                     parent_entity = self.repository.find_by_id(parent_id)
                     if parent_entity and entity_cache is not None:
                         entity_cache[parent_id] = parent_entity
+                else:
+                    print(f"Debug: Parent {parent_id} found in cache in cleanup_orphaned_folders_in_parent")
                 
                 if parent_entity:
                     parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity, entity_cache)

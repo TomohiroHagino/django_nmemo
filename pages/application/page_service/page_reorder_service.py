@@ -57,9 +57,13 @@ class PageReorderService:
         
         # 親ページを事前に取得してキャッシュに追加（後で複数回使用されるため）
         if target_entity.parent_id and target_entity.parent_id not in entity_cache:
+            print(f"Debug: Fetching parent {target_entity.parent_id} in reorder_page (not in cache)")
             parent_entity = self.repository.find_by_id(target_entity.parent_id)
             if parent_entity:
                 entity_cache[target_entity.parent_id] = parent_entity
+                print(f"Debug: Parent {target_entity.parent_id} cached in reorder_page")
+        elif target_entity.parent_id:
+            print(f"Debug: Parent {target_entity.parent_id} already in cache in reorder_page")
         
         all_pages = None
         if parent_changed:
@@ -244,7 +248,7 @@ class PageReorderService:
                         if old_folder_path_str and new_folder_path_str:
                             self.url_service.update_content_urls_after_rename(saved_entity.id, old_folder_path_str, new_folder_path_str, saved_entity)
                         else:
-                            self.url_service.update_content_urls_for_page(saved_entity.id, saved_entity)
+                            self.url_service.update_content_urls_for_page(saved_entity.id, saved_entity, entity_cache)
                     except Exception as e:
                         print(f"Warning: Failed to rename folder for page {saved_entity.id}: {e}")
                         traceback.print_exc()
@@ -267,7 +271,7 @@ class PageReorderService:
                         if old_folder_path_str and new_folder_path_str:
                             self.url_service.update_content_urls_after_rename(saved_entity.id, old_folder_path_str, new_folder_path_str, saved_entity)
                         else:
-                            self.url_service.update_content_urls_for_page(saved_entity.id, saved_entity)
+                            self.url_service.update_content_urls_for_page(saved_entity.id, saved_entity, entity_cache)
                     except Exception as e:
                         print(f"Warning: Failed to rename folder for page {saved_entity.id}: {e}")
                         traceback.print_exc()

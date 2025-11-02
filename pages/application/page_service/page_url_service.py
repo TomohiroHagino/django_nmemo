@@ -77,7 +77,7 @@ class PageUrlService:
             import traceback
             traceback.print_exc()
     
-    def update_content_urls_for_page(self, page_id: int, entity: Optional['PageEntity'] = None) -> None:
+    def update_content_urls_for_page(self, page_id: int, entity: Optional['PageEntity'] = None, entity_cache: Optional[Dict[int, 'PageEntity']] = None) -> None:
         """指定されたページのコンテンツ内のURLを現在のフォルダパスに更新"""
         try:
             # エンティティが渡されていればそれを使用、なければ取得
@@ -91,8 +91,8 @@ class PageUrlService:
             if not current_content:
                 return
             
-            # 現在の正しいフォルダパスを取得
-            current_folder_path = self.media_service.get_page_folder_path(entity)
+            # 現在の正しいフォルダパスを取得（entity_cacheを渡す）
+            current_folder_path = self.media_service.get_page_folder_path(entity, entity_cache)
             folder_path_str = str(current_folder_path).replace('\\', '/')
             
             # パターン1: /media/uploads/page_{id}/filename
@@ -148,7 +148,7 @@ class PageUrlService:
                     for page_id in affected_page_ids:
                         if page_id in entity_cache:
                             entity = entity_cache[page_id]
-                            current_folder_path = self.media_service.get_page_folder_path(entity)
+                            current_folder_path = self.media_service.get_page_folder_path(entity, entity_cache)
                             folder_path_str = str(current_folder_path).replace('\\', '/')
                             affected_pages_cache[entity.id] = folder_path_str
                 else:
@@ -156,7 +156,7 @@ class PageUrlService:
                     entities = self.repository.find_by_ids(affected_page_ids)
                     for entity in entities:
                         if entity:
-                            current_folder_path = self.media_service.get_page_folder_path(entity)
+                            current_folder_path = self.media_service.get_page_folder_path(entity, entity_cache)
                             folder_path_str = str(current_folder_path).replace('\\', '/')
                             affected_pages_cache[entity.id] = folder_path_str
             

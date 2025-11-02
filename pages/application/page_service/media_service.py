@@ -25,11 +25,11 @@ class MediaService:
     def get_page_folder_name(self, entity):
         return self.path_service.get_page_folder_name(entity)
     
-    def get_page_folder_path(self, entity):
-        return self.path_service.get_page_folder_path(entity)
+    def get_page_folder_path(self, entity, entity_cache: Optional[Dict[int, PageEntity]] = None):
+        return self.path_service.get_page_folder_path(entity, entity_cache)
     
-    def get_page_folder_path_by_id(self, page_id: int):
-        return self.path_service.get_page_folder_path_by_id(page_id)
+    def get_page_folder_path_by_id(self, page_id: int, entity_cache: Optional[Dict[int, PageEntity]] = None):
+        return self.path_service.get_page_folder_path_by_id(page_id, entity_cache)
     
     def _get_page_folder_absolute_path(self, entity, entity_cache: Optional[Dict[int, PageEntity]] = None):
         return self.path_service.get_page_folder_absolute_path(entity, entity_cache)

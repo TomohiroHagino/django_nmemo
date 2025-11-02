@@ -140,7 +140,7 @@ class FolderMoveService:
                             print(f"ERROR: Parent folder does not exist for page {entity.id}")
                             return None, None
                     
-                    parent_folder_path = self.media_service.get_page_folder_path(parent_entity)
+                    parent_folder_path = self.media_service.get_page_folder_path(parent_entity, entity_cache)
                     old_folder_path_str = str(parent_folder_path / old_folder_name).replace('\\', '/')
                     new_folder_path_str = str(parent_folder_path / new_folder_name).replace('\\', '/')
                     

@@ -64,10 +64,12 @@ class HtmlGenerator:
             
             if parent_entity is None:
                 # キャッシュにない場合のみDBから取得
-                print(f"Warning: Parent {entity.parent_id} not in cache in save_html_to_folder, fetching from DB")
+                print(f"Warning: Parent {entity.parent_id} not in cache in save_html_to_folder (entity={entity.id}), fetching from DB")
                 parent_entity = media_service.repository.find_by_id(entity.parent_id)
                 if parent_entity and entity_cache is not None:
                     entity_cache[entity.parent_id] = parent_entity
+            else:
+                print(f"Debug: Parent {entity.parent_id} found in cache in save_html_to_folder (entity={entity.id})")
         
         # まず、既存のフォルダを検索（orderが変更された場合に対応）
         # 親エンティティは上で既にキャッシュに追加されているので、_find_existing_page_folderでもキャッシュから取得される
