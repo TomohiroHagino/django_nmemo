@@ -37,7 +37,16 @@ export function videoHandler(currentPageId, getCreateQuill) {
         const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
         const youtubeMatch = url.match(youtubeRegex);
         if (youtubeMatch) {
-            embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+            const videoId = youtubeMatch[1];
+            // URLからsiパラメータを抽出（あれば）
+            try {
+                const urlObj = new URL(url);
+                const siParam = urlObj.searchParams.get('si');
+                embedUrl = `https://www.youtube.com/embed/${videoId}${siParam ? `?si=${siParam}` : ''}`;
+            } catch (e) {
+                // URLパースに失敗した場合はシンプルな形式を使用
+                embedUrl = `https://www.youtube.com/embed/${videoId}`;
+            }
         }
         
         // Vimeo URL の処理

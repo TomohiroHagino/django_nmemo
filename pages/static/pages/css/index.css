@@ -1071,16 +1071,7 @@ body {
    レスポンシブデザイン
    ======================================== */
 
-/* タブレット（768px以下） */
-@media (max-width: 768px) {
-    .ql-editor .ql-video {
-        width: 100% !important;
-        height: auto !important;
-        min-height: 200px !important;
-    }
-}
-
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 769px) {
     .sidebar {
         width: 250px;
         min-width: 200px;
@@ -1111,8 +1102,17 @@ body {
     }
 }
 
+/* タブレット（768px以下） */
+@media (max-width: 768px) {
+    .ql-editor .ql-video {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 400px !important;
+    }
+}
+
 /* スマートフォン（480px以下） */
-@media screen and (max-width: 480px) {
+@media screen and (max-width: 768px) {
     .container {
         flex-direction: column;
     }
@@ -1215,6 +1215,13 @@ body {
     .mobile-menu-btn:active {
         transform: scale(0.95);
         background: #1976d2;
+    }
+}
+
+/* タブレット（768px以下） */
+@media (max-width: 480px) {
+    .ql-editor .ql-video {
+        min-height: 260px;
     }
 }
 

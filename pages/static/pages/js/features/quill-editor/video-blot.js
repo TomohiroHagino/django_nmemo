@@ -11,7 +11,14 @@ class VideoBlot extends BlockEmbed {
             const iframe = document.createElement('iframe');
             iframe.setAttribute('src', value);
             iframe.setAttribute('frameborder', '0');
-            iframe.setAttribute('allowfullscreen', true);
+            // allowfullscreenは空文字列で設定（公式と同じ）
+            iframe.setAttribute('allowfullscreen', '');
+            // YouTubeの埋め込みに必要なallow属性を追加
+            iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+            // referrerpolicyを追加（公式と同じ）
+            iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+            // title属性を追加
+            iframe.setAttribute('title', 'YouTube video player');
             iframe.setAttribute('class', 'ql-video');
             node.appendChild(iframe);
         } else {
