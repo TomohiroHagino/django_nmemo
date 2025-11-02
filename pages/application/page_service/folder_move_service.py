@@ -5,7 +5,7 @@ import re
 import shutil
 import traceback
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 from ...domain.repositories import PageRepositoryInterface
 from .media_service import MediaService
 
@@ -202,7 +202,7 @@ class FolderMoveService:
             traceback.print_exc()
             return None, None
     
-    def move_folder_to_new_parent(self, entity: 'PageEntity', old_parent_id: Optional[int]) -> None:
+    def move_folder_to_new_parent(self, entity: 'PageEntity', old_parent_id: Optional[int], entity_cache: Optional[Dict[int, PageEntity]] = None) -> None:
         """親が変わった場合にフォルダを古い親から新しい親に移動する"""
         try:
             safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
@@ -211,11 +211,20 @@ class FolderMoveService:
             old_parent_folder = None
             old_folder = None
             if old_parent_id:
-                old_parent_entity = self.repository.find_by_id(old_parent_id)
+                # キャッシュから古い親エンティティを取得、なければDBから取得
+                old_parent_entity = None
+                if entity_cache:
+                    old_parent_entity = entity_cache.get(old_parent_id)
+                
+                if old_parent_entity is None:
+                    old_parent_entity = self.repository.find_by_id(old_parent_id)
+                    if old_parent_entity and entity_cache is not None:
+                        entity_cache[old_parent_id] = old_parent_entity
+                
                 if old_parent_entity:
-                    old_parent_folder = self.media_service._get_page_folder_absolute_path(old_parent_entity)
+                    old_parent_folder = self.media_service._get_page_folder_absolute_path(old_parent_entity, entity_cache)
                     if not old_parent_folder.exists() or not old_parent_folder.is_dir():
-                        old_parent_folder = self.media_service._find_existing_parent_folder(old_parent_entity)
+                        old_parent_folder = self.media_service._find_existing_parent_folder(old_parent_entity, entity_cache)
                 
                 if old_parent_folder and old_parent_folder.exists() and old_parent_folder.is_dir():
                     for item in old_parent_folder.iterdir():
@@ -232,11 +241,20 @@ class FolderMoveService:
             
             new_parent_folder = None
             if entity.parent_id:
-                new_parent_entity = self.repository.find_by_id(entity.parent_id)
+                # キャッシュから新しい親エンティティを取得、なければDBから取得
+                new_parent_entity = None
+                if entity_cache:
+                    new_parent_entity = entity_cache.get(entity.parent_id)
+                
+                if new_parent_entity is None:
+                    new_parent_entity = self.repository.find_by_id(entity.parent_id)
+                    if new_parent_entity and entity_cache is not None:
+                        entity_cache[entity.parent_id] = new_parent_entity
+                
                 if new_parent_entity:
-                    new_parent_folder = self.media_service._get_page_folder_absolute_path(new_parent_entity)
+                    new_parent_folder = self.media_service._get_page_folder_absolute_path(new_parent_entity, entity_cache)
                     if not new_parent_folder.exists() or not new_parent_folder.is_dir():
-                        new_parent_folder = self.media_service._find_existing_parent_folder(new_parent_entity)
+                        new_parent_folder = self.media_service._find_existing_parent_folder(new_parent_entity, entity_cache)
                     if not new_parent_folder or not new_parent_folder.exists():
                         print(f"Warning: New parent folder not found for page {entity.id}, parent_id={entity.parent_id}")
                         return

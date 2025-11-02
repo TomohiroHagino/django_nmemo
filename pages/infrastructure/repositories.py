@@ -1,6 +1,6 @@
 """Django ORM を用いたリポジトリ実装"""
 
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 from django.db import transaction
 from django.utils import timezone
@@ -119,7 +119,14 @@ class PageRepository(PageRepositoryInterface):
         except Page.DoesNotExist:
             return None
     
-    def bulk_update(self, entities: List[PageEntity]) -> List[PageEntity]:
+    def find_by_ids(self, page_ids: List[int]) -> List[PageEntity]:
+        """複数のIDでページを一括検索"""
+        if not page_ids:
+            return []
+        pages = Page.objects.filter(id__in=page_ids)
+        return [self._to_entity(page) for page in pages]
+    
+    def bulk_update(self, entities: List[PageEntity], existing_pages: Optional[Dict[int, Page]] = None) -> List[PageEntity]:
         """複数のページエンティティを一括更新する"""
         if not entities:
             return []
@@ -133,7 +140,16 @@ class PageRepository(PageRepositoryInterface):
         if not entity_ids:
             return []
         
-        existing_pages = {page.id: page for page in Page.objects.filter(id__in=entity_ids)}
+        # 既存のPageオブジェクトが渡されていればそれを使用、なければ取得
+        if existing_pages is None:
+            existing_pages = {}
+        
+        # 不足しているPageオブジェクトを取得
+        missing_ids = [eid for eid in entity_ids if eid not in existing_pages]
+        if missing_ids:
+            fetched_pages = Page.objects.filter(id__in=missing_ids)
+            for page in fetched_pages:
+                existing_pages[page.id] = page
         
         # 現在時刻を取得（全エンティティで統一、タイムゾーン対応）
         now = timezone.now()

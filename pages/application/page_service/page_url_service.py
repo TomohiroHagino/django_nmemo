@@ -133,15 +133,15 @@ class PageUrlService:
         """指定されたページIDを含むURLを持つすべてのページのコンテンツを更新"""
         try:
             # 影響を受けたページのエンティティとフォルダパスを事前に取得してキャッシュ
-            # これにより、全ページ × 影響を受けたページ数回のfind_by_id呼び出しを
-            # 影響を受けたページ数回だけに削減
+            # find_by_idsを使って一括取得することで、N回のfind_by_id呼び出しを1回のクエリに削減
             affected_pages_cache = {}
-            for affected_page_id in affected_page_ids:
-                entity = self.repository.find_by_id(affected_page_id)
-                if entity:
-                    current_folder_path = self.media_service.get_page_folder_path(entity)
-                    folder_path_str = str(current_folder_path).replace('\\', '/')
-                    affected_pages_cache[affected_page_id] = folder_path_str
+            if affected_page_ids:
+                entities = self.repository.find_by_ids(affected_page_ids)
+                for entity in entities:
+                    if entity:
+                        current_folder_path = self.media_service.get_page_folder_path(entity)
+                        folder_path_str = str(current_folder_path).replace('\\', '/')
+                        affected_pages_cache[entity.id] = folder_path_str
             
             # キャッシュが空の場合は何もしない
             if not affected_pages_cache:

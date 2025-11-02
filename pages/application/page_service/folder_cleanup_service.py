@@ -5,7 +5,7 @@ import re
 import shutil
 import traceback
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 from ...domain.repositories import PageRepositoryInterface
 from .media_service import MediaService
 from .folder_move_service import FolderMoveService
@@ -241,19 +241,49 @@ class FolderCleanupService:
             print(f"Warning: Failed to cleanup misplaced folders after save: {e}")
             traceback.print_exc()
     
-    def cleanup_orphaned_folders_in_parent(self, parent_id: Optional[int]) -> None:
+    def cleanup_orphaned_folders_in_parent(self, parent_id: Optional[int], entity_cache: Optional[Dict[int, 'PageEntity']] = None) -> None:
         """親フォルダ内のDBに存在しない孤立フォルダを削除する"""
         try:
-            all_pages = self.repository.find_all_pages()
-            existing_page_ids = {page.id for page in all_pages}
+            # 全ページを取得する代わりに、親フォルダ内のページIDだけを取得
+            if parent_id:
+                # 親の子ページだけを取得
+                child_pages = self.repository.find_children(parent_id)
+                existing_page_ids = {page.id for page in child_pages}
+                # 親自身も含める
+                if entity_cache and parent_id in entity_cache:
+                    existing_page_ids.add(parent_id)
+                elif parent_id:
+                    parent_entity = self.repository.find_by_id(parent_id)
+                    if parent_entity:
+                        existing_page_ids.add(parent_id)
+                        if entity_cache is not None:
+                            entity_cache[parent_id] = parent_entity
+            else:
+                # ルートページをentity_cacheから取得、なければ取得
+                if entity_cache:
+                    root_page_ids = {eid for eid, e in entity_cache.items() if e.parent_id is None}
+                    if root_page_ids:
+                        existing_page_ids = root_page_ids
+                    else:
+                        root_pages = self.repository.find_all_root_pages()
+                        existing_page_ids = {page.id for page in root_pages}
             
             parent_folder = None
             if parent_id:
-                parent_entity = self.repository.find_by_id(parent_id)
+                # キャッシュから親エンティティを取得、なければDBから取得
+                parent_entity = None
+                if entity_cache:
+                    parent_entity = entity_cache.get(parent_id)
+                
+                if parent_entity is None:
+                    parent_entity = self.repository.find_by_id(parent_id)
+                    if parent_entity and entity_cache is not None:
+                        entity_cache[parent_id] = parent_entity
+                
                 if parent_entity:
-                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                     if not parent_folder.exists() or not parent_folder.is_dir():
-                        parent_folder = self.media_service._find_existing_parent_folder(parent_entity)
+                        parent_folder = self.media_service._find_existing_parent_folder(parent_entity, entity_cache)
             else:
                 parent_folder = self.media_service.uploads_dir
             

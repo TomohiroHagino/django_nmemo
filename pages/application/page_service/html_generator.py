@@ -8,6 +8,7 @@ from django.conf import settings
 from .media_service import MediaService
 from ...domain.page_aggregate import PageEntity
 from ...infrastructure.repositories import PageRepository
+from typing import Optional, Dict
 
 
 class HtmlGenerator:
@@ -37,8 +38,13 @@ class HtmlGenerator:
         # HTML ドキュメントを構築
         return self._build_html_document(entity, embedded_content)
     
-    def save_html_to_folder(self, entity: PageEntity) -> None:
-        """ページのHTML版を画像フォルダに保存する"""
+    def save_html_to_folder(self, entity: PageEntity, entity_cache: Optional[Dict[int, PageEntity]] = None) -> None:
+        """ページのHTML版を画像フォルダに保存する
+        
+        Args:
+            entity: 保存するページエンティティ
+            entity_cache: エンティティキャッシュ（親エンティティの取得を最適化するため）
+        """
         
         # media_serviceが渡されている場合はそれを使用、なければ新規作成
         if self.media_service:
@@ -53,7 +59,7 @@ class HtmlGenerator:
         # まず、既存のフォルダを検索（orderが変更された場合に対応）
         existing_page_folder = None
         if media_service.repository:
-            existing_page_folder = media_service._find_existing_page_folder(entity)
+            existing_page_folder = media_service._find_existing_page_folder(entity, entity_cache)
             if existing_page_folder:
                 print(f"Found existing page folder: {existing_page_folder}")
             else:
@@ -65,14 +71,24 @@ class HtmlGenerator:
                 # repositoryがない場合はエラーを発生させる
                 raise ValueError(f'repository is None but entity has parent_id={entity.parent_id}')
             else:
-                parent_entity = media_service.repository.find_by_id(entity.parent_id)
+                # キャッシュから親エンティティを取得、なければDBから取得
+                parent_entity = None
+                if entity_cache:
+                    parent_entity = entity_cache.get(entity.parent_id)
+                
+                if parent_entity is None:
+                    parent_entity = media_service.repository.find_by_id(entity.parent_id)
+                    # キャッシュに追加
+                    if parent_entity and entity_cache is not None:
+                        entity_cache[entity.parent_id] = parent_entity
+                
                 if parent_entity:
-                    # _get_page_folder_absolute_pathを使う
-                    parent_folder = media_service._get_page_folder_absolute_path(parent_entity)
+                    # _get_page_folder_absolute_pathを使う（entity_cacheを渡す）
+                    parent_folder = media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                     
                     # 親フォルダが存在しない場合は、既存のフォルダを検索
                     if not parent_folder.exists() or not parent_folder.is_dir():
-                        existing_parent_folder = media_service._find_existing_parent_folder(parent_entity)
+                        existing_parent_folder = media_service._find_existing_parent_folder(parent_entity, entity_cache)
                         if existing_parent_folder:
                             parent_folder = existing_parent_folder
                         else:
@@ -93,7 +109,6 @@ class HtmlGenerator:
                         page_folder = parent_folder / folder_name
                         page_folder.mkdir(parents=False, exist_ok=True)
                 else:
-                    #￥
                     raise ValueError(f'親ページ（ID: {entity.parent_id}）が見つかりません。')
         else:
             # ルートページの場合
@@ -116,14 +131,24 @@ class HtmlGenerator:
         
         # 親フォルダが作成された場合、親ページのHTMLファイルも作成する
         if entity.parent_id and media_service.repository:
-            parent_entity = media_service.repository.find_by_id(entity.parent_id)
+            # キャッシュから親エンティティを取得（上で取得済みの場合は再利用）
+            parent_entity = None
+            if entity_cache:
+                parent_entity = entity_cache.get(entity.parent_id)
+            
+            if parent_entity is None:
+                parent_entity = media_service.repository.find_by_id(entity.parent_id)
+                # キャッシュに追加
+                if parent_entity and entity_cache is not None:
+                    entity_cache[entity.parent_id] = parent_entity
+                    
             if parent_entity:
-                # _get_page_folder_absolute_pathを使う
-                parent_folder = media_service._get_page_folder_absolute_path(parent_entity)
+                # _get_page_folder_absolute_pathを使う（entity_cacheを渡す）
+                parent_folder = media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                 
                 # 親フォルダが存在しない場合は、既存のフォルダを検索
                 if not parent_folder.exists() or not parent_folder.is_dir():
-                    existing_folder = media_service._find_existing_parent_folder(parent_entity)
+                    existing_folder = media_service._find_existing_parent_folder(parent_entity, entity_cache)
                     if existing_folder:
                         parent_folder = existing_folder
                 

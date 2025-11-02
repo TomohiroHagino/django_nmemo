@@ -1,7 +1,8 @@
 """メディアファイル操作サービス（後方互換性のためのラッパー）"""
 
-from typing import Optional
+from typing import Optional, Dict
 from ...domain.repositories import PageRepositoryInterface
+from ...domain.page_aggregate import PageEntity
 from .media_path_service import MediaPathService
 from .media_url_extractor import MediaUrlExtractor
 from .media_file_service import MediaFileService
@@ -30,14 +31,14 @@ class MediaService:
     def get_page_folder_path_by_id(self, page_id: int):
         return self.path_service.get_page_folder_path_by_id(page_id)
     
-    def _get_page_folder_absolute_path(self, entity):
-        return self.path_service.get_page_folder_absolute_path(entity)
+    def _get_page_folder_absolute_path(self, entity, entity_cache: Optional[Dict[int, PageEntity]] = None):
+        return self.path_service.get_page_folder_absolute_path(entity, entity_cache)
     
-    def _find_existing_parent_folder(self, parent_entity):
-        return self.path_service.find_existing_parent_folder(parent_entity)
+    def _find_existing_parent_folder(self, parent_entity, entity_cache: Optional[Dict[int, PageEntity]] = None):
+        return self.path_service.find_existing_parent_folder(parent_entity, entity_cache)
     
-    def _find_existing_page_folder(self, entity):
-        return self.path_service.find_existing_page_folder(entity)
+    def _find_existing_page_folder(self, entity, entity_cache: Optional[Dict[int, PageEntity]] = None):
+        return self.path_service.find_existing_page_folder(entity, entity_cache)
     
     # URL抽出メソッドの委譲
     def extract_media_urls(self, content: str):

@@ -1,6 +1,6 @@
 """ページフォルダ管理サービス（ファサード）"""
 
-from typing import Optional
+from typing import Optional, Dict
 from ...domain.repositories import PageRepositoryInterface
 from .media_service import MediaService
 from .folder_move_service import FolderMoveService
@@ -41,9 +41,9 @@ class PageFolderService:
         """保存後に親階層に誤って作成されたフォルダを削除"""
         return self.cleanup_service.cleanup_misplaced_folders_after_save(entity)
     
-    def cleanup_orphaned_folders_in_parent(self, parent_id: Optional[int]) -> None:
+    def cleanup_orphaned_folders_in_parent(self, parent_id: Optional[int], entity_cache: Optional[Dict[int, PageEntity]] = None) -> None:
         """親フォルダ内のDBに存在しない孤立フォルダを削除する"""
-        return self.cleanup_service.cleanup_orphaned_folders_in_parent(parent_id)
+        return self.cleanup_service.cleanup_orphaned_folders_in_parent(parent_id, entity_cache)
     
     # 移動・リネームメソッドの委譲
     def move_folder_contents(
@@ -67,7 +67,10 @@ class PageFolderService:
         return self.move_service.rename_folder_on_order_change(entity, old_order)
     
     def move_folder_to_new_parent(
-        self, entity: 'PageEntity', old_parent_id: Optional[int]
+        self, 
+        entity: 'PageEntity', 
+        old_parent_id: Optional[int],
+        entity_cache: Optional[Dict[int, PageEntity]] = None
     ) -> None:
         """親が変わった場合にフォルダを古い親から新しい親に移動する"""
-        return self.move_service.move_folder_to_new_parent(entity, old_parent_id)
+        return self.move_service.move_folder_to_new_parent(entity, old_parent_id, entity_cache)

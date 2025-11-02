@@ -1,7 +1,7 @@
 """リポジトリインターフェース（抽象クラス）"""
 
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import Optional, List, Dict
 from .page_aggregate import PageEntity
 
 
@@ -44,6 +44,17 @@ class PageRepositoryInterface(ABC):
         pass
     
     @abstractmethod
-    def bulk_update(self, entities: List[PageEntity]) -> List[PageEntity]:
-        """複数のページエンティティを一括更新する"""
+    def bulk_update(self, entities: List[PageEntity], existing_pages: Optional[Dict[int, 'Page']] = None) -> List[PageEntity]:
+        """複数のページエンティティを一括更新する
+        
+        Args:
+            entities: 更新するエンティティのリスト
+            existing_pages: 既存のDjangoモデルオブジェクトの辞書（IDをキーとする）
+                          渡された場合、この辞書を使用して重複クエリを避ける
+        """
+        pass
+    
+    @abstractmethod
+    def find_by_ids(self, page_ids: List[int]) -> List[PageEntity]:
+        """複数のIDでページを一括検索する"""
         pass
