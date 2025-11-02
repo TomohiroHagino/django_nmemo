@@ -34,6 +34,7 @@ db.sqlite3-journal
 .env
 django_nmemo_data
 django_nmemo_data_backup_*
+restored_backup_*
 
 # IDE
 .vscode/
