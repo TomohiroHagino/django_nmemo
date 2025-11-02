@@ -64,9 +64,10 @@ class PageUrlService:
             
             updated_content = pattern2.sub(replace_url2, updated_content)
             
-            # 変更があった場合のみUPDATE（SELECTなし）
+            # 変更があった場合のみ更新（リポジトリ経由）
             if current_content != updated_content:
-                Page.objects.filter(id=page_id).update(content=updated_content)
+                entity.content = updated_content
+                self.repository.save(entity)
                 print(f"✓ Updated content URLs for page {page_id}: {old_folder_path} -> {new_folder_path}")
             else:
                 print(f"  No URL changes needed for page {page_id} (old: {old_folder_path}, new: {new_folder_path})")
@@ -119,9 +120,10 @@ class PageUrlService:
             updated_content = pattern1.sub(replace_url1, updated_content)
             updated_content = pattern2.sub(replace_url2, updated_content)
             
-            # 変更があった場合のみUPDATE（SELECTなし）
+            # 変更があった場合のみ更新（リポジトリ経由）
             if current_content != updated_content:
-                Page.objects.filter(id=page_id).update(content=updated_content)
+                entity.content = updated_content
+                self.repository.save(entity)
                 print(f"✓ Updated content URLs for page {page_id} to current folder path: {folder_path_str}")
             
         except Exception as e:
@@ -129,34 +131,51 @@ class PageUrlService:
             import traceback
             traceback.print_exc()
     
-    def update_all_pages_content_urls(self, affected_page_ids: set) -> None:
+    def update_all_pages_content_urls(
+        self, 
+        affected_page_ids: set, 
+        entity_cache: Optional[Dict[int, 'PageEntity']] = None,
+        all_pages: Optional[List['PageEntity']] = None
+    ) -> None:
         """指定されたページIDを含むURLを持つすべてのページのコンテンツを更新"""
         try:
             # 影響を受けたページのエンティティとフォルダパスを事前に取得してキャッシュ
-            # find_by_idsを使って一括取得することで、N回のfind_by_id呼び出しを1回のクエリに削減
+            # entity_cacheがある場合はそれを使用、なければfind_by_idsで一括取得
             affected_pages_cache = {}
             if affected_page_ids:
-                entities = self.repository.find_by_ids(affected_page_ids)
-                for entity in entities:
-                    if entity:
-                        current_folder_path = self.media_service.get_page_folder_path(entity)
-                        folder_path_str = str(current_folder_path).replace('\\', '/')
-                        affected_pages_cache[entity.id] = folder_path_str
+                if entity_cache:
+                    # キャッシュから取得
+                    for page_id in affected_page_ids:
+                        if page_id in entity_cache:
+                            entity = entity_cache[page_id]
+                            current_folder_path = self.media_service.get_page_folder_path(entity)
+                            folder_path_str = str(current_folder_path).replace('\\', '/')
+                            affected_pages_cache[entity.id] = folder_path_str
+                else:
+                    # find_by_idsを使って一括取得
+                    entities = self.repository.find_by_ids(affected_page_ids)
+                    for entity in entities:
+                        if entity:
+                            current_folder_path = self.media_service.get_page_folder_path(entity)
+                            folder_path_str = str(current_folder_path).replace('\\', '/')
+                            affected_pages_cache[entity.id] = folder_path_str
             
             # キャッシュが空の場合は何もしない
             if not affected_pages_cache:
                 return
             
-            all_pages = Page.objects.all()
+            # 全ページを取得（既に取得済みの場合は再利用）
+            if all_pages is None:
+                all_pages = self.repository.find_all_pages()
             
-            for page in all_pages:
-                if not page.content:
+            for page_entity in all_pages:
+                if not page_entity.content:
                     continue
                 
                 content_updated = False
-                updated_content = page.content
+                updated_content = page_entity.content
                 
-                # キャッシュされたフォルダパスを使用（find_by_idを呼ばない）
+                # キャッシュされたフォルダパスを使用
                 for affected_page_id, folder_path_str in affected_pages_cache.items():
                     # パターン1: /media/uploads/page_{id}/filename
                     pattern1 = re.compile(
@@ -185,11 +204,10 @@ class PageUrlService:
                     if old_before != updated_content:
                         content_updated = True
                 
-                # 変更があった場合は保存
+                # 変更があった場合のみ更新（リポジトリ経由）
                 if content_updated:
-                    page.content = updated_content
-                    page.save(update_fields=['content'])
-                    print(f"✓ Updated content URLs in page {page.id} that reference affected pages")
+                    page_entity.content = updated_content
+                    self.repository.save(page_entity)
             
         except Exception as e:
             print(f"Warning: Failed to update all pages content URLs: {e}")
