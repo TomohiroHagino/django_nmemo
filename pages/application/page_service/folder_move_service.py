@@ -108,7 +108,7 @@ class FolderMoveService:
         except Exception as e:
             print(f"Warning: Failed to remove empty folders: {e}")
     
-    def rename_folder_on_order_change(self, entity: 'PageEntity', old_order: int) -> tuple:
+    def rename_folder_on_order_change(self, entity: 'PageEntity', old_order: int, entity_cache: Optional[Dict[int, PageEntity]] = None) -> tuple:
         """order変更時にフォルダをリネームする"""
         try:
             safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', entity.title)
@@ -119,12 +119,21 @@ class FolderMoveService:
             new_folder_path_str = None
             
             if entity.parent_id:
-                parent_entity = self.repository.find_by_id(entity.parent_id)
+                # キャッシュから親エンティティを取得、なければDBから取得
+                parent_entity = None
+                if entity_cache:
+                    parent_entity = entity_cache.get(entity.parent_id)
+                
+                if parent_entity is None:
+                    parent_entity = self.repository.find_by_id(entity.parent_id)
+                    if parent_entity and entity_cache is not None:
+                        entity_cache[entity.parent_id] = parent_entity
+                
                 if parent_entity:
-                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity)
+                    parent_folder = self.media_service._get_page_folder_absolute_path(parent_entity, entity_cache)
                     
                     if not parent_folder.exists() or not parent_folder.is_dir():
-                        existing_parent_folder = self.media_service._find_existing_parent_folder(parent_entity)
+                        existing_parent_folder = self.media_service._find_existing_parent_folder(parent_entity, entity_cache)
                         if existing_parent_folder:
                             parent_folder = existing_parent_folder
                         else:
@@ -152,7 +161,7 @@ class FolderMoveService:
                 new_folder_resolved = new_folder.resolve()
                 
                 if old_folder_resolved != new_folder_resolved:
-                    existing_folder = self.media_service._find_existing_page_folder(entity)
+                    existing_folder = self.media_service._find_existing_page_folder(entity, entity_cache)
                     if existing_folder:
                         existing_resolved = existing_folder.resolve()
                         if existing_resolved == old_folder_resolved:
@@ -180,7 +189,7 @@ class FolderMoveService:
                         
                         return old_folder_path_str, new_folder_path_str
             else:
-                existing_folder = self.media_service._find_existing_page_folder(entity)
+                existing_folder = self.media_service._find_existing_page_folder(entity, entity_cache)
                 if existing_folder:
                     existing_resolved = existing_folder.resolve()
                     new_folder_resolved = new_folder.resolve()
@@ -277,7 +286,7 @@ class FolderMoveService:
                     self.remove_empty_folders(old_folder)
             else:
                 print(f"Warning: Old folder not found for page {entity.id} (old_parent_id={old_parent_id})")
-                existing_folder = self.media_service._find_existing_page_folder(entity)
+                existing_folder = self.media_service._find_existing_page_folder(entity, entity_cache)
                 if existing_folder:
                     existing_resolved = existing_folder.resolve()
                     new_folder_resolved = new_folder.resolve()

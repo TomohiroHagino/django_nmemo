@@ -57,6 +57,7 @@ class MediaPathService:
                 parent_entity = entity_cache.get(entity.parent_id)
             
             if parent_entity is None:
+                print(f"Warning: Parent {entity.parent_id} not in cache in get_page_folder_absolute_path, fetching from DB")
                 parent_entity = self.repository.find_by_id(entity.parent_id)
                 if parent_entity and entity_cache is not None:
                     entity_cache[entity.parent_id] = parent_entity
@@ -78,6 +79,7 @@ class MediaPathService:
                 grandparent_entity = entity_cache.get(parent_entity.parent_id)
             
             if grandparent_entity is None:
+                print(f"Warning: Grandparent {parent_entity.parent_id} not in cache in find_existing_parent_folder, fetching from DB")
                 grandparent_entity = self.repository.find_by_id(parent_entity.parent_id)
                 if grandparent_entity and entity_cache is not None:
                     entity_cache[parent_entity.parent_id] = grandparent_entity
@@ -106,6 +108,7 @@ class MediaPathService:
                 parent_entity = entity_cache.get(entity.parent_id)
             
             if parent_entity is None:
+                print(f"Warning: Parent {entity.parent_id} not in cache in find_existing_page_folder, fetching from DB")
                 parent_entity = self.repository.find_by_id(entity.parent_id)
                 if parent_entity and entity_cache is not None:
                     entity_cache[entity.parent_id] = parent_entity

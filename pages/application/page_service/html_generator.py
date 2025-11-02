@@ -61,20 +61,16 @@ class HtmlGenerator:
         if entity.parent_id and media_service.repository:
             if entity_cache:
                 parent_entity = entity_cache.get(entity.parent_id)
-                if parent_entity:
-                    # キャッシュから取得できた場合はログ出力（最適化が機能していることを確認）
-                    pass  # デバッグ時のみ有効化
-                else:
-                    # キャッシュにない場合のみDBから取得
-                    print(f"Warning: Parent {entity.parent_id} not in cache, fetching from DB")
-                    parent_entity = media_service.repository.find_by_id(entity.parent_id)
-                    if parent_entity and entity_cache is not None:
-                        entity_cache[entity.parent_id] = parent_entity
-            else:
-                # entity_cacheがNoneの場合はDBから取得
+            
+            if parent_entity is None:
+                # キャッシュにない場合のみDBから取得
+                print(f"Warning: Parent {entity.parent_id} not in cache in save_html_to_folder, fetching from DB")
                 parent_entity = media_service.repository.find_by_id(entity.parent_id)
+                if parent_entity and entity_cache is not None:
+                    entity_cache[entity.parent_id] = parent_entity
         
         # まず、既存のフォルダを検索（orderが変更された場合に対応）
+        # 親エンティティは上で既にキャッシュに追加されているので、_find_existing_page_folderでもキャッシュから取得される
         existing_page_folder = None
         if media_service.repository:
             existing_page_folder = media_service._find_existing_page_folder(entity, entity_cache)

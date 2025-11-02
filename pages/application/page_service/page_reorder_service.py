@@ -73,8 +73,10 @@ class PageReorderService:
             entity, target_entity, target_page_id, position, entity_cache
         )
         
-        # エンティティキャッシュを作成（保存後のエンティティを初期値として使用）
-        entity_cache: Dict[int, PageEntity] = entity_cache.copy()
+        # 注: entity_cache.copy()は不要（同じ参照を使い続けるべき）
+        # キャッシュは参照渡しで共有されるため、copy()を使うと新しい辞書が作成されるが、
+        # 値（エンティティ）自体は参照がコピーされるため、基本的には問題ないが、
+        # 後の処理でキャッシュに追加されたエンティティが失われる可能性がある
         
         if parent_changed:
             saved_entity = entity_cache.get(page_id) or self.repository.find_by_id(page_id)
@@ -82,6 +84,11 @@ class PageReorderService:
                 entity_cache[page_id] = saved_entity
                 try:
                     # entity_cacheを渡して親エンティティの重複取得を避ける
+                    # 親エンティティ（new_parent_id）がキャッシュにあることを確認
+                    if new_parent_id and new_parent_id not in entity_cache:
+                        parent_entity = self.repository.find_by_id(new_parent_id)
+                        if parent_entity:
+                            entity_cache[new_parent_id] = parent_entity
                     self.folder_service.move_folder_to_new_parent(saved_entity, old_parent_id, entity_cache)
                 except Exception as e:
                     print(f"Warning: Failed to move folder to new parent for page {saved_entity.id}: {e}")
@@ -97,6 +104,7 @@ class PageReorderService:
             self.url_service.update_all_pages_content_urls(affected_page_ids, entity_cache, all_pages)
         
         # キャッシュされたエンティティを使用
+        # 親エンティティがキャッシュに含まれていることを確認してからHTML生成
         self._generate_html_for_affected_pages(updated_siblings, page_id, entity_cache)
         
         try:
@@ -194,10 +202,13 @@ class PageReorderService:
         entity_cache.update(saved_entities_cache)
         
         # デバッグ: キャッシュに全てのエンティティが含まれているか確認
+        # 注: updated_sibling_idsには親ページは含まれない（親は更新されないため）が、
+        # entity_cacheには親ページも含まれる可能性があるため、この比較は誤検知を引き起こす
+        # 代わりに、更新された兄弟ページが全てキャッシュに含まれているかを確認する
         updated_sibling_ids = {s.id for s in updated_siblings}
-        cached_ids = set(entity_cache.keys())
-        if updated_sibling_ids != cached_ids:
-            print(f"Warning: Cache mismatch. Updated siblings: {updated_sibling_ids}, Cached: {cached_ids}")
+        cached_sibling_ids = {sid for sid in entity_cache.keys() if sid in updated_sibling_ids}
+        if updated_sibling_ids != cached_sibling_ids:
+            print(f"Warning: Some updated siblings not in cache. Updated siblings: {updated_sibling_ids}, Cached siblings: {cached_sibling_ids}")
         
         if entity.id not in old_orders:
             old_orders[entity.id] = entity.order
@@ -229,7 +240,7 @@ class PageReorderService:
                 if old_order != saved_entity.order:
                     affected_page_ids.add(saved_entity.id)
                     try:
-                        old_folder_path_str, new_folder_path_str = self.folder_service.rename_folder_on_order_change(saved_entity, old_order)
+                        old_folder_path_str, new_folder_path_str = self.folder_service.rename_folder_on_order_change(saved_entity, old_order, entity_cache)
                         if old_folder_path_str and new_folder_path_str:
                             self.url_service.update_content_urls_after_rename(saved_entity.id, old_folder_path_str, new_folder_path_str, saved_entity)
                         else:
@@ -252,7 +263,7 @@ class PageReorderService:
                 if old_order != saved_entity.order:
                     affected_page_ids.add(page_id)
                     try:
-                        old_folder_path_str, new_folder_path_str = self.folder_service.rename_folder_on_order_change(saved_entity, old_order)
+                        old_folder_path_str, new_folder_path_str = self.folder_service.rename_folder_on_order_change(saved_entity, old_order, entity_cache)
                         if old_folder_path_str and new_folder_path_str:
                             self.url_service.update_content_urls_after_rename(saved_entity.id, old_folder_path_str, new_folder_path_str, saved_entity)
                         else:
@@ -289,6 +300,7 @@ class PageReorderService:
             
             for parent_id in current_parent_ids:
                 if parent_id not in entity_cache:
+                    print(f"Warning: Parent {parent_id} not in cache before pre-fetch, fetching from DB")
                     parent_entity = self.repository.find_by_id(parent_id)
                     if parent_entity:
                         entity_cache[parent_id] = parent_entity
@@ -296,11 +308,20 @@ class PageReorderService:
                         if parent_entity.parent_id:
                             parent_ids.add(parent_entity.parent_id)
                             all_parent_ids.add(parent_entity.parent_id)
+                else:
+                    # キャッシュに既にある場合、その親も確認
+                    parent_entity = entity_cache[parent_id]
+                    if parent_entity.parent_id and parent_entity.parent_id not in entity_cache:
+                        parent_ids.add(parent_entity.parent_id)
+                        all_parent_ids.add(parent_entity.parent_id)
         
         # デバッグ: 親エンティティがキャッシュに追加されているか確認
         for parent_id in all_parent_ids:
             if parent_id not in entity_cache:
                 print(f"Warning: Parent {parent_id} not in cache after pre-fetch")
+            else:
+                # デバッグ: 親エンティティがキャッシュに存在することを確認
+                print(f"Debug: Parent {parent_id} is in cache before HTML generation")
         
         for sibling in updated_siblings:
             # キャッシュから取得（必ずキャッシュにあるはず）
@@ -313,6 +334,12 @@ class PageReorderService:
                 try:
                     # エンティティキャッシュを渡して親エンティティの重複取得を避ける
                     # キャッシュが共有されることを確認（参照渡し）
+                    # デバッグ: 親エンティティがキャッシュにあることを確認してからHTML生成
+                    if saved_entity.parent_id and saved_entity.parent_id not in entity_cache:
+                        print(f"Warning: Parent {saved_entity.parent_id} not in cache before calling save_html_to_folder for page {saved_entity.id}, fetching now")
+                        parent_entity = self.repository.find_by_id(saved_entity.parent_id)
+                        if parent_entity:
+                            entity_cache[saved_entity.parent_id] = parent_entity
                     self.html_generator.save_html_to_folder(saved_entity, entity_cache)
                 except Exception as e:
                     print(f"Warning: Failed to save HTML for page {saved_entity.id}: {e}")
@@ -328,6 +355,12 @@ class PageReorderService:
             if saved_entity:
                 try:
                     # エンティティキャッシュを渡して親エンティティの重複取得を避ける
+                    # デバッグ: 親エンティティがキャッシュにあることを確認してからHTML生成
+                    if saved_entity.parent_id and saved_entity.parent_id not in entity_cache:
+                        print(f"Warning: Parent {saved_entity.parent_id} not in cache before calling save_html_to_folder for page {saved_entity.id}, fetching now")
+                        parent_entity = self.repository.find_by_id(saved_entity.parent_id)
+                        if parent_entity:
+                            entity_cache[saved_entity.parent_id] = parent_entity
                     self.html_generator.save_html_to_folder(saved_entity, entity_cache)
                 except Exception as e:
                     print(f"Warning: Failed to save HTML for moved page {saved_entity.id}: {e}")

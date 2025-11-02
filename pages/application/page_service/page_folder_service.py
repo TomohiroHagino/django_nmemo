@@ -61,10 +61,10 @@ class PageFolderService:
         return self.move_service.remove_empty_folders(folder)
     
     def rename_folder_on_order_change(
-        self, entity: 'PageEntity', old_order: int
+        self, entity: 'PageEntity', old_order: int, entity_cache: Optional[Dict[int, PageEntity]] = None
     ) -> tuple:
         """order変更時にフォルダをリネームする"""
-        return self.move_service.rename_folder_on_order_change(entity, old_order)
+        return self.move_service.rename_folder_on_order_change(entity, old_order, entity_cache)
     
     def move_folder_to_new_parent(
         self, 
