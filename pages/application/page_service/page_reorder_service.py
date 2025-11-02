@@ -297,6 +297,11 @@ class PageReorderService:
                             parent_ids.add(parent_entity.parent_id)
                             all_parent_ids.add(parent_entity.parent_id)
         
+        # デバッグ: 親エンティティがキャッシュに追加されているか確認
+        for parent_id in all_parent_ids:
+            if parent_id not in entity_cache:
+                print(f"Warning: Parent {parent_id} not in cache after pre-fetch")
+        
         for sibling in updated_siblings:
             # キャッシュから取得（必ずキャッシュにあるはず）
             saved_entity = entity_cache.get(sibling.id)
@@ -307,6 +312,7 @@ class PageReorderService:
             if saved_entity:
                 try:
                     # エンティティキャッシュを渡して親エンティティの重複取得を避ける
+                    # キャッシュが共有されることを確認（参照渡し）
                     self.html_generator.save_html_to_folder(saved_entity, entity_cache)
                 except Exception as e:
                     print(f"Warning: Failed to save HTML for page {saved_entity.id}: {e}")
