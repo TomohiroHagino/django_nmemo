@@ -2,8 +2,9 @@
 
 import { initPageTreeDragDrop, toggleChildren, addPageToTree } from './features/page-tree/index.js';
 import { openIconModal, closeIconModal, confirmIconChange } from './iconModal.js';
-import { openCreateModal, openCreateChildModal, closeCreateModal, handleCreatePage, setCreateQuill, getCreateQuill, initModalResize } from './pageModal.js';
-import { initCreateEditor, initContentEditor, imageHandler, videoHandler, addDragDropImageUpload, addDragDropVideoUpload, addDragDropExcelUpload, addImageResizeHandlers } from './quillEditor.js';
+import { openCreateModal, openCreateChildModal, closeCreateModal, handleCreatePage, setCreateEditor, getCreateEditor, initModalResize, setupTempCleanupOnUnload } from './pageModal.js';
+// カスタムエディタを直接インポート（quillEditor.jsは使わない）
+import { initCreateEditor, initContentEditor } from './features/custom-editor/index.js';
 import { getCurrentPageId, loadPage, savePage, cancelEdit, deletePage } from './pageOperations.js';
 
 import { escapeHtml, formatDate } from './utils/format.js';
@@ -11,8 +12,8 @@ import { showSaveIndicator } from './utils/notify.js';
 import { initSidebarResize } from './sidebarResize.js';
 import { initResponsive } from './responsive.js';
 
-// グローバルに保持する Quill エディタ参照
-let contentQuill = null;
+// グローバルに保持するエディタ参照（カスタムエディタ）
+let contentEditor = null;
 
 // モーダルの外側クリックで閉じる機能は無効化
 // window.onclick = function(event) {
@@ -44,8 +45,8 @@ document.addEventListener('keydown', (e) => {
         
         // 既存ページ編集の場合
         const currentPageId = getCurrentPageId();
-        if (currentPageId && contentQuill) {
-            savePage(contentQuill, showSaveIndicator);
+        if (currentPageId && contentEditor) {
+            savePage(contentEditor, showSaveIndicator);
         }
     }
 });
@@ -59,20 +60,12 @@ window.addEventListener('load', () => {
     // レスポンシブ機能を初期化
     initResponsive();
     
-    // 作成モーダル用の Quill を初期化（適切なコンテキストを付与）
-    const createQuill = initCreateEditor(
-        function() {
-            return imageHandler.call(this, getCurrentPageId(), getCreateQuill);
-        },
-        function() {
-            return videoHandler.call(this, getCurrentPageId(), getCreateQuill);
-        },
-        addImageResizeHandlers,
-        (quill, isCreate) => addDragDropImageUpload(quill, isCreate, getCurrentPageId()),
-        (quill, isCreate) => addDragDropVideoUpload(quill, isCreate, getCurrentPageId()),
-        (quill, isCreate) => addDragDropExcelUpload(quill, isCreate, getCurrentPageId())
-    );
-    setCreateQuill(createQuill);
+    // 作成モーダル用のカスタムエディタを初期化（内部で全て処理される）
+    const createEditor = initCreateEditor();
+    setCreateEditor(createEditor);
+    
+    // 一時ファイルクリーンアップの設定
+    setupTempCleanupOnUnload();
     
     // ページツリーのドラッグ＆ドロップを初期化
     initPageTreeDragDrop();
@@ -94,37 +87,32 @@ window.loadPage = function(pageId) {
     // loadPage returns a promise, so we need to wait for it
     loadPage(
         pageId,
-        (initialContent) => initContentEditor(
-            initialContent,
-            function() {
-                return imageHandler.call(this, getCurrentPageId(), getCreateQuill);
-            },
-            function() {
-                return videoHandler.call(this, getCurrentPageId(), getCreateQuill);
-            },
-            addImageResizeHandlers,
-            (quill, isCreate) => addDragDropImageUpload(quill, isCreate, getCurrentPageId()),
-            (quill, isCreate) => addDragDropVideoUpload(quill, isCreate, getCurrentPageId()),
-            (quill, isCreate) => addDragDropExcelUpload(quill, isCreate, getCurrentPageId())
-        ),
+        (initialContent) => {
+            const contentEditorInstance = initContentEditor(initialContent);
+            // ページIDを設定（ドラッグ&ドロップなどで必要）
+            if (contentEditorInstance.setPageId) {
+                contentEditorInstance.setPageId(pageId);
+            }
+            return contentEditorInstance;
+        },
         escapeHtml,
         formatDate
-    ).then(quill => {
-        contentQuill = quill;
+    ).then(editor => {
+        contentEditor = editor;
     });
 };
 window.savePage = function() {
-    if (!contentQuill) {
+    if (!contentEditor) {
         alert('エディタが初期化されていません');
         return;
     }
-    savePage(contentQuill, showSaveIndicator);
+    savePage(contentEditor, showSaveIndicator);
 };
 window.cancelEdit = function() {
-    if (!contentQuill) {
+    if (!contentEditor) {
         return;
     }
-    cancelEdit(contentQuill);
+    cancelEdit(contentEditor);
 };
 window.deletePage = function(pageId) {
     deletePage(pageId, showSaveIndicator);

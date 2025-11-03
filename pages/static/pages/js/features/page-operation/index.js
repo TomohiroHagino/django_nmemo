@@ -13,7 +13,12 @@ export function loadPage(pageId, initContentEditor, escapeHtml, formatDate) {
             setOriginals(data.title, data.content);
             renderContentArea(pageId, data, escapeHtml, formatDate);
 
-            const contentQuill = initContentEditor(data.content);
+            const contentEditor = initContentEditor(data.content);
+            
+            // ページIDを設定（ドラッグ&ドロップなどで必要）
+            if (contentEditor && contentEditor.setPageId) {
+                contentEditor.setPageId(pageId);
+            }
 
             const titleEl = document.getElementById('pageTitle');
             if (titleEl) {
@@ -23,12 +28,12 @@ export function loadPage(pageId, initContentEditor, escapeHtml, formatDate) {
                 titleEl.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        if (contentQuill) contentQuill.focus();
+                        if (contentEditor) contentEditor.focus();
                     }
                 });
             }
 
-            return contentQuill;
+            return contentEditor;
         })
         .catch(err => {
             console.error('Error loading page:', err);

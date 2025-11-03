@@ -21,4 +21,5 @@ urlpatterns = [
     path('api/upload-zip/', views.upload_zip, name='upload_zip'),
     path('api/upload-sketch/', views.upload_sketch, name='upload_sketch'),
     path('api/upload-ico/', views.upload_ico, name='upload_ico'),
+    path('api/cleanup-temp-images/', views.cleanup_temp_images, name='cleanup_temp_images'),
 ]

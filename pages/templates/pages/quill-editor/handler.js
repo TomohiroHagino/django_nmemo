@@ -2,9 +2,9 @@
 
 import { applySyntaxHighlight } from './syntax-highlight.js';
 
-export function videoHandler(currentPageId, getCreateQuill) {
+export function videoHandler(currentPageId, getCreateEditor) {
     const self = this;
-    const createQuill = getCreateQuill();
+    const createQuill = getCreateEditor();
     
     // ユーザーに選択肢を提示
     const choice = prompt('1: YouTube/Vimeo URLを入力\n2: 動画ファイルをアップロード\n\n番号を入力してください (1 または 2):');
@@ -195,14 +195,14 @@ export function codeBlockNoHighlight() {
 }
 
 // 画像ファイルを選択してアップロード・挿入するハンドラ
-export function imageHandler(currentPageId, getCreateQuill) {
+export function imageHandler(currentPageId, getCreateEditor) {
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
     input.setAttribute('accept', 'image/*');
     input.click();
     
     const self = this; // Save context to determine which editor is being used
-    const createQuill = getCreateQuill();
+    const createQuill = getCreateEditor();
     
     input.onchange = async () => {
         const file = input.files[0];

@@ -1,11 +1,12 @@
 """メディアファイル操作サービス（後方互換性のためのラッパー）"""
 
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from ...domain.repositories import PageRepositoryInterface
 from ...domain.page_aggregate import PageEntity
 from .media_path_service import MediaPathService
 from .media_url_extractor import MediaUrlExtractor
 from .media_file_service import MediaFileService
+import shutil
 
 
 class MediaService:
@@ -54,5 +55,5 @@ class MediaService:
     def delete_orphaned_media(self, page_id: int, content: str):
         return self.file_service.delete_orphaned_media(page_id, content)
     
-    def delete_page_media_folders(self, page_ids):
-        return self.file_service.delete_page_media_folders(page_ids)
+    def delete_page_media_folders(self, page_ids, entities_map=None):
+        return self.file_service.delete_page_media_folders(page_ids, entities_map)

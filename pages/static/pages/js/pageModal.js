@@ -4,6 +4,7 @@ export {
   closeCreateModal,
   handleCreatePage,
   initModalResize,
-  setCreateQuill,
-  getCreateQuill,
+  setCreateEditor,
+  getCreateEditor,
+  setupTempCleanupOnUnload,
 } from './features/page-modal/index.js';

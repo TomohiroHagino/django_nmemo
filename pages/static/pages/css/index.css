@@ -339,7 +339,7 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(0,0,0,0.5);
-    z-index: 1000;
+    z-index: 10000;
 }
 
 .modal__content {
@@ -367,6 +367,8 @@ body {
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .modal__content.resizing {
@@ -385,6 +387,13 @@ body {
     min-height: 0;
     overflow: hidden;
     margin-bottom: 20px;
+}
+
+/* カスタムエディタがモーダル内にある場合のスタイル */
+.modal__content .custom-editor {
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .modal__content .form-group .editor-container {
@@ -854,36 +863,35 @@ body {
 /* ========================================
    リサイズハンドルブロック
    ======================================== */
-.resize-handle {
+   .resize-handle {
     position: absolute;
     width: 20px;
     height: 20px;
     background: transparent;
-    cursor: nwse-resize;
 }
 
 .resize-handle--br {
     bottom: 0;
     right: 0;
-    cursor: nwse-resize;
+    cursor: se-resize;
 }
 
 .resize-handle--bl {
     bottom: 0;
     left: 0;
-    cursor: nesw-resize;
+    cursor: sw-resize;
 }
 
 .resize-handle--tr {
     top: 0;
     right: 0;
-    cursor: nesw-resize;
+    cursor: ne-resize;
 }
 
 .resize-handle--tl {
     top: 0;
     left: 0;
-    cursor: nwse-resize;
+    cursor: nw-resize;
 }
 
 .resize-handle--t {
@@ -1216,6 +1224,19 @@ body {
         transform: scale(0.95);
         background: #1976d2;
     }
+
+/* 試験的なデザイン */
+    .content-body {
+        margin-top: 0px;
+        padding: 0px 15px 15px 15px;
+    }
+    .page-content__title {
+        padding: 8px 40px 8px 48px;
+    }
+
+    .page-meta {
+        padding: 8px 40px 8px 48px;
+    }
 }
 
 /* タブレット（768px以下） */
@@ -1224,4 +1245,6 @@ body {
         min-height: 260px;
     }
 }
+
+
 

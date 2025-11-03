@@ -5,6 +5,8 @@ import { addImageResizeHandlers } from './image-resize.js';
 import { addDragDropImageUpload, addDragDropVideoUpload, addDragDropExcelUpload } from './drag-drop.js';
 import { addLinkShortcuts } from './shortcuts.js';
 import { applySyntaxHighlight } from './syntax-highlight.js';
+import { setupStylePreservingClipboard } from './clipboard-formatter.js';
+
 
 // VideoBlot をモジュール読み込み時に登録（従来のグローバル登録相当）
 registerVideoBlot();
@@ -100,6 +102,8 @@ export function initCreateEditor(
 
     addLinkShortcuts(createQuill);
     applySyntaxHighlight(createQuill);
+
+    setupStylePreservingClipboard(createQuill);
 
     return createQuill;
 }
@@ -279,6 +283,9 @@ export function initContentEditor(
 
     addLinkShortcuts(contentQuill);
     applySyntaxHighlight(contentQuill);
+
+    // スタイル保持クリップボードモジュールを適用
+    setupStylePreservingClipboard(contentQuill);
 
     return contentQuill;
 }

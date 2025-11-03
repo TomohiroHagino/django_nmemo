@@ -25,7 +25,15 @@ class PageDeleteService:
         aggregate = PageAggregate.from_entity_tree(entity)
         page_ids_to_delete = aggregate.collect_all_page_ids()
         
+        # 削除前にエンティティ情報を保持（エンティティマップを作成）
+        entities_map = {}
+        def collect_entities(e):
+            entities_map[e.id] = e
+            for child in e.children:
+                collect_entities(child)
+        collect_entities(entity)
+        
         self.repository.delete(page_id)
-        self.media_service.delete_page_media_folders(page_ids_to_delete)
+        self.media_service.delete_page_media_folders(page_ids_to_delete, entities_map)
         
         return True

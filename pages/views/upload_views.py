@@ -35,13 +35,20 @@ def _validate_and_save_file(
     if not page_id:
         return JsonResponse({'error': 'ページIDが必要です'}, status=400)
     
-    try:
-        page_id = int(page_id)
-    except ValueError:
-        return JsonResponse({'error': '無効なページIDです'}, status=400)
+    # 新規作成モーダルの場合は一時フォルダを使用
+    is_temp = (page_id == 'temp')
     
-    # ページの階層構造フォルダパスを取得
-    folder_path = _get_page_folder_path(page_id)
+    if is_temp:
+        # 一時フォルダに保存
+        folder_path = 'temp_uploads'
+    else:
+        try:
+            page_id_int = int(page_id)
+        except ValueError:
+            return JsonResponse({'error': '無効なページIDです'}, status=400)
+        
+        # ページの階層構造フォルダパスを取得
+        folder_path = _get_page_folder_path(page_id_int)
     
     file = request.FILES[file_key]
     
@@ -179,3 +186,163 @@ def upload_ico(request):
         max_size=10 * 1024 * 1024,  # 10MB
         use_original_name=True
     )
+
+
+@require_http_methods(["POST"])
+def cleanup_temp_images(request):
+    """一時フォルダの未使用メディアファイルを全て削除する（temp_uploadsとpage_tempの両方に対応）"""
+    import json
+    from django.core.files.storage import default_storage
+    import re
+    import os
+    import urllib.parse
+    
+    try:
+        # リクエストボディからJSONを取得
+        body = json.loads(request.body)
+        content_html = body.get('content', '')
+        
+        print(f"DEBUG: Content HTML length: {len(content_html)}")
+        print(f"DEBUG: Content HTML (first 500 chars): {content_html[:500]}")
+        
+        # 使用されているメディアファイル名を抽出
+        # 画像と動画の両方に対応（src属性またはhref属性）
+        used_files = set()
+        used_files_lower = set()  # 大文字小文字を区別しない比較用
+        
+        # パターン: /media/uploads/temp_uploads/ または /media/uploads/page_temp/ で始まるURL
+        patterns = [
+            r'/media/uploads/temp_uploads/([^"\'>\s?#]+)',  # temp_uploadsフォルダ
+            r'/media/uploads/page_temp/([^"\'>\s?#]+)',     # page_tempフォルダ
+        ]
+        
+        for pattern in patterns:
+            for match in re.finditer(pattern, content_html):
+                filename = match.group(1)
+                # URLデコード（必要に応じて）
+                try:
+                    filename = urllib.parse.unquote(filename)
+                    # パスセパレータが含まれている場合は最後のファイル名のみを取得
+                    if '/' in filename:
+                        filename = filename.split('/')[-1]
+                    if '\\' in filename:
+                        filename = filename.split('\\')[-1]
+                except:
+                    pass
+                if filename:
+                    used_files.add(filename)
+                    # 大文字小文字を区別しない比較用にも追加
+                    used_files_lower.add(filename.lower())
+        
+        print(f"DEBUG: Found {len(used_files)} used files: {list(used_files)[:10]}")  # 最初の10個を表示
+        
+        deleted_count = 0
+        
+        # 削除対象フォルダのリスト
+        temp_folders = [
+            ('temp_uploads', 'uploads/temp_uploads'),
+            ('page_temp', 'uploads/page_temp')
+        ]
+        
+        for folder_name, folder_path in temp_folders:
+            try:
+                temp_dir = default_storage.path(folder_path)
+            except Exception:
+                # default_storage.pathが使えない場合、直接パスを構築
+                temp_dir = os.path.join(settings.MEDIA_ROOT, folder_path)
+            
+            print(f"DEBUG: Checking folder: {temp_dir}")
+            
+            if not os.path.exists(temp_dir):
+                print(f"DEBUG: Folder does not exist: {temp_dir}")
+                continue
+                
+            if not os.path.isdir(temp_dir):
+                print(f"DEBUG: Not a directory: {temp_dir}")
+                continue
+            
+            files_in_folder = os.listdir(temp_dir)
+            print(f"DEBUG: Found {len(files_in_folder)} items in {folder_name}")
+            
+            for filename in files_in_folder:
+                file_path = os.path.join(temp_dir, filename)
+                
+                # ディレクトリはスキップ
+                if os.path.isdir(file_path):
+                    print(f"DEBUG: Skipping directory: {filename}")
+                    continue
+                
+                # .htmlファイルはスキップ（ページファイル）
+                if filename.endswith('.html'):
+                    print(f"DEBUG: Skipping HTML file: {filename}")
+                    continue
+                
+                # ファイル名が使用されていないかチェック
+                should_delete = True
+                
+                # コンテンツが空の場合は、すべてのファイルを削除対象とする
+                if not content_html or not content_html.strip():
+                    should_delete = True
+                    print(f"DEBUG: Content is empty, marking for deletion: {filename}")
+                else:
+                    # 使用されているファイル名のセットと比較（大文字小文字を考慮）
+                    if filename in used_files:
+                        should_delete = False
+                        print(f"DEBUG: File {filename} is in used_files (exact match)")
+                    # 大文字小文字を区別しない比較
+                    elif filename.lower() in used_files_lower:
+                        should_delete = False
+                        print(f"DEBUG: File {filename} is in used_files_lower (case-insensitive match)")
+                    else:
+                        # URLエンコードされたバージョンもチェック
+                        encoded_filename = urllib.parse.quote(filename, safe='')
+                        if encoded_filename in used_files:
+                            should_delete = False
+                            print(f"DEBUG: File {filename} matches encoded version in used_files")
+                        elif encoded_filename.lower() in used_files_lower:
+                            should_delete = False
+                            print(f"DEBUG: File {filename} matches encoded version in used_files_lower")
+                        else:
+                            # URLデコードされたバージョンと比較（使用ファイルリスト内で）
+                            matched = False
+                            for used_file in used_files:
+                                try:
+                                    decoded_used = urllib.parse.unquote(used_file)
+                                    # 大文字小文字を区別しない比較
+                                    if filename.lower() == decoded_used.lower() or filename.lower() == used_file.lower():
+                                        should_delete = False
+                                        matched = True
+                                        print(f"DEBUG: File {filename} matches used_file {used_file} after decode")
+                                        break
+                                except:
+                                    pass
+                            if not matched:
+                                print(f"DEBUG: File {filename} not matched, will be deleted")
+                
+                # 使用されていないファイルを削除
+                if should_delete:
+                    try:
+                        os.remove(file_path)
+                        deleted_count += 1
+                        print(f"✓ Deleted: {file_path} (filename: {filename})")
+                    except Exception as e:
+                        print(f"✗ Warning: Failed to delete {file_path}: {e}")
+                else:
+                    print(f"  Kept: {filename}")
+        
+        # デバッグ情報
+        print(f"DEBUG SUMMARY: Used files count: {len(used_files)}, Deleted files count: {deleted_count}")
+        
+        return JsonResponse({
+            'success': True,
+            'deleted_count': deleted_count
+        })
+            
+    except Exception as e:
+        import traceback
+        print(f"✗ Error in cleanup_temp_images: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)

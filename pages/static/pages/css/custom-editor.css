@@ -1,0 +1,473 @@
+/* pages/static/pages/css/custom-editor.css */
+.custom-editor {
+    min-height: 300px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    outline: none;
+    position: relative;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    overflow-x: auto;
+}
+
+.custom-editor.empty::before {
+    content: attr(data-placeholder);
+    color: #999;
+    pointer-events: none;
+    position: absolute;
+}
+
+.custom-editor img.selected {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}
+
+.custom-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 8px;
+    border-bottom: 1px solid #e0e0e0;
+    background: linear-gradient(to bottom, #ffffff, #f8f8f8);
+    flex-wrap: wrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.toolbar-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: #555;
+    position: relative;
+}
+
+.toolbar-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: #d0d0d0;
+    color: #333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-btn:active {
+    background: rgba(0, 0, 0, 0.1);
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-btn.active {
+    background: rgba(66, 133, 244, 0.15);
+    border-color: #4285f4;
+    color: #4285f4;
+}
+
+.toolbar-btn.active:hover {
+    background: rgba(66, 133, 244, 0.2);
+}
+
+.toolbar-btn code {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.toolbar-btn strong {
+    font-weight: bold;
+}
+
+.toolbar-btn em {
+    font-style: italic;
+}
+
+.toolbar-btn u {
+    text-decoration: underline;
+}
+
+.toolbar-btn s {
+    text-decoration: line-through;
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 24px;
+    background: #e0e0e0;
+    margin: 0 4px;
+    align-self: center;
+}
+
+/* 画像リサイズハンドル */
+.image-resize-container {
+    pointer-events: none;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid white;
+  border-radius: 50%;
+  pointer-events: all;
+}
+
+.resize-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
+.resize-handle.n { top: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+.resize-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
+.resize-handle.e { top: 50%; right: -5px; transform: translateY(-50%); cursor: ew-resize; }
+.resize-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+.resize-handle.s { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+.resize-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+.resize-handle.w { top: 50%; left: -5px; transform: translateY(-50%); cursor: ew-resize; }
+
+/* コードブロック */
+.custom-editor pre {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 8px 0;
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+.custom-editor pre code {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+}
+
+/* インラインコード */
+.custom-editor code:not(pre code) {
+    font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+    font-size: 0.9em;
+    background-color: #f5f5f5;
+    color: #e83e8c;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #e1e4e8;
+}
+
+/* ドラッグオーバー */
+.custom-editor.drag-over {
+    background: #f0f8ff;
+    border: 2px dashed #0066cc;
+}
+
+/* フォントサイズドロップダウン */
+.font-size-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.font-size-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 4px 0;
+}
+
+.font-size-option {
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    line-height: 1.5;
+}
+
+.font-size-option:hover {
+    background-color: #f0f0f0;
+}
+
+.font-size-option:active {
+    background-color: #e0e0e0;
+}
+
+/* スクロールバーのスタイル */
+.font-size-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.font-size-dropdown::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.font-size-dropdown::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.font-size-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* カラーパレット */
+.color-picker-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.color-picker-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    z-index: 1000;
+    min-width: 220px;
+}
+
+.color-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.color-picker-item {
+    width: 28px;
+    height: 28px;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.color-picker-item:hover {
+    transform: scale(1.1);
+    border-color: #333;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+.color-picker-item:active {
+    transform: scale(0.95);
+}
+
+.color-picker-custom {
+    display: flex;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.color-picker-custom label {
+    font-size: 12px;
+    color: #666;
+    white-space: nowrap;
+}
+
+.color-picker-input {
+    flex: 1;
+    width: 60px;
+    height: 32px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 2px;
+}
+
+.color-picker-apply-btn {
+    margin-left: 8px;
+    padding: 6px 12px;
+    background: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s ease;
+}
+
+.color-picker-apply-btn:hover {
+    background: #3367d6;
+}
+
+.color-picker-apply-btn:active {
+    background: #2851a3;
+}
+
+/* カラーアイコンのスタイル */
+.color-icon-text {
+    display: inline-block;
+    font-weight: bold;
+    font-size: 16px;
+    color: #e74c3c; /* 赤色の文字 */
+    line-height: 1;
+    font-family: Arial, sans-serif;
+}
+
+.color-icon-bg {
+    display: inline-block;
+    font-weight: bold;
+    font-size: 16px;
+    color: #333;
+    background-color: #f1c40f; /* 黄色の背景 */
+    padding: 2px 4px;
+    border-radius: 2px;
+    line-height: 1;
+    font-family: Arial, sans-serif;
+}
+
+/* 箇条書きと番号付きリストのスタイル */
+.custom-editor ul,
+.custom-editor ol {
+    margin: 8px 0;
+    padding-left: 24px;
+    list-style-position: outside;
+}
+
+.custom-editor ul {
+    list-style-type: disc;
+}
+
+.custom-editor ol {
+    list-style-type: decimal;
+}
+
+.custom-editor li {
+    margin: 4px 0;
+    line-height: 1.6;
+    padding-left: 4px;
+}
+
+/* ネストされたリスト */
+.custom-editor ul ul {
+    list-style-type: circle;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.custom-editor ul ul ul {
+    list-style-type: square;
+}
+
+.custom-editor ol ol {
+    list-style-type: lower-alpha;
+}
+
+.custom-editor ol ol ol {
+    list-style-type: lower-roman;
+}
+
+/* リストアイテム内の段落 */
+.custom-editor li p {
+    margin: 0;
+    display: inline;
+}
+
+/* テキスト配置 */
+.custom-editor {
+    text-align: left; /* デフォルトは左寄せ */
+}
+
+.custom-editor [style*="text-align: left"],
+.custom-editor [style*="text-align:start"] {
+    text-align: left !important;
+}
+
+.custom-editor [style*="text-align: center"] {
+    text-align: center !important;
+}
+
+.custom-editor [style*="text-align: right"] {
+    text-align: right !important;
+}
+
+/* YouTube/Vimeo埋め込み動画のレスポンシブ対応 */
+.custom-editor iframe {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: 8px 0;
+    border: none;
+    min-height: 400px;
+}
+
+/* テーブルの幅制限 */
+.custom-editor table {
+    max-width: 100% !important;
+    width: 100% !important;
+    table-layout: auto;
+    border-collapse: collapse;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+.custom-editor td,
+.custom-editor th {
+    max-width: 0;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+/* 画像の幅制限 */
+.custom-editor img {
+  max-width: 100% !important;
+  height: auto !important;
+  display: inline-block; /* block から inline-block に変更 */
+  vertical-align: middle; /* テキストとの配置を調整 */
+}
+
+/* div やその他の要素にも幅制限を追加 */
+.custom-editor > * {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.custom-editor div,
+.custom-editor p {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+    .custom-editor iframe {
+        min-height: 320px;
+    }
+    
+    .custom-toolbar {
+        padding: 8px 8px 8px 40px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: linear-gradient(to bottom, #ffffff, #f8f8f8);
+    }
+}
+
+@media (max-width: 480px) {
+    .custom-editor iframe {
+        min-height: 260px;
+    }
+
+  .custom-toolbar {
+      padding: 8px 40px 8px 40px;
+  }
+}

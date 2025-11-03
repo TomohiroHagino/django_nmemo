@@ -39,7 +39,8 @@ class MediaFileService:
         if not content:
             return content
         
-        temp_folder = self.uploads_dir / 'page_temp'
+        # temp_uploads フォルダを使用（upload_views.pyと統一）
+        temp_folder = self.uploads_dir / 'temp_uploads'
         
         if entity is None and self.repository:
             entity = self.repository.find_by_id(page_id)
@@ -100,8 +101,8 @@ class MediaFileService:
                     except FileNotFoundError as e:
                         raise ValueError(f'フォルダの作成に失敗しました: {page_folder}. エラー: {e}')
         
-        # content 内の page_temp を参照する画像・動画URLを抽出
-        pattern = r'(/media/uploads/page_temp/[^"\'>\s]+)'
+        # content 内の temp_uploads を参照する画像・動画URLを抽出
+        pattern = r'(/media/uploads/temp_uploads/[^"\'>\s]+)'
         matches = re.findall(pattern, content)
         
         updated_content = content
@@ -279,16 +280,58 @@ class MediaFileService:
         if deleted_count > 0:
             print(f"✓ Deleted {deleted_count} orphaned file(s) from {page_folder}")
     
-    def delete_page_media_folders(self, page_ids: List[int]) -> None:
+    def delete_page_media_folders(self, page_ids: List[int], entities_map: Optional[Dict[int, PageEntity]] = None) -> None:
         """指定ページID群の画像フォルダを削除する"""
         for page_id in page_ids:
-            page_folder_relative = self.path_service.get_page_folder_path_by_id(page_id)
-            page_folder = self.uploads_dir / page_folder_relative
-            if page_folder.exists() and page_folder.is_dir():
+            page_folder = None
+            
+            # まず、最も確実な方法としてパターンマッチングで検索
+            # _page_{page_id}_パターンは一意なので、これで確実に見つかる
+            print(f"Searching for folder with page_id={page_id}...")
+            for item in self.uploads_dir.rglob(f'*_page_{page_id}_*'):
+                if item.is_dir():
+                    page_folder = item
+                    print(f"Found folder by pattern matching: {page_folder}")
+                    break
+            
+            # パターンマッチングで見つからない場合、エンティティマップを使用
+            if not page_folder and entities_map and page_id in entities_map:
+                entity = entities_map[page_id]
+                print(f"Trying to find folder using entity info for page_id={page_id}...")
+                # まず既存フォルダを検索（orderが変更された場合に対応）
+                page_folder = self.path_service.find_existing_page_folder(entity, entities_map)
+                if not page_folder:
+                    # 既存フォルダが見つからない場合は、通常のパスを計算
+                    page_folder = self.path_service.get_page_folder_absolute_path(entity, entities_map)
+                    print(f"Calculated folder path: {page_folder}")
+            
+            # まだ見つからない場合、従来の方法で検索
+            if not page_folder:
+                print(f"Trying fallback method for page_id={page_id}...")
+                page_folder_relative = self.path_service.get_page_folder_path_by_id(page_id, entities_map)
+                page_folder = self.uploads_dir / page_folder_relative
+                print(f"Fallback folder path: {page_folder}")
+            
+            # フォルダの存在確認と削除
+            if page_folder and page_folder.exists() and page_folder.is_dir():
                 try:
                     shutil.rmtree(page_folder)
+                    print(f"✓ Deleted folder: {page_folder}")
                 except Exception as e:
-                    print(f"Warning: Failed to delete image folder for page {page_id}: {e}")
+                    print(f"Warning: Failed to delete image folder for page {page_id} ({page_folder}): {e}")
+                    import traceback
+                    traceback.print_exc()
+            else:
+                print(f"Warning: Folder not found for page {page_id}")
+                # デバッグ情報: 実際に存在するフォルダをリスト
+                print(f"Debug: Searching for any folder containing '_page_{page_id}_'...")
+                found_any = False
+                for item in self.uploads_dir.rglob('*'):
+                    if item.is_dir() and f'_page_{page_id}_' in item.name:
+                        print(f"Debug: Found potential folder (but not used): {item}")
+                        found_any = True
+                if not found_any:
+                    print(f"Debug: No folder containing '_page_{page_id}_' was found anywhere")
     
     def _cleanup_empty_temp_folder(self, temp_folder: Path) -> None:
         """空になった一時フォルダを削除する"""

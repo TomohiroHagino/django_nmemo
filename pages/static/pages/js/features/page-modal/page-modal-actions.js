@@ -1,7 +1,7 @@
 import { createPage } from '../../api/pages.js';
 
 import { closeCreateModal } from './page-modal-view.js';
-import { isTitleEnterPressed, setTitleEnterPressed, getCreateQuill } from './page-modal-state.js';
+import { isTitleEnterPressed, setTitleEnterPressed, getCreateEditor } from './page-modal-state.js';
 import { showSaveIndicator } from '../../utils/notify.js';
 
 export async function handleCreatePage(event, addPageToTree, escapeHtml) {
@@ -12,9 +12,9 @@ export async function handleCreatePage(event, addPageToTree, escapeHtml) {
     }
     event.preventDefault();
 
-    const q = getCreateQuill();
-    if (q) {
-        const content = q.root.innerHTML;
+    const editor = getCreateEditor();
+    if (editor) {
+        const content = editor.root.innerHTML;
         document.getElementById('newPageContent').value = content;
     }
 

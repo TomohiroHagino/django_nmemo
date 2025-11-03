@@ -43,17 +43,49 @@ class Command(BaseCommand):
         days = options['days']
         
         media_root = Path(settings.MEDIA_ROOT)
-        temp_folder = media_root / 'uploads' / 'page_temp'
         
-        if not temp_folder.exists():
-            self.stdout.write(self.style.SUCCESS('page_tempフォルダが存在しません。'))
-            return
+        # 両方のフォルダを処理
+        temp_folders = [
+            ('temp_uploads', media_root / 'uploads' / 'temp_uploads'),
+            ('page_temp', media_root / 'uploads' / 'page_temp')
+        ]
         
-        if not temp_folder.is_dir():
-            self.stdout.write(self.style.WARNING(f'{temp_folder} はフォルダではありません。'))
-            return
+        total_deleted = 0
+        total_skipped = 0
+        total_errors = 0
         
-        # すべてのファイルを取得
+        for folder_name, temp_folder in temp_folders:
+            if not temp_folder.exists():
+                self.stdout.write(self.style.SUCCESS(f'{folder_name}フォルダが存在しません。'))
+                continue
+            
+            if not temp_folder.is_dir():
+                self.stdout.write(self.style.WARNING(f'{temp_folder} はフォルダではありません。'))
+                continue
+            
+            self.stdout.write(f'\n{folder_name}フォルダの処理を開始...')
+            deleted, skipped, errors = self._cleanup_folder(
+                temp_folder, folder_name, dry_run, delete_all, days
+            )
+            total_deleted += deleted
+            total_skipped += skipped
+            total_errors += errors
+        
+        # 結果サマリー
+        self.stdout.write('\n' + '='*60)
+        if dry_run:
+            self.stdout.write(self.style.WARNING('DRY RUN結果:'))
+            self.stdout.write(f'  削除対象: {total_deleted}件')
+            self.stdout.write(f'  保持: {total_skipped}件')
+        else:
+            self.stdout.write(self.style.SUCCESS('クリーンアップ結果:'))
+            self.stdout.write(f'  削除: {total_deleted}件')
+            self.stdout.write(f'  スキップ: {total_skipped}件')
+            self.stdout.write(f'  エラー: {total_errors}件')
+    
+    def _cleanup_folder(self, temp_folder, folder_name, dry_run, delete_all, days):
+        """個別のフォルダをクリーンアップ"""
+        # ファイルを取得
         files = []
         try:
             for item in temp_folder.iterdir():
@@ -63,20 +95,20 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.ERROR(f'ファイル一覧の取得に失敗しました: {e}')
             )
-            return
+            return 0, 0, 0
         
         if not files:
-            self.stdout.write(self.style.SUCCESS('page_tempフォルダにファイルがありません。'))
-            return
+            self.stdout.write(self.style.SUCCESS(f'{folder_name}フォルダにファイルがありません。'))
+            return 0, 0, 0
         
-        self.stdout.write(f'page_tempフォルダ内のファイル数: {len(files)}')
+        self.stdout.write(f'{folder_name}フォルダ内のファイル数: {len(files)}')
         if dry_run:
             self.stdout.write(self.style.WARNING('DRY RUNモード: 実際の変更は行いません\n'))
         
-        # 参照されているファイルをチェック（オプション）
+        # 参照されているファイルをチェック
         repository = PageRepository()
         media_service = MediaService(repository)
-        referenced_files = self._get_referenced_files(repository)
+        referenced_files = self._get_referenced_files(repository, folder_name)
         
         deleted_count = 0
         skipped_count = 0
@@ -86,17 +118,11 @@ class Command(BaseCommand):
         
         for file_path in files:
             try:
-                # ファイルの最終更新日時を取得
                 file_mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
                 file_age = datetime.now() - file_mtime
-                
-                # ファイル名
                 filename = file_path.name
-                
-                # 参照されているかチェック
                 is_referenced = filename in referenced_files
                 
-                # 削除条件をチェック
                 should_delete = False
                 reason = ""
                 
@@ -155,26 +181,13 @@ class Command(BaseCommand):
             try:
                 if temp_folder.exists() and not any(temp_folder.iterdir()):
                     temp_folder.rmdir()
-                    self.stdout.write(f'\n空になったpage_tempフォルダを削除しました。')
+                    self.stdout.write(f'\n空になった{folder_name}フォルダを削除しました。')
             except Exception:
                 pass
         
-        # 結果サマリー
-        self.stdout.write('\n' + '='*60)
-        if dry_run:
-            self.stdout.write(self.style.WARNING('DRY RUN結果:'))
-            self.stdout.write(f'  削除対象: {deleted_count}件')
-            self.stdout.write(f'  保持: {skipped_count}件')
-            if not delete_all:
-                self.stdout.write(f'  削除基準: {days}日以上古いファイル')
-            self.stdout.write('\n実際にクリーンアップを実行する場合は --dry-run オプションを外してください。')
-        else:
-            self.stdout.write(self.style.SUCCESS('クリーンアップ結果:'))
-            self.stdout.write(f'  削除: {deleted_count}件')
-            self.stdout.write(f'  スキップ: {skipped_count}件')
-            self.stdout.write(f'  エラー: {error_count}件')
+        return deleted_count, skipped_count, error_count
     
-    def _get_referenced_files(self, repository) -> set:
+    def _get_referenced_files(self, repository, folder_name) -> set:
         """すべてのページコンテンツから参照されているファイル名の集合を取得"""
         referenced = set()
         
@@ -182,14 +195,17 @@ class Command(BaseCommand):
             from pages.models import Page
             all_pages = Page.objects.all()
             
+            # フォルダ名に応じたパターン
+            if folder_name == 'temp_uploads':
+                pattern = r'/media/uploads/temp_uploads/([^"\'>\s?]+)'
+            else:
+                pattern = r'/media/uploads/page_temp/([^"\'>\s?]+)'
+            
             for page in all_pages:
                 if page.content:
-                    # コンテンツから /media/uploads/page_temp/ で始まるURLを抽出
                     import re
-                    pattern = r'/media/uploads/page_temp/([^"\'>\s?]+)'
                     matches = re.findall(pattern, page.content)
                     for match in matches:
-                        # ファイル名のみを取得（クエリパラメータなどを除去）
                         filename = match.split('?')[0].split('#')[0]
                         referenced.add(filename)
         except Exception as e:

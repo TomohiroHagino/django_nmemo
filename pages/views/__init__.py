@@ -19,7 +19,8 @@ from .upload_views import (
     upload_excel,
     upload_zip,
     upload_sketch,
-    upload_ico
+    upload_ico,
+    cleanup_temp_images,
 )
 
 __all__ = [
@@ -43,4 +44,5 @@ __all__ = [
     'upload_zip',
     'upload_sketch',
     'upload_ico',
+    'cleanup_temp_images',
 ]
