@@ -25,7 +25,7 @@ let previousContentEditor = null; // クリーンアップ用
 // }
 
 // キーボードショートカット
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', async (e) => {
     // 保存: Mac は Cmd+S、Windows/Linux は Ctrl+S
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
@@ -47,7 +47,7 @@ document.addEventListener('keydown', (e) => {
         // 既存ページ編集の場合
         const currentPageId = getCurrentPageId();
         if (currentPageId && contentEditor) {
-            savePage(contentEditor, showSaveIndicator);
+            await savePage(contentEditor, showSaveIndicator);
         }
     }
 });
@@ -84,7 +84,7 @@ window.handleCreatePage = function(event) {
     );
 };
 window.toggleChildren = toggleChildren;
-window.loadPage = function(pageId) {
+window.loadPage = async function(pageId) {
     // 前のエディタインスタンスをクリーンアップ
     if (previousContentEditor) {
         // Quillエディタの場合
@@ -99,30 +99,37 @@ window.loadPage = function(pageId) {
         previousContentEditor = null;
     }
     
-    // loadPage returns a promise, so we need to wait for it
-    loadPage(
-        pageId,
-        (initialContent) => {
-            const contentEditorInstance = initContentEditor(initialContent);
-            // ページIDを設定（ドラッグ&ドロップなどで必要）
-            if (contentEditorInstance.setPageId) {
-                contentEditorInstance.setPageId(pageId);
-            }
-            return contentEditorInstance;
-        },
-        escapeHtml,
-        formatDate
-    ).then(editor => {
+    try {
+        const editor = await loadPage(
+            pageId,
+            (initialContent) => {
+                const contentEditorInstance = initContentEditor(initialContent);
+                // ページIDを設定（ドラッグ&ドロップなどで必要）
+                if (contentEditorInstance.setPageId) {
+                    contentEditorInstance.setPageId(pageId);
+                }
+                return contentEditorInstance;
+            },
+            escapeHtml,
+            formatDate
+        );
         previousContentEditor = contentEditor;
         contentEditor = editor;
-    });
+    } catch (err) {
+        console.error('Error loading page:', err);
+    }
 };
-window.savePage = function() {
+window.savePage = async function() {
     if (!contentEditor) {
         alert('エディタが初期化されていません');
         return;
     }
-    savePage(contentEditor, showSaveIndicator);
+    try {
+        await savePage(contentEditor, showSaveIndicator);
+    } catch (err) {
+        console.error('Error saving page:', err);
+        alert('保存に失敗しました');
+    }
 };
 window.cancelEdit = function() {
     if (!contentEditor) {
@@ -130,8 +137,13 @@ window.cancelEdit = function() {
     }
     cancelEdit(contentEditor);
 };
-window.deletePage = function(pageId) {
-    deletePage(pageId, showSaveIndicator);
+window.deletePage = async function(pageId) {
+    try {
+        await deletePage(pageId, showSaveIndicator);
+    } catch (err) {
+        console.error('Error deleting page:', err);
+        alert('削除に失敗しました');
+    }
 };
 window.openIconModal = openIconModal;
 window.closeIconModal = closeIconModal;
