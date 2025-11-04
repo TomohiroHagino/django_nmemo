@@ -368,26 +368,26 @@ export class EventHandlers {
     handleInput(e) {
         // 開発モードのみ出力
         if (window.DEBUG_SYNTAX_HIGHLIGHT) {
-            console.log('Input event fired');
+            console.log('Inputイベントが発生しました');
         }
         
         if (this.highlighter.isProcessingInput) {
             if (window.DEBUG_SYNTAX_HIGHLIGHT) {
-                console.log('Input event: isProcessingInput is true, skipping');
+                console.log('Inputイベント: 入力処理中です。スキップします');
             }
             return;
         }
         
         if (this.editor._syntaxHighlightSetup?.isInsertingCodeBlock) {
             if (window.DEBUG_SYNTAX_HIGHLIGHT) {
-                console.log('Input event: code block insertion in progress, skipping');
+                console.log('Inputイベント: コードブロック挿入中です。スキップします');
             }
             return;
         }
         
         if (this.highlighter.beforeInputHandled) {
             if (window.DEBUG_SYNTAX_HIGHLIGHT) {
-                console.log('Skipping input event because beforeinput was handled');
+                console.log('beforeinputが処理されたため、Inputイベントをスキップします');
             }
             return;
         }
@@ -406,7 +406,7 @@ export class EventHandlers {
             requestAnimationFrame(() => {
                 if (codeElement && codeElement.parentElement && codeElement.parentElement.tagName === 'PRE') {
                     if (window.DEBUG_SYNTAX_HIGHLIGHT) {
-                        console.log('Input event: skipping processing for code block input');
+                        console.log('Inputイベント: コードブロック入力の処理をスキップします');
                     }
                     this.highlighter.isProcessingInput = false;
                     return;
