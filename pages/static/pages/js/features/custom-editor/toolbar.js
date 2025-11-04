@@ -410,8 +410,7 @@ export class Toolbar {
   }
   
   applyFontSize(size, savedRange = null) {
-      console.log('applyFontSize called with size:', size);
-      
+
       // エディタにフォーカス
       this.editor.editor.focus();
       
@@ -444,8 +443,6 @@ export class Toolbar {
       if (!selectedText) {
           return;
       }
-      
-      console.log('選択されたテキスト:', selectedText);
       
       try {
           // 変更前の状態を履歴に保存
@@ -507,8 +504,6 @@ export class Toolbar {
           if (this.editor.saveStateToHistory) {
               this.editor.saveStateToHistory();
           }
-          
-          console.log('フォントサイズの適用完了');
       } catch (e) {
           console.error('フォントサイズの適用でエラー:', e);
       }

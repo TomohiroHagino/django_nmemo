@@ -121,5 +121,6 @@ export function confirmIconChange() {
         .catch(err => {
             console.error('Error updating icon:', err);
             alert('アイコン変更に失敗しました');
-        });
+        }
+    );
 }

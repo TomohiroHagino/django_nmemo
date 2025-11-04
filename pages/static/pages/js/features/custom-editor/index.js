@@ -9,37 +9,37 @@ import { setupShortcuts } from './shortcuts.js';
 import { setupMarkdown } from './markdown.js';
 
 export function initCreateEditor(imageHandlerFn, videoHandlerFn) {
-  const editor = new CustomEditor('createEditor', {
-      placeholder: 'コンテンツを入力してください...',
-      isCreateModal: true  // 新規作成モーダルであることを明示
-  });
-  
-  // ツールバーを追加
-  const toolbar = new Toolbar(editor, 'createToolbar');
-  
-  // 画像・動画ハンドラー
-  const imageHandler = createImageHandler(editor, null, true);
-  const videoHandler = createVideoHandler(editor, null, true);
-  
-  editor.onImageClick = imageHandler;
-  editor.onVideoClick = videoHandler;
-  
-  // ドラッグ&ドロップ
-  setupDragDrop(editor, null, true);
-  
-  // 画像リサイズ
-  setupImageResize(editor);
-  
-  // シンタックスハイライト（一旦コメントアウト）
-  setupSyntaxHighlight(editor);
-  
-  // キーボードショートカット
-  setupShortcuts(editor);
-  
-  // マークダウン記法
-  setupMarkdown(editor);
-  
-  return editor;
+    const editor = new CustomEditor('createEditor', {
+        placeholder: 'コンテンツを入力してください...',
+        isCreateModal: true  // 新規作成モーダルであることを明示
+    });
+    
+    // ツールバーを追加
+    const toolbar = new Toolbar(editor, 'createToolbar');
+    
+    // 画像・動画ハンドラー
+    const imageHandler = createImageHandler(editor, null, true);
+    const videoHandler = createVideoHandler(editor, null, true);
+    
+    editor.onImageClick = imageHandler;
+    editor.onVideoClick = videoHandler;
+    
+    // ドラッグ&ドロップ
+    setupDragDrop(editor, null, true);
+    
+    // 画像リサイズ
+    setupImageResize(editor);
+    
+    // シンタックスハイライト（一旦コメントアウト）
+    setupSyntaxHighlight(editor);
+    
+    // キーボードショートカット
+    setupShortcuts(editor);
+    
+    // マークダウン記法
+    setupMarkdown(editor);
+    
+    return editor;
 }
 
 export function initContentEditor(initialContent, imageHandlerFn, videoHandlerFn) {
