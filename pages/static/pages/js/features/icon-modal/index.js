@@ -81,19 +81,20 @@ export function openIconModal(pageId, currentIcon) {
             }
         };
         btn.onclick = function() {
-            document.querySelectorAll('.icon-btn').forEach(b => {
-                b.style.borderColor = '#e5e5e5';
-                b.style.background = '#fff';
-                b.style.transform = '';
-            });
+            // 選択されたアイコンを即座に適用
             selectedIcon = icon;
-            this.style.borderColor = '#2383e2';
-            this.style.background = '#f0f7ff';
-            this.style.transform = 'scale(1.1)';
-            this.onmouseout = function() {
-                this.style.borderColor = '#2383e2';
-                this.style.background = '#f0f7ff';
-            };
+            
+            // アイコンを変更
+            setPageIcon(currentIconPageId, icon)
+                .then(() => {
+                    const iconEls = document.querySelectorAll(`.page-item__header[id="header-${currentIconPageId}"] .page-item__icon`);
+                    iconEls.forEach(el => { el.textContent = icon; });
+                    closeIconModal();
+                })
+                .catch(err => {
+                    console.error('Error updating icon:', err);
+                    alert('アイコン変更に失敗しました');
+                });
         };
 
         iconGrid.appendChild(btn);

@@ -229,15 +229,24 @@ body {
     padding: 4px 6px;
     border-radius: 4px;
     transition: background-color 0.2s ease;
+    cursor: pointer;
 }
 
-/* 通常のホバー時は背景色なし、または非常に薄い色 */
+/* ホバー時の背景色 */
 .page-item__header:hover:not(.page-item__header--drop-target):not(.page-item__header--drop-target-before):not(.page-item__header--drop-target-after) {
-    background: transparent; /* または #f7f6f3 など非常に薄い色 */
+    background: #e1e1e1;
+}
+
+/* フォーカス時の背景色（キーボード操作時） */
+.page-item__header:focus-within,
+.page-item__header:focus {
+    background: #e1e1e1;
+    outline: 2px solid #2383e2;
+    outline-offset: -2px;
 }
 
 .page-item__header--active {
-    background: #e3e2e0;
+    background: #e1e1e1;
 }
 
 .page-item__header--drop-target,

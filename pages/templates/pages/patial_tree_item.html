@@ -1,5 +1,5 @@
 <div class="page-item">
-    <div class="page-item__header" id="header-{{ page.id }}">
+    <div class="page-item__header" id="header-{{ page.id }}" tabindex="0">
         {% if page.children %}
             <button id="toggle-{{ page.id }}" class="page-item__toggle collapsed" onclick="event.stopPropagation(); toggleChildren({{ page.id }})">
                 ▼
@@ -25,4 +25,3 @@
         </div>
     {% endif %}
 </div>
-
