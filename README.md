@@ -1,18 +1,34 @@
 # Nmemo Notionライクなメモアプリ
 
-Djangoで構築された一人用のNotionライクなSPAメモアプリケーションです。
-クラウドストレージを保存先として利用でき、保存時に自動でHTMLページとメディアファイルが保存先にエクスポートされます。
+- Djangoで構築された一人用のNotionライクなSPAメモアプリケーションです。
+- クラウドストレージを保存先として利用でき、保存時に自動でHTMLページとメディアファイルが保存先にエクスポートされていきます。
+- 使っているだけで、保存先に綺麗に整理されたフォルダが出来上がっていきます。
 
 <table>
   <tr>
-    <td><img alt="スクリーンショット 2025-10-26 20:18:00" src="https://github.com/user-attachments/assets/736a8082-b08b-41b8-b307-8cd28f78584b" width="100%"></td>
+    <td><img alt="スクリーンショット 2025-10-26 20:18:00" src="https://github.com/user-attachments/assets/83662bf7-31b7-40aa-9ab8-eda2a4564436" width="100%"></td>
   </tr>
 </table>
 
 <table>
   <tr>
+    <td><img alt="スクリーンショット 2025-10-26 21:19:44" src="https://github.com/user-attachments/assets/b32504c5-ed14-4fd2-a7b4-1611c88e65ec" width="100%"></td>
+  </tr>
+</table>
+
+
+## スマホレイアウト
+
+<table>
+  <tr>
     <td><img alt="スクリーンショット 2025-10-26 21:19:44" src="https://github.com/user-attachments/assets/958cea5f-0449-468f-a02c-db51d4aa7a7d" width="100%"></td>
     <td><img alt="スクリーンショット 2025-10-26 21:19:44" src="https://github.com/user-attachments/assets/21c07c0e-3bb1-43a9-876c-30f0f9afd532"></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><img alt="スクリーンショット 2025-10-26 21:19:44" src="https://github.com/user-attachments/assets/f7953da5-3a6e-4e55-8e4c-e8f14cb9d2de" width="100%"></td>
   </tr>
 </table>
 
@@ -23,18 +39,24 @@ Djangoで構築された一人用のNotionライクなSPAメモアプリケー�
   - ドラッグ&ドロップでページの並び替え・親子関係の変更
   - ページアイコンのカスタマイズ（絵文字）
 - 子ページの作成と表示
-- **リッチテキストエディタ対応**（Quill.js）
+  
+- **リッチテキストエディタ対応**
   - テキスト装飾（太字、斜体、下線、取り消し線）
   - 見出し、リスト、配色
-  - **画像の挿入とアップロード**
+  - コードスニペット機能（言語自動検出）
+  - サイトのレイアウトをそのままコピぺ
+  - 画像の挿入とアップロード
   - 画像のリサイズ機能
   - リンクの挿入
+  
 - **クラウドストレージ対応**
   - データベースと画像をBox等のクラウドストレージに保存可能
   - 環境変数で保存先を柔軟に設定
+  
 - **エクスポート機能**
   - JSON形式でページと子ページを一括エクスポート
   - HTML形式で画像を埋め込んだスタンドアロンファイルを自動生成
+  
 - **Notion風の直感的なUI**
   - リサイズ可能なサイドバー（ドラッグで幅を調整）
   - インライン編集機能
@@ -51,8 +73,7 @@ Djangoで構築された一人用のNotionライクなSPAメモアプリケー�
 ### フロントエンド
 - **HTML5/CSS3**
 - **JavaScript (ES6 Modules)** - モジュール化されたコード構造
-- **Quill.js 1.3.6** - リッチテキストエディタ
-- **Quill Image Resize Module** - 画像リサイズ機能
+- **リッチテキストエディタ** - 自作
 
 ### アーキテクチャ
 - **Domain-Driven Design (DDD)** - レイヤードアーキテクチャ
