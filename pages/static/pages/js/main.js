@@ -14,6 +14,7 @@ import { initResponsive } from './responsive.js';
 
 // グローバルに保持するエディタ参照（カスタムエディタ）
 let contentEditor = null;
+let previousContentEditor = null; // クリーンアップ用
 
 // モーダルの外側クリックで閉じる機能は無効化
 // window.onclick = function(event) {
@@ -84,6 +85,20 @@ window.handleCreatePage = function(event) {
 };
 window.toggleChildren = toggleChildren;
 window.loadPage = function(pageId) {
+    // 前のエディタインスタンスをクリーンアップ
+    if (previousContentEditor) {
+        // Quillエディタの場合
+        if (previousContentEditor.off && typeof previousContentEditor.off === 'function') {
+            previousContentEditor.off('text-change');
+            previousContentEditor.off('selection-change');
+        }
+        // CustomEditorの場合
+        if (previousContentEditor.destroy && typeof previousContentEditor.destroy === 'function') {
+            previousContentEditor.destroy();
+        }
+        previousContentEditor = null;
+    }
+    
     // loadPage returns a promise, so we need to wait for it
     loadPage(
         pageId,
@@ -98,6 +113,7 @@ window.loadPage = function(pageId) {
         escapeHtml,
         formatDate
     ).then(editor => {
+        previousContentEditor = contentEditor;
         contentEditor = editor;
     });
 };

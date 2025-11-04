@@ -4,9 +4,24 @@ import { fetchPage, updatePage, removePage } from '../../api/pages.js';
 import { markActiveHeader, renderContentArea, renderEmpty, renderLoadError, updateTreeTitle } from './dom.js';
 import { getCurrentPageId, setCurrentPageId, setOriginals, getOriginals, clearState } from './state.js';
 
+// グローバルに保持するイベントリスナーの参照（クリーンアップ用）
+let titleInputHandler = null;
+let titleKeydownHandler = null;
+
 export function loadPage(pageId, initContentEditor, escapeHtml, formatDate) {
     markActiveHeader(pageId);
     setCurrentPageId(pageId);
+
+    // 前のページのイベントリスナーを削除
+    const oldTitleEl = document.getElementById('pageTitle');
+    if (oldTitleEl && titleInputHandler) {
+        oldTitleEl.removeEventListener('input', titleInputHandler);
+        titleInputHandler = null;
+    }
+    if (oldTitleEl && titleKeydownHandler) {
+        oldTitleEl.removeEventListener('keydown', titleKeydownHandler);
+        titleKeydownHandler = null;
+    }
 
     return fetchPage(pageId)
         .then(data => {
@@ -22,15 +37,19 @@ export function loadPage(pageId, initContentEditor, escapeHtml, formatDate) {
 
             const titleEl = document.getElementById('pageTitle');
             if (titleEl) {
-                titleEl.addEventListener('input', () => {
+                // 新しいハンドラーを保存
+                titleInputHandler = () => {
                     // 将来的な自動保存フックはここ
-                });
-                titleEl.addEventListener('keydown', (e) => {
+                };
+                titleKeydownHandler = (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         if (contentEditor) contentEditor.focus();
                     }
-                });
+                };
+                
+                titleEl.addEventListener('input', titleInputHandler);
+                titleEl.addEventListener('keydown', titleKeydownHandler);
             }
 
             return contentEditor;

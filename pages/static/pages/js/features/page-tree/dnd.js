@@ -1,14 +1,49 @@
-// D&D本体と初期化
+// pages/static/pages/js/features/page-tree/dnd.js
+//
+// ページツリーのドラッグ&ドロップ機能を管理するモジュール
+//
+// 【使い方のルール】
+// - ページツリーの初期化時に`initPageTreeDragDrop()`を呼び出してください
+// - 動的に追加されたページヘッダーには`attachDragDropToPageItem()`を使用してください
+// - 既存のすべてのページヘッダーにD&Dを付与する場合は`attachDragDropToPageItems()`を使用してください
+//
+// 【使用例】
+//   import { initPageTreeDragDrop, attachDragDropToPageItem } from './page-tree/dnd.js';
+//
+//   // ページツリーの初期化（通常はアプリケーション起動時に1回のみ）
+//   initPageTreeDragDrop();
+//
+//   // 新しく追加されたページヘッダーにD&D機能を付与
+//   const newHeader = document.getElementById('header-123');
+//   attachDragDropToPageItem(newHeader);
+//
+// 【ドラッグ&ドロップの動作】
+// - ページヘッダーをドラッグすることで、ページの位置を変更できます
+// - ドロップ位置は以下の3種類があります：
+//   - 'before': ターゲットページの前に配置
+//   - 'after': ターゲットページの後に配置
+//   - 'child': ターゲットページの子として配置
+// - 子孫ページを親にすることはできません（エラーが表示されます）
+
 import { movePageApi, reorderPageApi } from '../../api/pages.js';
 import { moveDomAsChild, moveDomBeforeAfter } from './dom.js';
 
+// 現在ドラッグ中のページID
 let draggedPageId = null;
+
+// ドロップ位置を示すインジケーター要素
 let dropIndicator = null;
 
+// 内部関数: ページツリー要素を取得
 function pageTree() { return document.getElementById('pageTree'); }
+
+// 内部関数: サイドバー要素を取得
 function sidebar() { return document.querySelector('.sidebar'); }
+
+// 内部関数: サイドバーコンテンツ要素を取得
 function sidebarContent() { return document.querySelector('.sidebar__content'); }
 
+// 内部関数: ドロップインジケーター要素を確保（存在しない場合は作成）
 function ensureDropIndicator() {
     if (!dropIndicator) {
         dropIndicator = document.createElement('div');
@@ -19,9 +54,15 @@ function ensureDropIndicator() {
     if (sc && !dropIndicator.parentNode) sc.appendChild(dropIndicator);
     return dropIndicator;
 }
+
+// 内部関数: ドロップインジケーターを非表示にする
 function hideIndicator() {
     if (dropIndicator) dropIndicator.style.display = 'none';
 }
+
+// 内部関数: 指定された位置にドロップインジケーターを表示
+// @param {DOMRect} rect - ターゲット要素の位置情報
+// @param {string} position - ドロップ位置 ('before', 'after', 'child')
 function showIndicatorForRect(rect, position) {
     const sc = sidebarContent();
     if (!sc || !rect) return;
@@ -41,6 +82,11 @@ function showIndicatorForRect(rect, position) {
         ? (rect.top - scRect.top + scrollTop) + 'px'
         : (rect.bottom - scRect.top + scrollTop) + 'px';
 }
+
+// 内部関数: マウスポインターの位置からドロップ位置を計算
+// @param {DragEvent} e - ドラッグイベント
+// @param {HTMLElement} el - ターゲット要素
+// @returns {{position: string, rect: DOMRect}} ドロップ位置と要素の位置情報
 function computePositionByPointer(e, el) {
     const rect = el.getBoundingClientRect();
     const y = e.clientY - rect.top;
@@ -49,10 +95,17 @@ function computePositionByPointer(e, el) {
     if (y < h * 0.8) return { position: 'child', rect };
     return { position: 'after', rect };
 }
+
+// 内部関数: ドロップ関連のCSSクラスをすべて削除
+// @param {HTMLElement} el - 対象要素
 function clearDropClasses(el) {
     el.classList.remove('page-item__header--drop-target', 'page-item__header--drop-target-child', 'page-item__header--drop-target-before', 'page-item__header--drop-target-after');
     el.removeAttribute('data-drop-position');
 }
+
+// 内部関数: ドロップ位置に応じたCSSクラスを適用
+// @param {HTMLElement} el - 対象要素
+// @param {string} position - ドロップ位置 ('before', 'after', 'child')
 function applyDropClass(el, position) {
     el.classList.remove('page-item__header--drop-target');
     if (position === 'child') {
@@ -64,6 +117,11 @@ function applyDropClass(el, position) {
     }
     el.setAttribute('data-drop-position', position);
 }
+
+// 内部関数: ターゲットページが指定された祖先ページの子孫かどうかを判定
+// @param {number} targetId - チェック対象のページID
+// @param {number} ancestorId - 祖先としてチェックするページID
+// @returns {boolean} ターゲットが祖先の子孫の場合true
 function isDescendant(targetId, ancestorId) {
     const targetHeader = document.getElementById('header-' + targetId);
     if (!targetHeader) return false;
@@ -80,7 +138,16 @@ function isDescendant(targetId, ancestorId) {
     return false;
 }
 
-// 公開: 初期化
+/**
+ * ページツリーのドラッグ&ドロップ機能を初期化します
+ * 
+ * この関数は以下の処理を行います：
+ * - 既存のすべてのページヘッダーにD&D機能を付与
+ * - サイドバーとサイドバーコンテンツにドラッグイベントリスナーを設定
+ * - サイドバーへのドロップでページをルート階層に移動できるようにする
+ * 
+ * 通常はアプリケーション起動時に1回のみ呼び出してください。
+ */
 export function initPageTreeDragDrop() {
     const tree = pageTree();
     if (!tree) return;
@@ -143,14 +210,37 @@ export function initPageTreeDragDrop() {
     });
 }
 
-// 公開: 既存ヘッダにD&D付与
+/**
+ * 現在存在するすべてのページヘッダーにドラッグ&ドロップ機能を付与します
+ * 
+ * この関数は`.page-item__header`クラスを持つすべての要素に対して
+ * `attachDragDropToPageItem()`を適用します。
+ * 
+ * 既にD&D機能が付与されているヘッダーには重複してイベントリスナーは追加されません。
+ */
 export function attachDragDropToPageItems() {
     document.querySelectorAll('.page-item__header').forEach((header) => {
         attachDragDropToPageItem(header);
     });
 }
 
-// 公開: 個別ヘッダにD&D付与
+/**
+ * 個別のページヘッダーにドラッグ&ドロップ機能を付与します
+ * 
+ * この関数は指定されたヘッダー要素に以下のイベントリスナーを設定します：
+ * - dragstart: ドラッグ開始時にドラッグ中のページIDを保存
+ * - dragend: ドラッグ終了時にスタイルとクラスをリセット
+ * - dragover: ドラッグ中にドロップ位置を計算し、視覚的フィードバックを表示
+ * - dragenter: ドラッグ進入時にドロップクラスを適用
+ * - dragleave: ドラッグ離脱時にドロップクラスを削除
+ * - drop: ドロップ時にページの移動・並び替えを実行
+ * 
+ * @param {HTMLElement} header - ドラッグ&ドロップ機能を付与するページヘッダー要素
+ *                               要素のIDは`header-{pageId}`の形式である必要があります
+ * 
+ * 注意: 既にD&D機能が付与されているヘッダー（`data-dnd-attached="1"`）には
+ *       重複してイベントリスナーは追加されません。
+ */
 export function attachDragDropToPageItem(header) {
     if (!header || header.dataset.dndAttached === '1') return;
 

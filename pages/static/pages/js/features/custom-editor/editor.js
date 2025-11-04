@@ -427,4 +427,22 @@ export class CustomEditor {
         }
         return this;
     }
+
+    // クリーンアップメソッドを追加
+    destroy() {
+        // イベントリスナーを削除
+        if (this.editor) {
+            // すべてのイベントリスナーを削除するためにクローンを作成
+            const newEditor = this.editor.cloneNode(true);
+            this.editor.parentNode?.replaceChild(newEditor, this.editor);
+        }
+        
+        // 履歴をクリア
+        this.history = [];
+        this.historyIndex = -1;
+        
+        // その他の参照をクリア
+        this.editor = null;
+        this.container = null;
+    }
 }

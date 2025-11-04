@@ -75,7 +75,6 @@ export function addPageToTree(pageId, title, parentId, escapeHtml) {
                 </span>
                 <div class="actions">
                     <button class="btn" style="background: transparent; color: #37352f; font-size: 16px; padding: 4px 6px; border: none; cursor: pointer; font-weight: bold;" onclick="event.stopPropagation(); openCreateChildModal(${pageId}, '${escapeHtml(title).replace(/'/g, "\\'")}');" title="子ページを追加">+</button>
-                    <a href="/page/${pageId}/export/" class="btn" style="background: #28a745; color: white; text-decoration: none; font-size: 11px; padding: 4px 8px;" onclick="event.stopPropagation();" title="エクスポート">📥</a>
                 </div>
             </div>
         </div>
