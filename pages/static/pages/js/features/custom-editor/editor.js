@@ -84,7 +84,7 @@ export class CustomEditor {
                 this.undo();
             }
             // Cmd+Shift+Z または Ctrl+Y (Redo)
-            else if ((e.metaKey || e.ctrlKey) && (e.shiftKey && e.key === 'z') || e.key === 'y') {
+            else if ((e.metaKey || e.ctrlKey) && ((e.shiftKey && e.key === 'z') || e.key === 'y')) {
                 e.preventDefault();
                 this.redo();
             }
