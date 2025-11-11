@@ -35,9 +35,6 @@ export function initCreateEditor(imageHandlerFn, videoHandlerFn) {
     // キーボードショートカット
     setupShortcuts(editor);
     
-    // マークダウン記法
-    // setupMarkdown(editor); // 削除
-    
     // アコーディオン機能（マークダウンの後に設定）
     setupAccordion(editor);
     
