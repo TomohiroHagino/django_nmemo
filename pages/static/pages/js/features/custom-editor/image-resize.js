@@ -1,5 +1,10 @@
 // 画像のリサイズ機能
 export function setupImageResize(editor) {
+    // 定数定義
+    const MIN_IMAGE_WIDTH = 50;
+    const EDITOR_PADDING = 20;
+    const SELECTION_DELAY_MS = 0;
+
     const editorEl = editor.editor;
     const editorContainer = editorEl.parentElement || document.body;
     
@@ -32,7 +37,7 @@ export function setupImageResize(editor) {
                 element.classList.add('selected');
                 createResizeHandles(element);
             }
-        }, 0);
+        }, SELECTION_DELAY_MS);
     }
     
     function createResizeHandles(element) {
@@ -47,7 +52,6 @@ export function setupImageResize(editor) {
         container.style.width = rect.width + 'px';
         container.style.height = rect.height + 'px';
         container.style.pointerEvents = 'none';
-        container.style.zIndex = '10000';
         
         const handles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
         handles.forEach(pos => {
@@ -120,7 +124,7 @@ export function setupImageResize(editor) {
                 break;
         }
         
-        newWidth = Math.max(50, Math.min(newWidth, editorEl.clientWidth - 20));
+        newWidth = Math.max(MIN_IMAGE_WIDTH, Math.min(newWidth, editorEl.clientWidth - EDITOR_PADDING));
         newHeight = newWidth / aspectRatio;
         
         selectedElement.style.width = newWidth + 'px';

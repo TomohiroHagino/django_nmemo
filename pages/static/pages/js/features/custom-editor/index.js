@@ -13,8 +13,8 @@ export function initCreateEditor(imageHandlerFn, videoHandlerFn) {
         isCreateModal: true  // 新規作成モーダルであることを明示
     });
     
-    // ツールバーを追加
-    const toolbar = new Toolbar(editor, 'createToolbar');
+    // ツールバーを実体化
+    new Toolbar(editor, 'createToolbar');
     
     // 画像・動画ハンドラー
     const imageHandler = createImageHandler(editor, null, true);
@@ -53,8 +53,8 @@ export function initContentEditor(initialContent, imageHandlerFn, videoHandlerFn
         editor.setContent(initialContent);
     }
     
-    // ツールバーを追加
-    const toolbar = new Toolbar(editor, 'contentToolbar');
+    // ツールバーを実体化
+    new Toolbar(editor, 'contentToolbar');
     
     // 画像・動画ハンドラー
     let currentPageId = null;
