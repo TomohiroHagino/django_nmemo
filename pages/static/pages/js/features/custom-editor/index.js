@@ -7,7 +7,7 @@ import { setupSyntaxHighlight } from './syntax-highlight.js';
 import { setupShortcuts } from './shortcuts.js';
 import { setupAccordion } from './accordion.js';
 
-export function initCreateEditor(imageHandlerFn, videoHandlerFn) {
+export function initCreateEditor() {
     const editor = new CustomEditor('createEditor', {
         placeholder: 'コンテンツを入力してください...',
         isCreateModal: true  // 新規作成モーダルであることを明示
