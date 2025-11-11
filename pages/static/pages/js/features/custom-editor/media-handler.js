@@ -1,4 +1,6 @@
 // 画像・動画のアップロードと挿入
+import { MAX_IMAGE_FILE_SIZE, MAX_VIDEO_FILE_SIZE } from './clipboard.js';
+
 export function createImageHandler(editor, currentPageId, isCreateModal) {
     return async () => {
         const input = document.createElement('input');
@@ -10,7 +12,7 @@ export function createImageHandler(editor, currentPageId, isCreateModal) {
             const file = input.files[0];
             if (!file) return;
 
-            if (file.size > 5 * 1024 * 1024) {
+            if (file.size > MAX_IMAGE_FILE_SIZE) {
                 alert('ファイルサイズは5MB以下にしてください');
                 return;
             }
@@ -93,7 +95,7 @@ export function createVideoHandler(editor, currentPageId, isCreateModal) {
                 const file = input.files[0];
                 if (!file) return;
 
-                if (file.size > 250 * 1024 * 1024) {
+                if (file.size > MAX_VIDEO_FILE_SIZE) {
                     alert('動画ファイルサイズは250MB以下にしてください');
                     return;
                 }

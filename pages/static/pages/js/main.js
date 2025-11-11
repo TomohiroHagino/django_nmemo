@@ -16,6 +16,7 @@ import { initResponsive } from './responsive.js';
 let contentEditor = null;
 let previousContentEditor = null; // クリーンアップ用
 
+
 // モーダルの外側クリックで閉じる機能は無効化
 // window.onclick = function(event) {
 //     const createModal = document.getElementById('createModal');
@@ -70,6 +71,16 @@ window.addEventListener('load', () => {
     
     // ページツリーのドラッグ＆ドロップを初期化
     initPageTreeDragDrop();
+    
+    // ボタンにイベントリスナーを追加
+    const buttons = document.querySelectorAll('.btn--primary');
+    const createPageButton = Array.from(buttons).find(btn => btn.textContent.includes('新しいページ'));
+    if (createPageButton) {
+        createPageButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            openCreateModal();
+        });
+    }
 });
 
 // インラインのイベントハンドラから呼び出せるように関数をグローバルに公開

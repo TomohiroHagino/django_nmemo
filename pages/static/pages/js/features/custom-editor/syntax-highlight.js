@@ -1,19 +1,36 @@
 import { SyntaxHighlighter } from './syntax-highlight/index.js';
 
-// 後方互換性のためのエクスポート関数
+const ERROR_MESSAGE = 'SyntaxHighlighter が初期化されていません。まず setupSyntaxHighlight を呼び出してください。';
+
 export function setupSyntaxHighlight(editor) {
     const highlighter = new SyntaxHighlighter(editor);
     highlighter.setup();
+    // 注意: editor オブジェクトに _syntaxHighlighter プロパティを追加します
+    // これは後続の insertCodeBlock 関数で使用されるため、意図的な副作用です
     editor._syntaxHighlighter = highlighter;
     return highlighter;
 }
 
-export function insertCodeBlock(editor, language = '', noHighlight = false) {
-    if (editor._syntaxHighlighter) {
-        editor._syntaxHighlighter.insertCodeBlock(language, noHighlight);
-    } else {
-        console.warn('SyntaxHighlighter not initialized. Call setupSyntaxHighlight first.');
+function _checkAndWarnIfNotInitialized(editor) {
+    if (!editor._syntaxHighlighter) {
+        console.warn(ERROR_MESSAGE);
+        return false;
     }
+    return true;
+}
+
+export function insertCodeBlock(editor, language = '') {
+    if (!_checkAndWarnIfNotInitialized(editor)) {
+        return;
+    }
+    editor._syntaxHighlighter.insertCodeBlock(language, true);
+}
+
+export function insertCodeBlockWithoutHighlight(editor, language = '') {
+    if (!_checkAndWarnIfNotInitialized(editor)) {
+        return;
+    }
+    editor._syntaxHighlighter.insertCodeBlock(language, false);
 }
 
 export { SyntaxHighlighter };

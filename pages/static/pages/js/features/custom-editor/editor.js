@@ -18,6 +18,13 @@ export class CustomEditor {
         this.historyIndex = -1;
         this.maxHistorySize = 50;
         
+        // 画像・動画ハンドラー（外部から設定される）
+        this.onImageClick = null;
+        this.onVideoClick = null;
+        
+        // ツールバー参照（外部から設定される）
+        this.toolbar = null;
+        
         this.init();
     }
     
@@ -25,7 +32,7 @@ export class CustomEditor {
         // エディタ要素を作成
         this.editor = document.createElement('div');
         this.editor.className = 'custom-editor';
-        this.editor.contentEditable = true;
+        this.editor.setAttribute('contenteditable', 'true');
         this.editor.setAttribute('data-placeholder', this.options.placeholder);
         
         // isCreateModalフラグをデータ属性に設定
@@ -64,13 +71,16 @@ export class CustomEditor {
         this.saveToHistory();
 
         this.editor.addEventListener('click', (e) => {
-            const link = e.target.closest('a');
-            if (link && link.href) {
-                // Ctrl/Cmdキーを押していない場合でもリンクを開く
-                if (!e.ctrlKey && !e.metaKey) {
-                    e.preventDefault();
-                    // 新しいタブで開く
-                    window.open(link.href, '_blank');
+            const target = e.target;
+            if (target instanceof Element) {
+                const link = target.closest('a');
+                if (link && link.href) {
+                    // Ctrl/Cmdキーを押していない場合でもリンクを開く
+                    if (!e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        // 新しいタブで開く
+                        window.open(link.href, '_blank');
+                    }
                 }
             }
         });
@@ -112,7 +122,7 @@ export class CustomEditor {
         let codeElement = null;
         if (node.nodeType === Node.TEXT_NODE) {
             codeElement = node.parentElement?.closest('code');
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
+        } else if (node instanceof Element) {
             codeElement = node.closest('code');
         }
         
@@ -129,8 +139,9 @@ export class CustomEditor {
         if (isRightArrow) {
             // コードブロックの最後にいるかチェック
             if (node.nodeType === Node.TEXT_NODE) {
+                const textLength = node.nodeValue ? node.nodeValue.length : 0;
                 // テキストノードの最後にいる場合
-                if (offset >= node.length) {
+                if (offset >= textLength) {
                     // 次の兄弟ノードがない、またはcode要素の最後の場合
                     if (!node.nextSibling || codeElement.contains(node) && node.parentElement === codeElement && !node.nextSibling) {
                         e.preventDefault();
@@ -159,16 +170,19 @@ export class CustomEditor {
             // code要素の最後のテキストノードの最後にいる場合
             if (!cursorMoved) {
                 const lastTextNode = this.getLastTextNode(codeElement);
-                if (lastTextNode && node === lastTextNode && offset >= node.length) {
-                    e.preventDefault();
-                    const textNode = document.createTextNode('\u200B');
-                    codeElement.parentElement.insertBefore(textNode, codeElement.nextSibling);
-                    const newRange = document.createRange();
-                    newRange.setStart(textNode, 0);
-                    newRange.collapse(true);
-                    selection.removeAllRanges();
-                    selection.addRange(newRange);
-                    cursorMoved = true;
+                if (lastTextNode && node === lastTextNode && node.nodeType === Node.TEXT_NODE) {
+                    const textLength = node.nodeValue ? node.nodeValue.length : 0;
+                    if (offset >= textLength) {
+                        e.preventDefault();
+                        const textNode = document.createTextNode('\u200B');
+                        codeElement.parentElement.insertBefore(textNode, codeElement.nextSibling);
+                        const newRange = document.createRange();
+                        newRange.setStart(textNode, 0);
+                        newRange.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                        cursorMoved = true;
+                    }
                 }
             }
         }
@@ -185,7 +199,9 @@ export class CustomEditor {
                         const newRange = document.createRange();
                         if (codeElement.previousSibling) {
                             if (codeElement.previousSibling.nodeType === Node.TEXT_NODE) {
-                                newRange.setStart(codeElement.previousSibling, codeElement.previousSibling.length);
+                                const prevTextNode = codeElement.previousSibling;
+                                const textLength = prevTextNode.nodeValue ? prevTextNode.nodeValue.length : 0;
+                                newRange.setStart(prevTextNode, textLength);
                             } else {
                                 newRange.setStartAfter(codeElement.previousSibling);
                             }
@@ -361,7 +377,7 @@ export class CustomEditor {
                 
                 // フォーマット要素（s, strong, em, u）の中にカーソルがある場合
                 // 特に、取り消し線（s）の場合は通常のテキストノードに移動
-                if (node && node.tagName === 'S') {
+                if (node && node instanceof Element && node.tagName === 'S') {
                     // 取り消し線要素の後に通常のテキストノードを作成
                     const textNode = document.createTextNode('');
                     
@@ -426,6 +442,13 @@ export class CustomEditor {
             this.clear();
         }
         return this;
+    }
+
+    // ページIDを設定するメソッド（外部から呼び出される）
+    setPageId(pageId) {
+        // このメソッドは外部でオーバーライドされる可能性があるため、
+        // ここでは何もしない（index.jsで実装される）
+        this._pageId = pageId;
     }
 
     // クリーンアップメソッドを追加

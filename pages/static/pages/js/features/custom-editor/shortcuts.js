@@ -1,267 +1,266 @@
 // キーボードショートカット
+
+// 定数定義
+const DEFAULT_LINK_URL = 'https://';
+const COLOR_RED = '#ff0000';
+const COLOR_BLUE = '#0000ff';
+const AUTO_LINK_DELAY_MS = 500;
+const SELECTION_RESTORE_DELAY_MS = 10;
+
 export function setupShortcuts(editor) {
     const editorEl = editor.editor;
     
-    editorEl.addEventListener('keydown', (e) => {
+    editorEl.addEventListener('keydown', (event) => {
         // Ctrl+K / Cmd+K でリンク
-        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'k') {
-            e.preventDefault();
-            
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-            
-            const range = selection.getRangeAt(0);
-            let url = 'https://';
-            
-            if (range.toString().trim()) {
-                // 選択されたテキストがある場合
-                url = prompt('リンクのURLを入力してください:', 'https://');
-                if (url && url !== 'https://') {
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.textContent = range.toString();
-                    
-                    range.deleteContents();
-                    range.insertNode(link);
-                    
-                    editor.updatePlaceholder();
-                }
-            } else {
-                // テキストが選択されていない場合
-                url = prompt('リンクのURLを入力してください:', 'https://');
-                if (url && url !== 'https://') {
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.textContent = url;
-                    
-                    range.insertNode(link);
-                    range.setStartAfter(link);
-                    range.collapse(true);
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                    
-                    editor.updatePlaceholder();
-                }
-            }
+        if (_isModifierKeyPressed(event) && !event.shiftKey && event.key === 'k') {
+            event.preventDefault();
+            _handleLinkShortcut(editor);
         }
         
         // Ctrl+Shift+; で文字を赤色に
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === ';' || e.key === ':' || e.code === 'Semicolon')) {
-            e.preventDefault();
-            
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-            
-            const range = selection.getRangeAt(0);
-            const selectedText = range.toString().trim();
-            
-            if (selectedText) {
-                const targetColor = '#ff0000';
-                
-                // 色が既に適用されているかチェック
-                const hasColor = checkAndRemoveColor(range, targetColor);
-                
-                if (!hasColor) {
-                    // 色を適用
-                    const span = document.createElement('span');
-                    span.style.color = targetColor;
-                    const contents = range.extractContents();
-                    span.appendChild(contents);
-                    range.insertNode(span);
-                    
-                    // 選択範囲をspan要素全体に設定（選択を維持）
-                    const newRange = document.createRange();
-                    newRange.selectNodeContents(span);
-                    selection.removeAllRanges();
-                    selection.addRange(newRange);
-                }
-                
-                editor.updatePlaceholder();
-            }
+        if (_isModifierKeyPressed(event) && event.shiftKey && _isSemicolonKey(event)) {
+            event.preventDefault();
+            _handleRedColorShortcut(editor);
         }
         
         // Ctrl+Shift+' で文字を青色に
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '\'' || e.key === '"' || e.code === 'Quote')) {
-            e.preventDefault();
-            
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-            
-            const range = selection.getRangeAt(0);
-            const selectedText = range.toString().trim();
-            
-            if (selectedText) {
-                const targetColor = '#0000ff';
-                
-                // 色が既に適用されているかチェック
-                const hasColor = checkAndRemoveColor(range, targetColor);
-                
-                if (!hasColor) {
-                    // 色を適用
-                    const span = document.createElement('span');
-                    span.style.color = targetColor;
-                    const contents = range.extractContents();
-                    span.appendChild(contents);
-                    range.insertNode(span);
-                    
-                    // 選択範囲をspan要素全体に設定（選択を維持）
-                    const newRange = document.createRange();
-                    newRange.selectNodeContents(span);
-                    selection.removeAllRanges();
-                    selection.addRange(newRange);
-                }
-                
-                editor.updatePlaceholder();
-            }
+        if (_isModifierKeyPressed(event) && event.shiftKey && _isQuoteKey(event)) {
+            event.preventDefault();
+            _handleBlueColorShortcut(editor);
         }
     });
     
     // URL自動リンク（簡易版）
     editorEl.addEventListener('input', () => {
         setTimeout(() => {
-            autoLinkURLs(editorEl);
-        }, 500);
+            _autoLinkURLs(editorEl);
+        }, AUTO_LINK_DELAY_MS);
     });
 }
 
-// 指定された色が適用されているかチェックし、適用されている場合は解除
-function checkAndRemoveColor(range, targetColor) {
-    const selectedText = range.toString().trim();
-    if (!selectedText) return false;
+// リンクを作成して挿入する
+function _createAndInsertLink(range, url, linkText, shouldSelectLink = false) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.textContent = linkText;
     
-    // 選択範囲のテキストを保存（正規化）
-    const selectedTextContent = range.toString().trim();
+    if (shouldSelectLink) {
+        range.insertNode(link);
+        range.setStartAfter(link);
+        range.collapse(true);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+    } else {
+        range.deleteContents();
+        range.insertNode(link);
+    }
+}
+
+// 選択範囲を取得する
+function _getSelectionRange() {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return null;
+    return selection.getRangeAt(0);
+}
+
+// 選択範囲に色を適用または解除する
+function _applyOrToggleColor(range, targetColor) {
+    const selection = window.getSelection();
+    const hasColor = _checkAndRemoveColor(range, targetColor);
     
-    // 共通の親要素を取得
-    let commonAncestor = range.commonAncestorContainer;
-    
-    // 共通の親要素自体がspan要素の場合
-    if (commonAncestor.nodeType === Node.ELEMENT_NODE && 
-        commonAncestor.tagName === 'SPAN' && 
-        commonAncestor.style.color) {
-        const spanColor = commonAncestor.style.color;
-        const normalizedSpanColor = normalizeColorToHex(spanColor);
-        const normalizedTarget = normalizeColorToHex(targetColor);
+    if (!hasColor) {
+        const span = document.createElement('span');
+        span.style.color = targetColor;
+        const contents = range.extractContents();
+        span.appendChild(contents);
+        range.insertNode(span);
         
-        if (normalizedSpanColor === normalizedTarget) {
-            const spanText = commonAncestor.textContent.trim();
-            if (spanText === selectedTextContent) {
-                // このspan要素を削除
-                const parent = commonAncestor.parentElement;
-                if (parent) {
-                    const fragment = document.createDocumentFragment();
-                    while (commonAncestor.firstChild) {
-                        fragment.appendChild(commonAncestor.firstChild);
-                    }
-                    
-                    const nextSibling = commonAncestor.nextSibling;
-                    if (nextSibling) {
-                        parent.insertBefore(fragment, nextSibling);
-                    } else {
-                        parent.appendChild(fragment);
-                    }
-                    
-                    commonAncestor.remove();
-                    
-                    // 選択範囲を復元
-                    restoreSelection(parent, selectedTextContent);
-                    return true;
-                }
-            }
-        }
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
     }
     
-    // テキストノードの場合は親要素を取得
+    return hasColor;
+}
+
+// リンクショートカットを処理する
+function _handleLinkShortcut(editor) {
+    const range = _getSelectionRange();
+    if (!range) return;
+    
+    const selectedText = range.toString().trim();
+    const inputUrl = prompt('リンクのURLを入力してください:', DEFAULT_LINK_URL);
+    
+    if (inputUrl && inputUrl !== DEFAULT_LINK_URL) {
+        const linkText = selectedText || inputUrl;
+        const shouldSelectLink = !selectedText;
+        
+        _createAndInsertLink(range, inputUrl, linkText, shouldSelectLink);
+        editor.updatePlaceholder();
+    }
+}
+
+// 赤色ショートカットを処理する
+function _handleRedColorShortcut(editor) {
+    const range = _getSelectionRange();
+    if (!range) return;
+    
+    const selectedText = range.toString().trim();
+    
+    if (selectedText) {
+        _applyOrToggleColor(range, COLOR_RED);
+        editor.updatePlaceholder();
+    }
+}
+
+// 青色ショートカットを処理する
+function _handleBlueColorShortcut(editor) {
+    const range = _getSelectionRange();
+    if (!range) return;
+    
+    const selectedText = range.toString().trim();
+    
+    if (selectedText) {
+        _applyOrToggleColor(range, COLOR_BLUE);
+        editor.updatePlaceholder();
+    }
+}
+
+// 修飾キーが押されているかチェック（Ctrl/Cmd）
+function _isModifierKeyPressed(event) {
+    return event.ctrlKey || event.metaKey;
+}
+
+// セミコロンキーが押されたかチェック
+function _isSemicolonKey(event) {
+    return event.key === ';' || event.key === ':' || event.code === 'Semicolon';
+}
+
+// クォートキーが押されたかチェック
+function _isQuoteKey(event) {
+    return event.key === '\'' || event.key === '"' || event.code === 'Quote';
+}
+
+// span要素の色が対象色と一致するかチェック
+function _isColorMatch(spanElement, targetColor, selectedTextContent) {
+    if (!spanElement.style.color) return false;
+    
+    const spanColor = spanElement.style.color;
+    const normalizedSpanColor = _normalizeColorToHex(spanColor);
+    const normalizedTarget = _normalizeColorToHex(targetColor);
+    
+    if (normalizedSpanColor !== normalizedTarget) return false;
+    
+    const spanText = spanElement.textContent.trim();
+    return spanText === selectedTextContent;
+}
+
+// span要素を削除して中身を展開する
+function _removeSpanAndUnwrap(spanElement, selectedTextContent) {
+    const parent = spanElement.parentElement;
+    if (!parent) return;
+    
+    const fragment = document.createDocumentFragment();
+    while (spanElement.firstChild) {
+        fragment.appendChild(spanElement.firstChild);
+    }
+    
+    const nextSibling = spanElement.nextSibling;
+    if (nextSibling) {
+        parent.insertBefore(fragment, nextSibling);
+    } else {
+        parent.appendChild(fragment);
+    }
+    
+    spanElement.remove();
+    _restoreSelection(parent, selectedTextContent);
+}
+
+// 共通の親要素自体がspan要素の場合の処理
+function _checkCommonAncestorSpan(commonAncestor, targetColor, selectedTextContent) {
+    if (commonAncestor.nodeType !== Node.ELEMENT_NODE) return false;
+    if (commonAncestor.tagName !== 'SPAN') return false;
+    if (!commonAncestor.style.color) return false;
+    
+    if (_isColorMatch(commonAncestor, targetColor, selectedTextContent)) {
+        _removeSpanAndUnwrap(commonAncestor, selectedTextContent);
+        return true;
+    }
+    
+    return false;
+}
+
+// 開始ノードから親要素をたどってspan要素を探す
+function _findColorSpanFromStartNode(range, ancestorElement, targetColor, selectedTextContent) {
+    let startNode = range.startContainer;
+    let currentNode = startNode.nodeType === Node.TEXT_NODE ? startNode.parentElement : startNode;
+    
+    while (currentNode && currentNode !== ancestorElement && currentNode !== document.body) {
+        if (currentNode.tagName === 'SPAN' && _isColorMatch(currentNode, targetColor, selectedTextContent)) {
+            return currentNode;
+        }
+        currentNode = currentNode.parentElement;
+    }
+    
+    return null;
+}
+
+// 共通の親要素内のすべてのspan要素を検索
+function _findColorSpanInAncestor(ancestorElement, range, targetColor, selectedTextContent) {
+    const allSpans = Array.from(ancestorElement.querySelectorAll('span[style*="color"]'));
+    
+    return allSpans.find(span => {
+        if (!_isColorMatch(span, targetColor, selectedTextContent)) return false;
+        
+        if (!range.intersectsNode(span)) return false;
+        
+        try {
+            const spanRange = document.createRange();
+            spanRange.selectNodeContents(span);
+            const spanTextFromRange = spanRange.toString().trim();
+            
+            if (spanTextFromRange === selectedTextContent) {
+                return true;
+            }
+        } catch (err) {
+            // エラーが発生した場合でも、テキストが一致していれば使用
+            const spanText = span.textContent.trim();
+            if (spanText === selectedTextContent) {
+                return true;
+            }
+        }
+        
+        return false;
+    }) || null;
+}
+
+// 指定された色が適用されているかチェックし、適用されている場合は解除
+function _checkAndRemoveColor(range, targetColor) {
+    const selectedTextContent = range.toString().trim();
+    if (!selectedTextContent) return false;
+    
+    const commonAncestor = range.commonAncestorContainer;
+    
+    if (_checkCommonAncestorSpan(commonAncestor, targetColor, selectedTextContent)) {
+        return true;
+    }
+    
     const ancestorElement = commonAncestor.nodeType === Node.TEXT_NODE 
         ? commonAncestor.parentElement 
         : commonAncestor;
     
     if (!ancestorElement) return false;
     
-    // 開始ノードと終了ノードからspan要素を探す
-    let foundColorSpan = null;
+    let foundColorSpan = _findColorSpanFromStartNode(range, ancestorElement, targetColor, selectedTextContent);
     
-    // 開始ノードから親要素をたどってspan要素を探す
-    let startNode = range.startContainer;
-    let currentNode = startNode.nodeType === Node.TEXT_NODE ? startNode.parentElement : startNode;
-    
-    while (currentNode && currentNode !== ancestorElement && currentNode !== document.body) {
-        if (currentNode.tagName === 'SPAN' && currentNode.style.color) {
-            const spanColor = currentNode.style.color;
-            const normalizedSpanColor = normalizeColorToHex(spanColor);
-            const normalizedTarget = normalizeColorToHex(targetColor);
-            
-            if (normalizedSpanColor === normalizedTarget) {
-                const spanText = currentNode.textContent.trim();
-                if (spanText === selectedTextContent) {
-                    foundColorSpan = currentNode;
-                    break;
-                }
-            }
-        }
-        currentNode = currentNode.parentElement;
-    }
-    
-    // 見つからない場合は、共通の親要素内のすべてのspan要素を検索
     if (!foundColorSpan) {
-        const allSpans = Array.from(ancestorElement.querySelectorAll('span[style*="color"]'));
-        
-        for (let span of allSpans) {
-            const spanColor = span.style.color;
-            const normalizedSpanColor = normalizeColorToHex(spanColor);
-            const normalizedTarget = normalizeColorToHex(targetColor);
-            
-            if (normalizedSpanColor === normalizedTarget) {
-                const spanText = span.textContent.trim();
-                
-                // テキストが一致する、または選択範囲と交差する
-                if (spanText === selectedTextContent || range.intersectsNode(span)) {
-                    // span要素全体が選択されているか確認
-                    try {
-                        const spanRange = document.createRange();
-                        spanRange.selectNodeContents(span);
-                        const spanTextFromRange = spanRange.toString().trim();
-                        
-                        if (spanTextFromRange === selectedTextContent) {
-                            foundColorSpan = span;
-                            break;
-                        }
-                    } catch (err) {
-                        // エラーが発生した場合でも、テキストが一致していれば使用
-                        if (spanText === selectedTextContent) {
-                            foundColorSpan = span;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        foundColorSpan = _findColorSpanInAncestor(ancestorElement, range, targetColor, selectedTextContent);
     }
     
     if (foundColorSpan) {
-        // 色を解除：span要素を削除して中身を展開
-        const parent = foundColorSpan.parentElement;
-        if (!parent) return true;
-        
-        // span要素のすべての子ノードを取り出す
-        const fragment = document.createDocumentFragment();
-        while (foundColorSpan.firstChild) {
-            fragment.appendChild(foundColorSpan.firstChild);
-        }
-        
-        // span要素を置き換え
-        const nextSibling = foundColorSpan.nextSibling;
-        if (nextSibling) {
-            parent.insertBefore(fragment, nextSibling);
-        } else {
-            parent.appendChild(fragment);
-        }
-        
-        foundColorSpan.remove();
-        
-        // 選択範囲を復元
-        restoreSelection(parent, selectedTextContent);
-        
+        _removeSpanAndUnwrap(foundColorSpan, selectedTextContent);
         return true;
     }
     
@@ -269,7 +268,7 @@ function checkAndRemoveColor(range, targetColor) {
 }
 
 // 選択範囲を復元するヘルパー関数
-function restoreSelection(parentElement, textContent) {
+function _restoreSelection(parentElement, textContent) {
     setTimeout(() => {
         const selection = window.getSelection();
         try {
@@ -283,13 +282,13 @@ function restoreSelection(parentElement, textContent) {
                     null
                 );
                 
-                let textNode;
                 let currentPos = 0;
                 let startNode = null;
                 let startPos = 0;
                 
                 // 開始位置を見つける
-                while (textNode = walker.nextNode()) {
+                let textNode = walker.nextNode();
+                while (textNode) {
                     const nodeLength = textNode.textContent.length;
                     
                     if (currentPos + nodeLength > startIndex && !startNode) {
@@ -299,6 +298,7 @@ function restoreSelection(parentElement, textContent) {
                     }
                     
                     currentPos += nodeLength;
+                    textNode = walker.nextNode();
                 }
                 
                 if (startNode) {
@@ -332,11 +332,11 @@ function restoreSelection(parentElement, textContent) {
         } catch (err) {
             console.warn('Error restoring selection:', err);
         }
-    }, 10);
+    }, SELECTION_RESTORE_DELAY_MS);
 }
 
 // 色をHEX形式に正規化
-function normalizeColorToHex(color) {
+function _normalizeColorToHex(color) {
     if (!color) return '';
     
     // 既にHEX形式の場合
@@ -360,7 +360,7 @@ function normalizeColorToHex(color) {
     return color.toLowerCase();
 }
 
-function autoLinkURLs(editorEl) {
+function _autoLinkURLs(editorEl) {
     const textNodes = [];
     const walker = document.createTreeWalker(
         editorEl,
@@ -368,11 +368,12 @@ function autoLinkURLs(editorEl) {
         null
     );
     
-    let node;
-    while (node = walker.nextNode()) {
+    let node = walker.nextNode();
+    while (node) {
         if (node.textContent.match(/https?:\/\/[^\s]+/)) {
             textNodes.push(node);
         }
+        node = walker.nextNode();
     }
     
     textNodes.forEach(textNode => {

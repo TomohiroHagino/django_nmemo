@@ -3,10 +3,9 @@ import { Toolbar } from './toolbar.js';
 import { createImageHandler, createVideoHandler } from './media-handler.js';
 import { setupDragDrop } from './drag-drop.js';
 import { setupImageResize } from './image-resize.js';
-// シンタックスハイライト機能は一旦コメントアウト
 import { setupSyntaxHighlight } from './syntax-highlight.js';
 import { setupShortcuts } from './shortcuts.js';
-import { setupMarkdown } from './markdown.js';
+import { setupAccordion } from './accordion.js';
 
 export function initCreateEditor(imageHandlerFn, videoHandlerFn) {
     const editor = new CustomEditor('createEditor', {
@@ -37,7 +36,10 @@ export function initCreateEditor(imageHandlerFn, videoHandlerFn) {
     setupShortcuts(editor);
     
     // マークダウン記法
-    setupMarkdown(editor);
+    // setupMarkdown(editor); // 削除
+    
+    // アコーディオン機能（マークダウンの後に設定）
+    setupAccordion(editor);
     
     return editor;
 }
@@ -73,15 +75,15 @@ export function initContentEditor(initialContent, imageHandlerFn, videoHandlerFn
     
     // キーボードショートカット
     setupShortcuts(editor);
-
-    // マークダウン記法
-    setupMarkdown(editor);
+    
+    // アコーディオン機能（マークダウンの後に設定）
+    setupAccordion(editor);
     
     // currentPageIdを設定するメソッドを追加
     editor.setPageId = (pageId) => {
         currentPageId = pageId;
         editor.onImageClick = createImageHandler(editor, pageId, false);
-        editor.onVideoClick = createImageHandler(editor, pageId, false);
+        editor.onVideoClick = createVideoHandler(editor, pageId, false);
         // ドラッグ&ドロップも更新
         setupDragDrop(editor, pageId, false);
     };

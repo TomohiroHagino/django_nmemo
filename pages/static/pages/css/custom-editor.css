@@ -246,6 +246,8 @@
     margin-bottom: 12px;
 }
 
+/* color-picker-btn と color-picker-item の両方に対応 */
+.color-picker-btn,
 .color-picker-item {
     width: 28px;
     height: 28px;
@@ -255,8 +257,12 @@
     padding: 0;
     transition: all 0.2s ease;
     position: relative;
+    box-sizing: border-box;
+    min-width: 28px;
+    min-height: 28px;
 }
 
+.color-picker-btn:hover,
 .color-picker-item:hover {
     transform: scale(1.1);
     border-color: #333;
@@ -264,6 +270,7 @@
     z-index: 1;
 }
 
+.color-picker-btn:active,
 .color-picker-item:active {
     transform: scale(0.95);
 }
@@ -273,22 +280,25 @@
     align-items: center;
     padding-top: 8px;
     border-top: 1px solid #e0e0e0;
+    gap: 8px;
 }
 
 .color-picker-custom label {
     font-size: 12px;
     color: #666;
     white-space: nowrap;
+    margin-right: 8px;
 }
 
 .color-picker-input {
     flex: 1;
-    width: 60px;
+    width: 100%;
     height: 32px;
     border: 1px solid #d0d0d0;
     border-radius: 4px;
     cursor: pointer;
     padding: 2px;
+    box-sizing: border-box;
 }
 
 .color-picker-apply-btn {
@@ -448,6 +458,66 @@
     word-wrap: break-word;
 }
 
+/* アコーディオンのスタイル */
+.custom-editor .accordion-item {
+    margin: 8px 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #fafafa;
+}
+
+.custom-editor .accordion-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    user-select: none;
+    background-color: #f5f5f5;
+    border-radius: 4px 4px 0 0;
+    transition: background-color 0.2s;
+}
+
+.custom-editor .accordion-header:hover {
+    background-color: #eeeeee;
+}
+
+.custom-editor .accordion-icon {
+    margin-right: 8px;
+    font-size: 12px;
+    color: #666;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+}
+
+.custom-editor .accordion-title {
+    flex: 1;
+    font-weight: 500;
+    color: #333;
+    outline: none;
+}
+
+.custom-editor .accordion-content {
+    border-top: 1px solid #e0e0e0;
+    background-color: #ffffff;
+    border-radius: 0 0 4px 4px;
+}
+
+.custom-editor .accordion-body {
+    padding: 12px;
+    min-height: 40px;
+    outline: none;
+}
+
+.custom-editor .accordion-item.expanded .accordion-header {
+    border-radius: 4px 4px 0 0;
+}
+
+.custom-editor .accordion-item:not(.expanded) .accordion-content {
+    display: none;
+}
+
 @media (max-width: 768px) {
     .custom-editor iframe {
         min-height: 320px;
@@ -467,7 +537,7 @@
         min-height: 260px;
     }
 
-  .custom-toolbar {
-      padding: 8px 40px 8px 40px;
-  }
+    .custom-toolbar {
+        padding: 8px 40px 8px 40px;
+    }
 }

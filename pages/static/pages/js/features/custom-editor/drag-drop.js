@@ -1,4 +1,6 @@
 // ドラッグ&ドロップアップロード
+import { MAX_IMAGE_FILE_SIZE, MAX_VIDEO_FILE_SIZE } from './clipboard.js';
+
 let dropHandler = null; // 既存のハンドラーを保持
 
 export function setupDragDrop(editor, currentPageId, isCreateModal) {
@@ -172,7 +174,7 @@ function getDropRange(editorEl, e) {
 }
 
 async function uploadImage(file, pageId, csrfToken, editor, range) {
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_IMAGE_FILE_SIZE) {
         alert(`ファイル "${file.name}" のサイズは5MB以下にしてください`);
         return null;
     }
@@ -248,7 +250,7 @@ async function uploadImage(file, pageId, csrfToken, editor, range) {
 }
 
 async function uploadVideo(file, pageId, csrfToken, editor, range) {
-    if (file.size > 250 * 1024 * 1024) {
+    if (file.size > MAX_VIDEO_FILE_SIZE) {
         alert(`ファイル "${file.name}" のサイズは250MB以下にしてください`);
         return null;
     }
