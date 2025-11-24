@@ -1,7 +1,5 @@
 import { SyntaxHighlighter } from './syntax-highlight/index.js';
 
-const ERROR_MESSAGE = 'SyntaxHighlighter が初期化されていません。まず setupSyntaxHighlight を呼び出してください。';
-
 export function setupSyntaxHighlight(editor) {
     const highlighter = new SyntaxHighlighter(editor);
     highlighter.setup();
@@ -12,6 +10,8 @@ export function setupSyntaxHighlight(editor) {
 }
 
 function _checkAndWarnIfNotInitialized(editor) {
+    const ERROR_MESSAGE = 'SyntaxHighlighter が初期化されていません。まず setupSyntaxHighlight を呼び出してください。';
+
     if (!editor._syntaxHighlighter) {
         console.warn(ERROR_MESSAGE);
         return false;

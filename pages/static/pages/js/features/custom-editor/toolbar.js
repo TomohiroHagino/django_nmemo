@@ -5,28 +5,6 @@ import { insertCodeBlock } from './syntax-highlight.js';
 // 定数定義
 // ============================================================================
 
-const FONT_SIZES = [
-    { value: '10px', label: '10px - 極小' },
-    { value: '12px', label: '12px - 小' },
-    { value: '14px', label: '14px - 標準' },
-    { value: '16px', label: '16px - 中' },
-    { value: '18px', label: '18px - 大' },
-    { value: '20px', label: '20px' },
-    { value: '24px', label: '24px' },
-    { value: '32px', label: '32px' },
-    { value: '48px', label: '48px - 特大' },
-];
-
-const COLOR_PALETTE = [
-    '#000000', '#333333', '#666666', '#999999', '#CCCCCC', '#FFFFFF',
-    '#FF0000', '#FF6600', '#FFCC00', '#99FF00', '#00FF00', '#00FFCC',
-    '#0099FF', '#0066FF', '#6600FF', '#CC00FF', '#FF0099', '#FF0066',
-    '#990000', '#CC6600', '#999900', '#669900', '#009900', '#009999',
-    '#006699', '#003399', '#660099', '#9900CC', '#CC0099', '#CC0066'
-];
-
-const LIGHT_COLORS_NEEDING_BORDER = ['#FFFFFF', '#CCCCCC', '#FFCC00', '#99FF00', '#00FFCC'];
-
 export const BLOCK_ELEMENTS = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV', 'LI', 'BLOCKQUOTE'];
 
 const TEXT_ALIGN_COMMANDS = ['justifyLeft', 'justifyCenter', 'justifyRight'];
@@ -37,18 +15,9 @@ const ALIGN_COMMAND_MAP = {
     'justifyRight': 'right'
 };
 
-const ZERO_WIDTH_SPACE = '\u200B';
-const HTML_TAG_PATTERN = /<[^>]+>/;
-
 const NODE_TYPE = {
     ELEMENT: Node.ELEMENT_NODE,
     TEXT: Node.TEXT_NODE
-};
-
-const TEXT_ALIGN_VALUES = {
-    START: 'start',
-    LEFT: 'left',
-    EMPTY: ''
 };
 
 // ============================================================================
@@ -381,6 +350,8 @@ export class Toolbar {
      * @returns {HTMLButtonElement} 作成されたボタン要素
      */
     _createBaseButton(icon, title) {
+        const HTML_TAG_PATTERN = /<[^>]+>/;
+
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'toolbar-btn';
@@ -422,6 +393,17 @@ export class Toolbar {
         const dropdown = document.createElement('div');
         dropdown.className = 'font-size-dropdown';
 
+        const FONT_SIZES = [
+            { value: '10px', label: '10px - 極小' },
+            { value: '12px', label: '12px - 小' },
+            { value: '14px', label: '14px - 標準' },
+            { value: '16px', label: '16px - 中' },
+            { value: '18px', label: '18px - 大' },
+            { value: '20px', label: '20px' },
+            { value: '24px', label: '24px' },
+            { value: '32px', label: '32px' },
+            { value: '48px', label: '48px - 特大' },
+        ];
         FONT_SIZES.forEach(size => {
             const option = this._createFontSizeOption(size, savedRangeBeforeOpen);
             dropdown.appendChild(option);
@@ -625,6 +607,8 @@ export class Toolbar {
      * @returns {HTMLElement} カラーボタン要素
      */
     _createColorButton(color, type, savedRange) {
+        const LIGHT_COLORS_NEEDING_BORDER = ['#FFFFFF', '#CCCCCC', '#FFCC00', '#99FF00', '#00FFCC'];
+
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'color-picker-btn';
@@ -673,6 +657,13 @@ export class Toolbar {
         const grid = document.createElement('div');
         grid.className = 'color-picker-grid';
 
+        const COLOR_PALETTE = [
+            '#000000', '#333333', '#666666', '#999999', '#CCCCCC', '#FFFFFF',
+            '#FF0000', '#FF6600', '#FFCC00', '#99FF00', '#00FF00', '#00FFCC',
+            '#0099FF', '#0066FF', '#6600FF', '#CC00FF', '#FF0099', '#FF0066',
+            '#990000', '#CC6600', '#999900', '#669900', '#009900', '#009999',
+            '#006699', '#003399', '#660099', '#9900CC', '#CC0099', '#CC0066'
+        ];
         COLOR_PALETTE.forEach(color => {
             const colorButton = this._createColorButton(color, type, savedRange);
             grid.appendChild(colorButton);
@@ -978,6 +969,12 @@ export class Toolbar {
      * @returns {string|null} テキスト配置値、取得できない場合はnull
      */
     _getTextAlign(element) {
+        const TEXT_ALIGN_VALUES = {
+            START: 'start',
+            LEFT: 'left',
+            EMPTY: ''
+        };
+
         if (!element) return null;
 
         const textAlignValue = element.style.textAlign?.trim();
@@ -1247,6 +1244,8 @@ export class Toolbar {
      * @param {Range} range - 選択範囲
      */
     _createEmptyCodeElement(range) {
+        const ZERO_WIDTH_SPACE = '\u200B';
+
         const code = document.createElement('code');
         const textNode = document.createTextNode(ZERO_WIDTH_SPACE);
         code.appendChild(textNode);
