@@ -30,6 +30,9 @@ db.sqlite3-journal
 /media/
 /static/
 
+
+node_modules/
+
 # Environment variables
 .env
 django_nmemo_data
