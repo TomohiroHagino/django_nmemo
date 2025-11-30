@@ -2,6 +2,7 @@
 
 from typing import Optional, Dict
 from ...domain.repositories import PageRepositoryInterface
+from ...domain.page_aggregate import PageEntity
 from .media_service import MediaService
 from .folder_move_service import FolderMoveService
 from .folder_cleanup_service import FolderCleanupService

@@ -7,6 +7,7 @@ import traceback
 from pathlib import Path
 from typing import Optional, Dict
 from ...domain.repositories import PageRepositoryInterface
+from ...domain.page_aggregate import PageEntity
 from .media_service import MediaService
 
 
